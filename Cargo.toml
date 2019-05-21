@@ -1,0 +1,8 @@
+[package]
+name = "rusty-gadgets"
+version = "0.1.0"
+authors = ["Daniel Lubarov <daniel@mirprotocol.org>", "Brendan Farmer <brendan@mirprotocol.org>"]
+
+[dependencies]
+itertools = "0.8.0"
+num = "0.2.0"
