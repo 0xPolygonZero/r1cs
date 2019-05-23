@@ -41,3 +41,33 @@ fn split(builder: &mut GadgetBuilder, wire: Wire, bits: usize) -> Vec<Wire> {
 
     bit_wires
 }
+
+#[cfg(test)]
+mod tests {
+    use gadget_builder::GadgetBuilder;
+    use gadgets::split::split;
+    use wire_values::WireValues;
+    use field_element::FieldElement;
+
+    #[test]
+    fn split_19_32() {
+        let mut builder = GadgetBuilder::new();
+        let wire = builder.wire();
+        let bit_wires = split(&mut builder, wire, 32);
+        let gadget = builder.build();
+
+        let mut wire_values = WireValues::new();
+        wire_values.set(wire.clone(), 19.into());
+        assert!(gadget.execute(&mut wire_values));
+
+        let false_element: FieldElement = 0.into();
+        let true_element: FieldElement = 1.into();
+        assert_eq!(true_element, wire_values.get(&bit_wires[0]));
+        assert_eq!(true_element, wire_values.get(&bit_wires[1]));
+        assert_eq!(false_element, wire_values.get(&bit_wires[2]));
+        assert_eq!(false_element, wire_values.get(&bit_wires[3]));
+        assert_eq!(true_element, wire_values.get(&bit_wires[4]));
+        assert_eq!(false_element, wire_values.get(&bit_wires[5]));
+        assert_eq!(false_element, wire_values.get(&bit_wires[6]));
+    }
+}
