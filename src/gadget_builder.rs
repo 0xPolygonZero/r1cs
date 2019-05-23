@@ -8,16 +8,16 @@ pub struct GadgetBuilder {
     next_wire_index: u32,
     nonzero_element: LinearCombination,
     constraints: Vec<Constraint>,
-    generators: Vec<WitnessGenerator>,
+    witness_generators: Vec<WitnessGenerator>,
 }
 
 impl GadgetBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         GadgetBuilder {
             next_wire_index: 1,
             nonzero_element: Wire::ONE.into(),
             constraints: Vec::new(),
-            generators: Vec::new(),
+            witness_generators: Vec::new(),
         }
     }
 
@@ -32,18 +32,18 @@ impl GadgetBuilder {
     }
 
     pub fn generator(&mut self, generator: WitnessGenerator) {
-        self.generators.push(generator);
+        self.witness_generators.push(generator);
     }
 
     /// Return the product of zero or more terms.
     pub fn product(&mut self, terms: &[LinearCombination]) -> LinearCombination {
         // As an optimization, filter out any 1 terms.
         let filtered_terms: Vec<&LinearCombination> = terms.iter()
-            .filter(|t| **t != LinearCombination::one())
+            .filter(|t| **t != 1.into())
             .collect();
 
         if filtered_terms.is_empty() {
-            LinearCombination::one()
+            1.into()
         } else if filtered_terms.len() == 1 {
             filtered_terms[0].clone()
         } else {
@@ -70,8 +70,13 @@ impl GadgetBuilder {
         unimplemented!("TODO")
     }
 
-    fn build(&self) -> Gadget {
-        unimplemented!("TODO")
+    pub fn build(self) -> Gadget {
+        let mut generated_constraints = self.constraints;
+
+        // Constrain nonzero_element to be non-zero.
+        // TODO: implementation pending
+
+        Gadget { constraints: generated_constraints, witness_generators: self.witness_generators }
     }
 }
 

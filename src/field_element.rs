@@ -39,6 +39,12 @@ impl FieldElement {
             &(FieldElement::size() - BigUint::from(2u64)),
             &FieldElement::size()))
     }
+
+    /// Return the i'th least significant bit. So, for example, x.bit(0) returns the least
+    /// significant bit of x.
+    pub fn bit(&self, i: usize) -> bool {
+        (self.value.clone() >> i) & BigUint::from(1u64) == BigUint::from(1u64)
+    }
 }
 
 impl From<BigUint> for FieldElement {
@@ -129,47 +135,70 @@ impl Div<FieldElement> for FieldElement {
 mod tests {
     use field_element::FieldElement;
     use std::str::FromStr;
+    use std::iter;
+    use itertools::assert_equal;
 
     #[test]
     fn addition() {
         assert_eq!(
-            FieldElement::one() + FieldElement::one(),
-            FieldElement::from(2));
+            FieldElement::from(2),
+            FieldElement::one() + FieldElement::one());
 
         assert_eq!(
-            FieldElement::from(13) + FieldElement::from(20),
-            FieldElement::from(33));
+            FieldElement::from(33),
+            FieldElement::from(13) + FieldElement::from(20));
     }
 
     #[test]
     fn addition_overflow() {
         assert_eq!(
+            FieldElement::from_str("3").unwrap(),
             FieldElement::from_str(
                 "21888242871839275222246405745257275088548364400416034343698204186575808495615"
-            ).unwrap() + FieldElement::from_str("5").unwrap(),
-            FieldElement::from_str("3").unwrap());
+            ).unwrap() + FieldElement::from_str("5").unwrap());
     }
 
     #[test]
     fn additive_inverse() {
         assert_eq!(
-            -FieldElement::one(),
             FieldElement::from_str(
                 "21888242871839275222246405745257275088548364400416034343698204186575808495616"
-            ).unwrap());
+            ).unwrap(),
+            -FieldElement::one());
 
         assert_eq!(
-            FieldElement::from(123) + -FieldElement::from(123),
-            FieldElement::zero());
+            FieldElement::zero(),
+            FieldElement::from(123) + -FieldElement::from(123));
     }
 
     #[test]
     fn multiplication_overflow() {
         assert_eq!(
-            FieldElement::from_str("1234567890123456789012345678901234567890").unwrap()
-                * FieldElement::from_str("1234567890123456789012345678901234567890").unwrap(),
             FieldElement::from_str(
                 "13869117166973684714533159833916213390696312133829829072325816326144232854527"
-            ).unwrap());
+            ).unwrap(),
+            FieldElement::from_str("1234567890123456789012345678901234567890").unwrap()
+                * FieldElement::from_str("1234567890123456789012345678901234567890").unwrap());
+    }
+
+    #[test]
+    fn bits_0() {
+        let x = FieldElement::from(0);
+        let n: usize = 300;
+        assert_equal(
+            iter::repeat(false).take(n),
+            (0..n).map(|i| x.bit(i)));
+    }
+
+    #[test]
+    fn bits_19() {
+        let x = FieldElement::from(19);
+        assert_eq!(true, x.bit(0));
+        assert_eq!(true, x.bit(1));
+        assert_eq!(false, x.bit(2));
+        assert_eq!(false, x.bit(3));
+        assert_eq!(true, x.bit(4));
+        assert_eq!(false, x.bit(5));
+        assert_eq!(false, x.bit(6));
     }
 }

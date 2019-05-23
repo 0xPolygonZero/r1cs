@@ -11,26 +11,9 @@ pub struct LinearCombination {
 }
 
 impl LinearCombination {
-    pub fn zero() -> Self {
-        LinearCombination::constant_u128(0)
-    }
-
-    pub fn one() -> Self {
-        LinearCombination::constant_u128(1)
-    }
-
-    pub fn constant(value: FieldElement) -> Self {
-        LinearCombination::new(
-            [(Wire::ONE, value)].iter().cloned().collect())
-    }
-
-    pub fn constant_u128(value: u128) -> Self {
-        LinearCombination::constant(FieldElement::from(value))
-    }
-
     fn new(coefficients: HashMap<Wire, FieldElement>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
-            .filter(|(k, v)| *v != FieldElement::zero())
+            .filter(|(_k, v)| *v != FieldElement::zero())
             .collect();
         LinearCombination { coefficients: nonzero_coefficients }
     }
@@ -48,6 +31,19 @@ impl From<Wire> for LinearCombination {
     fn from(wire: Wire) -> Self {
         LinearCombination::new(
             [(wire, FieldElement::one())].iter().cloned().collect())
+    }
+}
+
+impl From<FieldElement> for LinearCombination {
+    fn from(value: FieldElement) -> Self {
+        LinearCombination::new(
+            [(Wire::ONE, value)].iter().cloned().collect())
+    }
+}
+
+impl From<u128> for LinearCombination {
+    fn from(value: u128) -> Self {
+        LinearCombination::from(FieldElement::from(value))
     }
 }
 
