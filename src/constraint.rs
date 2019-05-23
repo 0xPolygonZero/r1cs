@@ -10,15 +10,6 @@ pub struct Constraint {
 }
 
 impl Constraint {
-    /// Create and return a constraint which forces the given quantity to equal 0 or 1.
-    pub fn binary(x: &LinearCombination) -> Self {
-        Constraint {
-            a: x.clone(),
-            b: x.clone() - 1.into(),
-            c: 0.into(),
-        }
-    }
-
     pub fn evaluate(&self, wire_values: &WireValues) -> bool {
         let a_value = self.a.evaluate(wire_values);
         let b_value = self.b.evaluate(wire_values);

@@ -56,6 +56,15 @@ impl GadgetBuilder {
         self.constraints.push(Constraint { a, b, c });
     }
 
+    /// Assert that the given quantity is in [0, 1].
+    pub fn assert_binary(&mut self, a: LinearCombination) {
+        self.assert_product(a.clone(), a - 1.into(), 0.into());
+    }
+
+    pub fn assert_equal(&mut self, x: LinearCombination, y: LinearCombination) {
+        self.constraints.push(Constraint { a: x, b: 1.into(), c: y })
+    }
+
     pub fn assert_nonequal(&mut self, x: LinearCombination, y: LinearCombination) {
         let difference = x - y;
         self.assert_nonzero(difference)

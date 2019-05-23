@@ -11,7 +11,7 @@ pub struct LinearCombination {
 }
 
 impl LinearCombination {
-    fn new(coefficients: HashMap<Wire, FieldElement>) -> Self {
+    pub fn new(coefficients: HashMap<Wire, FieldElement>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
             .filter(|(_k, v)| *v != FieldElement::zero())
             .collect();
