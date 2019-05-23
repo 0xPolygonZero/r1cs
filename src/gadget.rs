@@ -1,5 +1,3 @@
-use wire::Wire;
-use field_element::FieldElement;
 use constraint::Constraint;
 use std::collections::HashMap;
 use witness_generator::WitnessGenerator;
@@ -19,9 +17,8 @@ impl Gadget {
         loop {
             let mut made_progress = false;
             pending_generators.retain(|generator| {
-                if wire_values.contains_all(&mut generator.inputs.iter()) {
-                    let g: &Fn(&mut WireValues) = generator.generate.borrow();
-                    g(&mut wire_values);
+                if wire_values.contains_all(&mut generator.inputs()) {
+                    generator.generate(&mut wire_values);
                     made_progress = true;
                     false
                 } else {

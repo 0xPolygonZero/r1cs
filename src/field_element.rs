@@ -3,7 +3,7 @@ use std::ops::{Mul, Add, Div, AddAssign, Neg, MulAssign};
 use num::BigUint;
 use num::bigint::ParseBigIntError;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct FieldElement {
     value: BigUint,
 }
@@ -32,7 +32,7 @@ impl FieldElement {
         FieldElement::from(1)
     }
 
-    fn multiplicative_inverse(&self) -> FieldElement {
+    pub fn multiplicative_inverse(&self) -> FieldElement {
         assert_ne!(*self, FieldElement::zero(), "Zero does not have a multiplicative inverse");
         // From Euler's theorem.
         FieldElement::from(self.value.modpow(

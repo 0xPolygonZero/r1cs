@@ -28,7 +28,7 @@ impl LinearCombination {
         LinearCombination::constant(FieldElement::from(value))
     }
 
-    fn new(coefficients: HashMap<Wire, FieldElement>) -> LinearCombination {
+    fn new(coefficients: HashMap<Wire, FieldElement>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
             .filter(|(k, v)| *v != FieldElement::zero())
             .collect();

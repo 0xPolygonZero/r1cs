@@ -12,7 +12,7 @@ pub struct GadgetBuilder {
 }
 
 impl GadgetBuilder {
-    fn new() -> GadgetBuilder {
+    fn new() -> Self {
         GadgetBuilder {
             next_wire_index: 1,
             nonzero_element: Wire::ONE.into(),
@@ -21,21 +21,24 @@ impl GadgetBuilder {
         }
     }
 
-    fn wire(&mut self) -> Wire {
+    pub fn wire(&mut self) -> Wire {
         let index = self.next_wire_index;
         self.next_wire_index += 1;
         Wire { index: index }
     }
 
-    pub fn constrain(&mut self, constraint: Constraint) {
-        self.constraints.push(constraint);
+    pub fn wires(&mut self, n: usize) -> Vec<Wire> {
+        (0..n).map(|_i| self.wire()).collect()
+    }
+
+    pub fn generator(&mut self, generator: WitnessGenerator) {
+        self.generators.push(generator);
     }
 
     /// Return the product of zero or more terms.
-    pub fn product(&mut self, terms: &[&LinearCombination]) -> LinearCombination {
+    pub fn product(&mut self, terms: &[LinearCombination]) -> LinearCombination {
         // As an optimization, filter out any 1 terms.
         let filtered_terms: Vec<&LinearCombination> = terms.iter()
-            .map(|t| *t)
             .filter(|t| **t != LinearCombination::one())
             .collect();
 
@@ -48,14 +51,23 @@ impl GadgetBuilder {
         }
     }
 
-    pub fn assert_nonequal(&mut self, x: &LinearCombination, y: &LinearCombination) {
-        let difference = x.clone() - y.clone();
-        self.assert_nonzero(&difference)
+    pub fn assert_product(&mut self, a: LinearCombination, b: LinearCombination,
+                          c: LinearCombination) {
+        self.constraints.push(Constraint { a, b, c });
     }
 
-    pub fn assert_nonzero(&mut self, x: &LinearCombination) {
-        let terms = [&self.nonzero_element.clone(), x];
+    pub fn assert_nonequal(&mut self, x: LinearCombination, y: LinearCombination) {
+        let difference = x - y;
+        self.assert_nonzero(difference)
+    }
+
+    pub fn assert_nonzero(&mut self, x: LinearCombination) {
+        let terms = [self.nonzero_element.clone(), x];
         self.nonzero_element = self.product(&terms);
+    }
+
+    pub fn assert_le(&mut self, a: LinearCombination, b: LinearCombination) {
+        unimplemented!("TODO")
     }
 
     fn build(&self) -> Gadget {

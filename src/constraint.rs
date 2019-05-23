@@ -4,9 +4,9 @@ use wire_values::WireValues;
 /// An R1CS constraint, of the form a * b = c, where a, b, and c are linear combinations of wires.
 #[derive(Debug)]
 pub struct Constraint {
-    a: LinearCombination,
-    b: LinearCombination,
-    c: LinearCombination,
+    pub a: LinearCombination,
+    pub b: LinearCombination,
+    pub c: LinearCombination,
 }
 
 impl Constraint {
