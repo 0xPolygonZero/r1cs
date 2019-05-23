@@ -3,6 +3,8 @@ use wire::Wire;
 use linear_combination::LinearCombination;
 use witness_generator::WitnessGenerator;
 use gadget::Gadget;
+use gadgets::split::split;
+use field_element::FieldElement;
 
 pub struct GadgetBuilder {
     next_wire_index: u32,
@@ -76,6 +78,7 @@ impl GadgetBuilder {
     }
 
     pub fn assert_le(&mut self, a: LinearCombination, b: LinearCombination) {
+        split(self, a, FieldElement::bits());
         unimplemented!("TODO")
     }
 

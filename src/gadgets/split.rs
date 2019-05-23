@@ -3,22 +3,21 @@ use wire::Wire;
 use witness_generator::WitnessGenerator;
 use wire_values::WireValues;
 use field_element::FieldElement;
-use constraint::Constraint;
 use std::collections::HashMap;
 use linear_combination::LinearCombination;
 use num::BigUint;
 
-fn split(builder: &mut GadgetBuilder, wire: Wire, bits: usize) -> Vec<Wire> {
+pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> Vec<Wire> {
     let bit_wires = builder.wires(bits);
 
     {
-        let wire = wire.clone();
+        let x = x.clone();
         let bit_wires = bit_wires.clone();
 
         builder.generator(WitnessGenerator::new(
-            vec![wire],
+            x.variable_wires(),
             move |values: &mut WireValues| {
-                let value = values.get(&wire);
+                let value = x.evaluate(values);
                 for i in 0..bits {
                     let bit_value = FieldElement::from(value.bit(i) as u128);
                     values.set(bit_wires[i], bit_value);
@@ -37,7 +36,7 @@ fn split(builder: &mut GadgetBuilder, wire: Wire, bits: usize) -> Vec<Wire> {
         bit_weights.insert(wire, (BigUint::from(1u64) << i).into());
     }
     let weighted_sum = LinearCombination::new(bit_weights);
-    builder.assert_equal(wire.into(), weighted_sum);
+    builder.assert_equal(x.into(), weighted_sum);
 
     bit_wires
 }
@@ -53,7 +52,7 @@ mod tests {
     fn split_19_32() {
         let mut builder = GadgetBuilder::new();
         let wire = builder.wire();
-        let bit_wires = split(&mut builder, wire, 32);
+        let bit_wires = split(&mut builder, wire.into(), 32);
         let gadget = builder.build();
 
         let mut wire_values = WireValues::new();

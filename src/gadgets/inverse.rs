@@ -3,7 +3,7 @@ use wire::Wire;
 use witness_generator::WitnessGenerator;
 use wire_values::WireValues;
 
-fn inverse(builder: &mut GadgetBuilder, x: Wire) -> Wire {
+pub fn inverse(builder: &mut GadgetBuilder, x: Wire) -> Wire {
     let inverse = builder.wire();
     builder.generator(WitnessGenerator::new(
         vec![x],

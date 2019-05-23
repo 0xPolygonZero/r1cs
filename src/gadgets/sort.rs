@@ -3,7 +3,7 @@ use wire::Wire;
 use witness_generator::WitnessGenerator;
 use wire_values::WireValues;
 
-fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
+pub fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
     let n: usize = original.len();
     let sorted = builder.wires(n);
 

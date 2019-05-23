@@ -18,6 +18,21 @@ impl LinearCombination {
         LinearCombination { coefficients: nonzero_coefficients }
     }
 
+    // Return a vector of all wires involved in this linear combination.
+    pub fn wires(&self) -> Vec<Wire> {
+        self.coefficients.keys()
+            .map(|w| w.clone())
+            .collect()
+    }
+
+    // Return a vector of all wires involved in this linear combination, except for the special 1
+    // wire.
+    pub fn variable_wires(&self) -> Vec<Wire> {
+        return self.wires().into_iter()
+            .filter(|&w| w != Wire::ONE)
+            .collect();
+    }
+
     pub fn evaluate(&self, wire_values: &WireValues) -> FieldElement {
         let mut sum = FieldElement::zero();
         for (wire, coefficient) in &self.coefficients {
