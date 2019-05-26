@@ -8,6 +8,11 @@ pub struct Gadget {
 }
 
 impl Gadget {
+    /// The number of constraints in this gadget.
+    pub fn size(&self) -> usize {
+        self.constraints.len()
+    }
+
     /// Execute the gadget, and return whether all constraints were satisfied.
     pub fn execute(&self, wire_values: &mut WireValues) -> bool {
         let mut pending_generators: Vec<&WitnessGenerator> = self.witness_generators.iter().collect();
