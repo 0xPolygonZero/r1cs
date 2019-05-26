@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg};
 use std::str::FromStr;
 
@@ -203,5 +205,17 @@ mod tests {
         assert_eq!(true, x.bit(4));
         assert_eq!(false, x.bit(5));
         assert_eq!(false, x.bit(6));
+    }
+}
+
+impl fmt::Display for FieldElement {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        // As a UX optimization, display "-1" for the largest field element.
+        let s = if *self == -FieldElement::one() {
+            "-1".to_string()
+        } else {
+            self.value.to_string()
+        };
+        write!(f, "{}", s)
     }
 }

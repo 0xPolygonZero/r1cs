@@ -70,7 +70,7 @@ mod tests {
     fn missing_input() {
         let mut builder = GadgetBuilder::new();
         let x = builder.wire();
-        let x_inv = builder.inverse(x.into());
+        builder.inverse(x.into());
         let gadget = builder.build();
 
         let mut values = WireValues::new();

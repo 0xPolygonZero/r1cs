@@ -103,7 +103,6 @@ impl GadgetBuilder {
         // If x != 0, then the first constraint implies that z is in [0, 1]. If z == 1, then the
         // third constraint would require that y == 0, which the second constraint prohibits.
         // Ergo, z must always equal (x == 0) in order for the constraints to be satisfied.
-
         let (y, z) = (self.wire(), self.wire());
 
         {
@@ -125,6 +124,32 @@ impl GadgetBuilder {
         self.assert_product(x.into(), y.into(), LinearCombination::one() - z.into());
 
         z.into()
+    }
+
+    pub fn le(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+        // TODO: This is a super naive implementation. Should only need 1 constraint per compared
+        // bit, or less using a non-deterministic method like jsnark.
+        let bits = FieldElement::bits();
+        let a_bits = split(self, a, bits);
+        let b_bits = split(self, b, bits);
+        let mut status = LinearCombination::one();
+        for i in 0..bits {
+            let a_i: LinearCombination = a_bits[i].into();
+            let b_i: LinearCombination = b_bits[i].into();
+            let delta_i = a_i - b_i;
+            let lt_i = self.equal(delta_i.clone(), (-FieldElement::one()).into());
+            let eq_i = self.equals_zero(delta_i);
+            let carry = self.product(eq_i, status);
+            status = self.or(lt_i, carry);
+        }
+        status
+    }
+
+    /// Equal to if c { x } else { y }. Assumes c is binary.
+    pub fn _if(&mut self, c: LinearCombination,
+               x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        let not_c = LinearCombination::one() - c.clone();
+        self.product(c, x) + self.product(not_c, y)
     }
 
     pub fn assert_product(&mut self, a: LinearCombination, b: LinearCombination,
@@ -156,22 +181,14 @@ impl GadgetBuilder {
         self.inverse(x);
     }
 
-    pub fn assert_le(&mut self, a: LinearCombination, b: LinearCombination) {
-        let bits = FieldElement::bits();
-        let a_bits = split(self, a, bits);
-        let b_bits = split(self, b, bits);
-        for i in 0..bits {
-            let ai = a_bits[i];
-            let bi = b_bits[i];
-            // TODO
-        }
-        unimplemented!("TODO")
+    /// Assert that x == 1.
+    pub fn assert_true(&mut self, x: LinearCombination) {
+        self.assert_equal(x, 1.into());
     }
 
-    /// Equal to if c { x } else { y }. Assumes c is binary.
-    pub fn _if(&mut self, c: LinearCombination, x: LinearCombination, y: LinearCombination) -> LinearCombination {
-        let not_c = LinearCombination::one() - c.clone();
-        self.product(c, x) + self.product(not_c, y)
+    pub fn assert_le(&mut self, x: LinearCombination, y: LinearCombination) {
+        let le = self.le(x, y);
+        self.assert_true(le);
     }
 
     pub fn build(self) -> Gadget {
@@ -184,15 +201,32 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
+    use field_element::FieldElement;
     use gadget_builder::GadgetBuilder;
     use wire_values::WireValues;
+
+    #[test]
+    fn equal() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y) = (builder.wire(), builder.wire());
+        let equal = builder.equal(x.into(), y.into());
+        let gadget = builder.build();
+
+        let mut values = WireValues::new();
+        values.set(x, 42.into());
+        values.set(y, 42.into());
+
+        let constraints_satisfied = gadget.execute(&mut values);
+        assert!(constraints_satisfied);
+        assert_eq!(FieldElement::one(), equal.evaluate(&values));
+    }
 
     #[test]
     #[should_panic]
     fn invert_zero() {
         let mut builder = GadgetBuilder::new();
         let x = builder.wire();
-        let x_inv = builder.inverse(x.into());
+        builder.inverse(x.into());
         let gadget = builder.build();
 
         let mut values = WireValues::new();

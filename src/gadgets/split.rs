@@ -18,7 +18,7 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
         let bit_wires = bit_wires.clone();
 
         builder.generator(WitnessGenerator::new(
-            x.variable_wires(),
+            x.wires(),
             move |values: &mut WireValues| {
                 let value = x.evaluate(values);
                 for i in 0..bits {

@@ -1,9 +1,12 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use field_element::FieldElement;
 use wire::Wire;
 use wire_values::WireValues;
+use itertools::Itertools;
 
 /// A linear combination of wires.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -27,15 +30,19 @@ impl LinearCombination {
         LinearCombination::from(1u128)
     }
 
-    // Return a vector of all wires involved in this linear combination.
+    pub fn num_terms(&self) -> usize {
+        self.coefficients.len()
+    }
+
+    /// Return a vector of all wires involved in this linear combination.
     pub fn wires(&self) -> Vec<Wire> {
         self.coefficients.keys()
             .map(|w| w.clone())
             .collect()
     }
 
-    // Return a vector of all wires involved in this linear combination, except for the special 1
-    // wire.
+    /// Return a vector of all wires involved in this linear combination, except for the special 1
+    /// wire.
     pub fn variable_wires(&self) -> Vec<Wire> {
         return self.wires().into_iter()
             .filter(|&w| w != Wire::ONE)
@@ -142,5 +149,28 @@ impl MulAssign<FieldElement> for LinearCombination {
 impl MulAssign<u128> for LinearCombination {
     fn mul_assign(&mut self, rhs: u128) {
         *self = self.clone() * rhs;
+    }
+}
+
+impl fmt::Display for LinearCombination {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let term_strings: Vec<String> = self.coefficients.iter()
+            .sorted_by(|(k1, _v1), (k2, _v2)| k1.cmp(k2))
+            .map(|(k, v)| {
+                if *k == Wire::ONE {
+                    format!("{}", v)
+                } else if *v == FieldElement::one() {
+                    format!("{}", k)
+                } else {
+                    format!("{} * {}", k, v)
+                }
+            })
+            .collect();
+        let s = if term_strings.is_empty() {
+            "0".to_string()
+        } else {
+            term_strings.join(" + ")
+        };
+        write!(f, "{}", s)
     }
 }
