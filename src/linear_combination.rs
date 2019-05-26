@@ -1,8 +1,9 @@
-use wire::Wire;
 use std::collections::HashMap;
+use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+
 use field_element::FieldElement;
+use wire::Wire;
 use wire_values::WireValues;
-use std::ops::{Add, Mul, AddAssign, MulAssign, Neg, Sub, SubAssign};
 
 /// A linear combination of wires.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -16,6 +17,14 @@ impl LinearCombination {
             .filter(|(_k, v)| *v != FieldElement::zero())
             .collect();
         LinearCombination { coefficients: nonzero_coefficients }
+    }
+
+    pub fn zero() -> Self {
+        LinearCombination::from(0u128)
+    }
+
+    pub fn one() -> Self {
+        LinearCombination::from(1u128)
     }
 
     // Return a vector of all wires involved in this linear combination.

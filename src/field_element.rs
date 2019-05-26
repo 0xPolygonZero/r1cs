@@ -1,7 +1,8 @@
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg};
 use std::str::FromStr;
-use std::ops::{Mul, Add, Div, AddAssign, Neg, MulAssign};
-use num::BigUint;
+
 use num::bigint::ParseBigIntError;
+use num::BigUint;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct FieldElement {
@@ -133,10 +134,12 @@ impl Div<FieldElement> for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use field_element::FieldElement;
-    use std::str::FromStr;
     use std::iter;
+    use std::str::FromStr;
+
     use itertools::assert_equal;
+
+    use field_element::FieldElement;
 
     #[test]
     fn addition() {

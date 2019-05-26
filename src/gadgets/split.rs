@@ -1,12 +1,15 @@
-use gadget_builder::GadgetBuilder;
-use wire::Wire;
-use witness_generator::WitnessGenerator;
-use wire_values::WireValues;
-use field_element::FieldElement;
 use std::collections::HashMap;
-use linear_combination::LinearCombination;
+
 use num::BigUint;
 
+use field_element::FieldElement;
+use gadget_builder::GadgetBuilder;
+use linear_combination::LinearCombination;
+use wire::Wire;
+use wire_values::WireValues;
+use witness_generator::WitnessGenerator;
+
+// TODO: Moving to GadgetBuilder.
 pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> Vec<Wire> {
     let bit_wires = builder.wires(bits);
 
@@ -43,10 +46,10 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
 
 #[cfg(test)]
 mod tests {
+    use field_element::FieldElement;
     use gadget_builder::GadgetBuilder;
     use gadgets::split::split;
     use wire_values::WireValues;
-    use field_element::FieldElement;
 
     #[test]
     fn split_19_32() {

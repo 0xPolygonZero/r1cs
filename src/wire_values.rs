@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use wire::Wire;
+
 use field_element::FieldElement;
+use wire::Wire;
 
 pub struct WireValues {
     values: HashMap<Wire, FieldElement>,

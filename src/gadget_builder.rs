@@ -1,14 +1,14 @@
 use constraint::Constraint;
-use wire::Wire;
-use linear_combination::LinearCombination;
-use witness_generator::WitnessGenerator;
+use field_element::FieldElement;
 use gadget::Gadget;
 use gadgets::split::split;
-use field_element::FieldElement;
+use linear_combination::LinearCombination;
+use wire::Wire;
+use wire_values::WireValues;
+use witness_generator::WitnessGenerator;
 
 pub struct GadgetBuilder {
     next_wire_index: u32,
-    nonzero_element: LinearCombination,
     constraints: Vec<Constraint>,
     witness_generators: Vec<WitnessGenerator>,
 }
@@ -17,7 +17,6 @@ impl GadgetBuilder {
     pub fn new() -> Self {
         GadgetBuilder {
             next_wire_index: 1,
-            nonzero_element: Wire::ONE.into(),
             constraints: Vec::new(),
             witness_generators: Vec::new(),
         }
@@ -33,24 +32,99 @@ impl GadgetBuilder {
         (0..n).map(|_i| self.wire()).collect()
     }
 
+    // TODO: Take the input list and generate function directly.
     pub fn generator(&mut self, generator: WitnessGenerator) {
         self.witness_generators.push(generator);
     }
 
     /// Return the product of zero or more terms.
-    pub fn product(&mut self, terms: &[LinearCombination]) -> LinearCombination {
-        // As an optimization, filter out any 1 terms.
-        let filtered_terms: Vec<&LinearCombination> = terms.iter()
-            .filter(|t| **t != 1.into())
-            .collect();
-
-        if filtered_terms.is_empty() {
-            1.into()
-        } else if filtered_terms.len() == 1 {
-            filtered_terms[0].clone()
-        } else {
-            unimplemented!("TODO")
+    pub fn product(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+        if a == 1.into() {
+            return b;
         }
+        if b == 1.into() {
+            return a;
+        }
+
+        let product: LinearCombination = self.wire().into();
+        self.assert_product(a, b, product.clone());
+        product
+    }
+
+    /// Equal to 1 / x, assuming x is non-zero. If x is zero, the gadget will not be satisfiable.
+    pub fn inverse(&mut self, x: LinearCombination) -> LinearCombination {
+        let x_inv = self.wire();
+
+        {
+            let x = x.clone();
+            self.generator(WitnessGenerator::new(
+                x.wires(),
+                move |values: &mut WireValues| {
+                    let x_value = x.evaluate(values);
+                    let inverse_value = x_value.multiplicative_inverse();
+                    values.set(x_inv, inverse_value);
+                },
+            ));
+        }
+
+        self.assert_product(x, x_inv.into(), 1.into());
+        x_inv.into()
+    }
+
+    pub fn quotient(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        let y_inv = self.inverse(y);
+        self.product(x, y_inv)
+    }
+
+    pub fn and(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+        self.product(a, b)
+    }
+
+    pub fn or(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+        a.clone() + b.clone() - self.and(a, b)
+    }
+
+    /// Equal to 1 if a == b, or 0 otherwise.
+    pub fn equal(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+        self.equals_zero(a - b)
+    }
+
+    /// Equal to 1 if x == 0, or 0 otherwise.
+    pub fn equals_zero(&mut self, x: LinearCombination) -> LinearCombination {
+        // We will non-deterministically compute three wires:
+        // - z := if x == 0 { 1 } else { 0 }
+        // - y := if x == 0 { 42 } else { 1 / x } (42 being an arbitrary non-zero element)
+        // - y_inv := 1 / y
+        // And then add three constraints:
+        // - z must be binary
+        // - y must be non-zero (in other words, it must have an inverse)
+        // - x * y = 1 - z
+        // If x == 0, then the third constraint requires that z == 1.
+        // If x != 0, then the first constraint implies that z is in [0, 1]. If z == 1, then the
+        // third constraint would require that y == 0, which the second constraint prohibits.
+        // Ergo, z must always equal (x == 0) in order for the constraints to be satisfied.
+
+        let (y, z) = (self.wire(), self.wire());
+
+        {
+            let x = x.clone();
+            self.generator(WitnessGenerator::new(
+                x.wires(),
+                move |values: &mut WireValues| {
+                    let x_value = x.evaluate(values);
+                    let z_value = if x_value == 0.into() { 1.into() } else { 0.into() };
+                    let y_value = if x_value == 0.into() { 42.into() } else { x_value.multiplicative_inverse() };
+                    values.set(z, z_value);
+                    values.set(y, y_value);
+                },
+            ));
+        }
+
+        self.assert_binary(z.into());
+        self.assert_nonzero(y.into());
+        self.assert_product(x.into(), y.into(), LinearCombination::one() - z.into());
+
+        z.into()
     }
 
     pub fn assert_product(&mut self, a: LinearCombination, b: LinearCombination,
@@ -64,43 +138,65 @@ impl GadgetBuilder {
     }
 
     pub fn assert_equal(&mut self, x: LinearCombination, y: LinearCombination) {
-        self.constraints.push(Constraint { a: x, b: 1.into(), c: y })
+        self.constraints.push(Constraint { a: x, b: 1.into(), c: y });
     }
 
     pub fn assert_nonequal(&mut self, x: LinearCombination, y: LinearCombination) {
         let difference = x - y;
-        self.assert_nonzero(difference)
+        self.assert_nonzero(difference);
+    }
+
+    pub fn assert_zero(&mut self, x: LinearCombination) {
+        self.assert_equal(x, 0.into());
     }
 
     pub fn assert_nonzero(&mut self, x: LinearCombination) {
-        let terms = [self.nonzero_element.clone(), x];
-        self.nonzero_element = self.product(&terms);
+        // A field element is non-zero iff it has a multiplicative inverse.
+        // We don't care what the inverse is, but calling inverse(x) will require that it exists.
+        self.inverse(x);
     }
 
     pub fn assert_le(&mut self, a: LinearCombination, b: LinearCombination) {
-        split(self, a, FieldElement::bits());
+        let bits = FieldElement::bits();
+        let a_bits = split(self, a, bits);
+        let b_bits = split(self, b, bits);
+        for i in 0..bits {
+            let ai = a_bits[i];
+            let bi = b_bits[i];
+            // TODO
+        }
         unimplemented!("TODO")
     }
 
+    /// Equal to if c { x } else { y }. Assumes c is binary.
+    pub fn _if(&mut self, c: LinearCombination, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        let not_c = LinearCombination::one() - c.clone();
+        self.product(c, x) + self.product(not_c, y)
+    }
+
     pub fn build(self) -> Gadget {
-        let mut generated_constraints = self.constraints;
-
-        // Constrain nonzero_element to be non-zero.
-        // TODO: implementation pending
-
-        Gadget { constraints: generated_constraints, witness_generators: self.witness_generators }
+        Gadget {
+            constraints: self.constraints,
+            witness_generators: self.witness_generators,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn constraint_not_satisfied() {
-        // TODO
-    }
+    use gadget_builder::GadgetBuilder;
+    use wire_values::WireValues;
 
     #[test]
-    fn missing_generator() {
-        // TODO
+    #[should_panic]
+    fn invert_zero() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.wire();
+        let x_inv = builder.inverse(x.into());
+        let gadget = builder.build();
+
+        let mut values = WireValues::new();
+        values.set(x, 0.into());
+        gadget.execute(&mut values);
     }
 }

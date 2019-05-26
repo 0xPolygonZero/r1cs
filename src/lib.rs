@@ -1,3 +1,7 @@
+extern crate core;
+extern crate itertools;
+extern crate num;
+
 pub mod constraint;
 pub mod field_element;
 pub mod gadget;
@@ -8,6 +12,3 @@ pub mod wire_values;
 pub mod witness_generator;
 pub mod gadgets;
 
-extern crate itertools;
-extern crate num;
-extern crate core;

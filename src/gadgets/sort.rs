@@ -1,7 +1,7 @@
 use gadget_builder::GadgetBuilder;
 use wire::Wire;
-use witness_generator::WitnessGenerator;
 use wire_values::WireValues;
+use witness_generator::WitnessGenerator;
 
 pub fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
     let n: usize = original.len();
@@ -32,10 +32,10 @@ pub fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
 
 #[cfg(test)]
 mod tests {
-    use gadget_builder::GadgetBuilder;
-    use wire_values::WireValues;
     use field_element::FieldElement;
+    use gadget_builder::GadgetBuilder;
     use gadgets::sort::sort;
+    use wire_values::WireValues;
 
     #[test]
     fn sort_12345() {

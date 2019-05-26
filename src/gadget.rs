@@ -1,6 +1,6 @@
 use constraint::Constraint;
-use witness_generator::WitnessGenerator;
 use wire_values::WireValues;
+use witness_generator::WitnessGenerator;
 
 pub struct Gadget {
     pub constraints: Vec<Constraint>,
@@ -30,5 +30,50 @@ impl Gadget {
         }
 
         self.constraints.iter().all(|constraint| constraint.evaluate(wire_values))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gadget_builder::GadgetBuilder;
+    use wire_values::WireValues;
+
+    #[test]
+    fn constraint_not_satisfied() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y) = (builder.wire(), builder.wire());
+        builder.assert_equal(x.into(), y.into());
+        let gadget = builder.build();
+
+        let mut values = WireValues::new();
+        values.set(x, 42.into());
+        values.set(y, 43.into());
+
+        let constraints_satisfied = gadget.execute(&mut values);
+        assert!(!constraints_satisfied);
+    }
+
+    #[test]
+    #[should_panic]
+    fn missing_generator() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y, z) = (builder.wire(), builder.wire(), builder.wire());
+        builder.assert_product(x.into(), y.into(), z.into());
+        let gadget = builder.build();
+
+        let mut values = WireValues::new();
+        gadget.execute(&mut values);
+    }
+
+    #[test]
+    #[should_panic]
+    fn missing_input() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.wire();
+        let x_inv = builder.inverse(x.into());
+        let gadget = builder.build();
+
+        let mut values = WireValues::new();
+        gadget.execute(&mut values);
     }
 }
