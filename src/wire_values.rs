@@ -49,3 +49,15 @@ impl WireValues {
         wires.all(|wire| self.contains(wire))
     }
 }
+
+macro_rules! wire_values {
+    ( $( $wire:expr => $value:expr ),* ) => {
+        {
+            let mut values = WireValues::new();
+            $(
+                values.set($wire, $value);
+            )*
+            values
+        }
+    }
+}

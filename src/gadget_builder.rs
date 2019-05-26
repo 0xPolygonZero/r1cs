@@ -22,6 +22,8 @@ impl GadgetBuilder {
         }
     }
 
+    /// Add a wire to the gadget. It will start with no associated constraints, but constraints can
+    /// be added later using the assert_* methods.
     pub fn wire(&mut self) -> Wire {
         let index = self.next_wire_index;
         self.next_wire_index += 1;
@@ -32,7 +34,6 @@ impl GadgetBuilder {
         (0..n).map(|_i| self.wire()).collect()
     }
 
-    // TODO: Take the input list and generate function directly.
     pub fn generator<T>(&mut self, inputs: Vec<Wire>, generate: T)
         where T: Fn(&mut WireValues) + 'static {
         self.witness_generators.push(WitnessGenerator::new(inputs, generate));
@@ -47,9 +48,21 @@ impl GadgetBuilder {
             return a;
         }
 
-        let product: LinearCombination = self.wire().into();
-        self.assert_product(a, b, product.clone());
-        product
+        let product = self.wire();
+        self.assert_product(a.clone(), b.clone(), product.into());
+
+        {
+            let product = product.clone();
+            self.generator(
+                [a.wires(), b.wires()].concat(),
+                move |values: &mut WireValues| {
+                    let product_value = a.evaluate(values) * b.evaluate(values);
+                    values.set(product, product_value);
+                }
+            );
+        }
+
+        product.into()
     }
 
     /// 1 / x. Assumes x is non-zero. If x is zero, the gadget will not be satisfiable.
@@ -77,10 +90,14 @@ impl GadgetBuilder {
         self.product(x, y_inv)
     }
 
+    /// The logical conjunction of two binary values. Assumes both inputs are binary, otherwise the
+    /// result is undefined.
     pub fn and(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
         self.product(a, b)
     }
 
+    /// The logical disjunction of two binary values. Assumes both inputs are binary, otherwise the
+    /// result is undefined.
     pub fn or(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
         a.clone() + b.clone() - self.and(a, b)
     }
@@ -205,6 +222,30 @@ mod tests {
     use field_element::FieldElement;
     use gadget_builder::GadgetBuilder;
     use wire_values::WireValues;
+
+    #[test]
+    fn and() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y) = (builder.wire(), builder.wire());
+        let and = builder.and(x.into(), y.into());
+        let gadget = builder.build();
+
+        let mut values00 = wire_values!(x => 0.into(), y => 0.into());
+        assert!(gadget.execute(&mut values00));
+        assert_eq!(FieldElement::zero(), and.evaluate(&values00));
+
+        let mut values01 = wire_values!(x => 0.into(), y => 1.into());
+        assert!(gadget.execute(&mut values01));
+        assert_eq!(FieldElement::zero(), and.evaluate(&values01));
+
+        let mut values10 = wire_values!(x => 1.into(), y => 0.into());
+        assert!(gadget.execute(&mut values10));
+        assert_eq!(FieldElement::zero(), and.evaluate(&values10));
+
+        let mut values11 = wire_values!(x => 1.into(), y => 1.into());
+        assert!(gadget.execute(&mut values11));
+        assert_eq!(FieldElement::one(), and.evaluate(&values11));
+    }
 
     #[test]
     fn equal() {
