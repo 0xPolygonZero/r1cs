@@ -15,6 +15,7 @@ impl WireValues {
     }
 
     pub fn get(&self, wire: &Wire) -> FieldElement {
+        assert!(self.values.contains_key(wire), "No value for {}", wire);
         self.values[wire].clone()
     }
 
