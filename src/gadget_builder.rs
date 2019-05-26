@@ -224,6 +224,34 @@ mod tests {
     use wire_values::WireValues;
 
     #[test]
+    fn assert_binary_0_1() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.wire();
+        builder.assert_binary(x.into());
+        let gadget = builder.build();
+
+        // With x = 0, the constraint should be satisfied.
+        let mut values0 = wire_values!(x => 0.into());
+        assert!(gadget.execute(&mut values0));
+
+        // With x = 1, the constraint should be satisfied.
+        let mut values1 = wire_values!(x => 1.into());
+        assert!(gadget.execute(&mut values1));
+    }
+
+    #[test]
+    fn assert_binary_2() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.wire();
+        builder.assert_binary(x.into());
+        let gadget = builder.build();
+
+        // With x = 2, the constraint should NOT be satisfied.
+        let mut values2 = wire_values!(x => 2.into());
+        assert!(!gadget.execute(&mut values2));
+    }
+
+    #[test]
     fn and() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
@@ -248,18 +276,38 @@ mod tests {
     }
 
     #[test]
+    fn or() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y) = (builder.wire(), builder.wire());
+        let or = builder.or(x.into(), y.into());
+        let gadget = builder.build();
+
+        let mut values00 = wire_values!(x => 0.into(), y => 0.into());
+        assert!(gadget.execute(&mut values00));
+        assert_eq!(FieldElement::zero(), or.evaluate(&values00));
+
+        let mut values01 = wire_values!(x => 0.into(), y => 1.into());
+        assert!(gadget.execute(&mut values01));
+        assert_eq!(FieldElement::one(), or.evaluate(&values01));
+
+        let mut values10 = wire_values!(x => 1.into(), y => 0.into());
+        assert!(gadget.execute(&mut values10));
+        assert_eq!(FieldElement::one(), or.evaluate(&values10));
+
+        let mut values11 = wire_values!(x => 1.into(), y => 1.into());
+        assert!(gadget.execute(&mut values11));
+        assert_eq!(FieldElement::one(), or.evaluate(&values11));
+    }
+
+    #[test]
     fn equal() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
         let equal = builder.equal(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values = WireValues::new();
-        values.set(x, 42.into());
-        values.set(y, 42.into());
-
-        let constraints_satisfied = gadget.execute(&mut values);
-        assert!(constraints_satisfied);
+        let mut values = wire_values!(x => 42.into(), y => 42.into());
+        assert!(gadget.execute(&mut values));
         assert_eq!(FieldElement::one(), equal.evaluate(&values));
     }
 
@@ -270,12 +318,8 @@ mod tests {
         builder.assert_le(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values = WireValues::new();
-        values.set(x, 42.into());
-        values.set(y, 42.into());
-
-        let constraints_satisfied = gadget.execute(&mut values);
-        assert!(constraints_satisfied);
+        let mut values = wire_values!(x => 42.into(), y => 42.into());
+        assert!(gadget.execute(&mut values));
     }
 
     #[test]
@@ -286,8 +330,7 @@ mod tests {
         builder.inverse(x.into());
         let gadget = builder.build();
 
-        let mut values = WireValues::new();
-        values.set(x, 0.into());
+        let mut values = wire_values!(x => 0.into());
         gadget.execute(&mut values);
     }
 }
