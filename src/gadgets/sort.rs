@@ -1,7 +1,6 @@
 use gadget_builder::GadgetBuilder;
 use wire::Wire;
 use wire_values::WireValues;
-use witness_generator::WitnessGenerator;
 
 pub fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
     let n: usize = original.len();
@@ -11,14 +10,14 @@ pub fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
         let original = original.clone();
         let sorted = sorted.clone();
 
-        builder.generator(WitnessGenerator::new(
+        builder.generator(
             original.clone(),
             move |values: &mut WireValues| {
                 let mut sorted_values = values.get_all(original.iter());
                 sorted_values.sort();
                 values.set_all(sorted.clone().into_iter(), sorted_values.into_iter());
             }
-        ));
+        );
     }
 
     // TODO: Verify that `sorted` is a permutation of `original`.

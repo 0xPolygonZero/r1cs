@@ -35,6 +35,11 @@ impl FieldElement {
         FieldElement::from(1)
     }
 
+    /// The additive inverse of 1.
+    pub fn neg_one() -> Self {
+        FieldElement::one().multiplicative_inverse()
+    }
+
     pub fn multiplicative_inverse(&self) -> FieldElement {
         assert_ne!(*self, FieldElement::zero(), "Zero does not have a multiplicative inverse");
         // From Euler's theorem.

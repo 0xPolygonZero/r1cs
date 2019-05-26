@@ -33,11 +33,12 @@ impl GadgetBuilder {
     }
 
     // TODO: Take the input list and generate function directly.
-    pub fn generator(&mut self, generator: WitnessGenerator) {
-        self.witness_generators.push(generator);
+    pub fn generator<T>(&mut self, inputs: Vec<Wire>, generate: T)
+        where T: Fn(&mut WireValues) + 'static {
+        self.witness_generators.push(WitnessGenerator::new(inputs, generate));
     }
 
-    /// Return the product of zero or more terms.
+    /// The product of two terms.
     pub fn product(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
         if a == 1.into() {
             return b;
@@ -51,20 +52,20 @@ impl GadgetBuilder {
         product
     }
 
-    /// Equal to 1 / x, assuming x is non-zero. If x is zero, the gadget will not be satisfiable.
+    /// 1 / x. Assumes x is non-zero. If x is zero, the gadget will not be satisfiable.
     pub fn inverse(&mut self, x: LinearCombination) -> LinearCombination {
         let x_inv = self.wire();
 
         {
             let x = x.clone();
-            self.generator(WitnessGenerator::new(
+            self.generator(
                 x.wires(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
                     let inverse_value = x_value.multiplicative_inverse();
                     values.set(x_inv, inverse_value);
                 },
-            ));
+            );
         }
 
         self.assert_product(x, x_inv.into(), 1.into());
@@ -84,12 +85,12 @@ impl GadgetBuilder {
         a.clone() + b.clone() - self.and(a, b)
     }
 
-    /// Equal to 1 if a == b, or 0 otherwise.
+    /// if x == 0 { 1 } else { 0 }.
     pub fn equal(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
         self.equals_zero(a - b)
     }
 
-    /// Equal to 1 if x == 0, or 0 otherwise.
+    /// if x == 0 { 1 } else { 0 }.
     pub fn equals_zero(&mut self, x: LinearCombination) -> LinearCombination {
         // We will non-deterministically compute three wires:
         // - z := if x == 0 { 1 } else { 0 }
@@ -107,7 +108,7 @@ impl GadgetBuilder {
 
         {
             let x = x.clone();
-            self.generator(WitnessGenerator::new(
+            self.generator(
                 x.wires(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
@@ -116,7 +117,7 @@ impl GadgetBuilder {
                     values.set(z, z_value);
                     values.set(y, y_value);
                 },
-            ));
+            );
         }
 
         self.assert_binary(z.into());
@@ -137,7 +138,7 @@ impl GadgetBuilder {
             let a_i: LinearCombination = a_bits[i].into();
             let b_i: LinearCombination = b_bits[i].into();
             let delta_i = a_i - b_i;
-            let lt_i = self.equal(delta_i.clone(), (-FieldElement::one()).into());
+            let lt_i = self.equal(delta_i.clone(), LinearCombination::neg_one());
             let eq_i = self.equals_zero(delta_i);
             let carry = self.product(eq_i, status);
             status = self.or(lt_i, carry);
@@ -145,7 +146,7 @@ impl GadgetBuilder {
         status
     }
 
-    /// Equal to if c { x } else { y }. Assumes c is binary.
+    /// if c { x } else { y }. Assumes c is binary.
     pub fn _if(&mut self, c: LinearCombination,
                x: LinearCombination, y: LinearCombination) -> LinearCombination {
         let not_c = LinearCombination::one() - c.clone();
@@ -219,6 +220,21 @@ mod tests {
         let constraints_satisfied = gadget.execute(&mut values);
         assert!(constraints_satisfied);
         assert_eq!(FieldElement::one(), equal.evaluate(&values));
+    }
+
+    #[test]
+    fn assert_le_equal() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y) = (builder.wire(), builder.wire());
+        builder.assert_le(x.into(), y.into());
+        let gadget = builder.build();
+
+        let mut values = WireValues::new();
+        values.set(x, 42.into());
+        values.set(y, 42.into());
+
+        let constraints_satisfied = gadget.execute(&mut values);
+        assert!(constraints_satisfied);
     }
 
     #[test]

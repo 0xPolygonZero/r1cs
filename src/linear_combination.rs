@@ -30,6 +30,11 @@ impl LinearCombination {
         LinearCombination::from(1u128)
     }
 
+    /// The additive inverse of 1.
+    pub fn neg_one() -> Self {
+        -LinearCombination::one()
+    }
+
     pub fn num_terms(&self) -> usize {
         self.coefficients.len()
     }

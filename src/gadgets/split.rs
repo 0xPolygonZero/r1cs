@@ -7,7 +7,6 @@ use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
 use wire::Wire;
 use wire_values::WireValues;
-use witness_generator::WitnessGenerator;
 
 // TODO: Moving to GadgetBuilder.
 pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> Vec<Wire> {
@@ -17,7 +16,7 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
         let x = x.clone();
         let bit_wires = bit_wires.clone();
 
-        builder.generator(WitnessGenerator::new(
+        builder.generator(
             x.wires(),
             move |values: &mut WireValues| {
                 let value = x.evaluate(values);
@@ -26,7 +25,7 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
                     values.set(bit_wires[i], bit_value);
                 }
             },
-        ));
+        );
     }
 
     // Constrain each bit wire to [0, 1].
