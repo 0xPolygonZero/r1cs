@@ -90,16 +90,22 @@ impl GadgetBuilder {
         self.product(x, y_inv)
     }
 
-    /// The logical conjunction of two binary values. Assumes both inputs are binary, otherwise the
-    /// result is undefined.
+    /// The conjunction of two binary values. Assumes both inputs are binary, otherwise the result
+    /// is undefined.
     pub fn and(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
         self.product(a, b)
     }
 
-    /// The logical disjunction of two binary values. Assumes both inputs are binary, otherwise the
-    /// result is undefined.
+    /// The disjunction of two binary values. Assumes both inputs are binary, otherwise the result
+    /// is undefined.
     pub fn or(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
         a.clone() + b.clone() - self.and(a, b)
+    }
+
+    /// The exclusive disjunction of two binary values. Assumes both inputs are binary, otherwise
+    /// the result is undefined.
+    pub fn xor(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+        a.clone() + b.clone() - self.and(a, b) * 2u128
     }
 
     /// if x == 0 { 1 } else { 0 }.
@@ -144,17 +150,18 @@ impl GadgetBuilder {
         z.into()
     }
 
-    pub fn le(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
+    /// x <= y
+    pub fn le(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
         // TODO: This is a super naive implementation. Should only need 1 constraint per compared
         // bit, or less using a non-deterministic method like jsnark.
         let bits = FieldElement::bits();
-        let a_bits = split(self, a, bits);
-        let b_bits = split(self, b, bits);
+        let x_bits = split(self, x, bits);
+        let y_bits = split(self, y, bits);
         let mut status = LinearCombination::one();
         for i in 0..bits {
-            let a_i: LinearCombination = a_bits[i].into();
-            let b_i: LinearCombination = b_bits[i].into();
-            let delta_i = a_i - b_i;
+            let x_i: LinearCombination = x_bits[i].into();
+            let y_i: LinearCombination = y_bits[i].into();
+            let delta_i = x_i - y_i;
             let lt_i = self.equal(delta_i.clone(), LinearCombination::neg_one());
             let eq_i = self.equals_zero(delta_i);
             let carry = self.product(eq_i, status);
@@ -297,6 +304,30 @@ mod tests {
         let mut values11 = wire_values!(x => 1.into(), y => 1.into());
         assert!(gadget.execute(&mut values11));
         assert_eq!(FieldElement::one(), or.evaluate(&values11));
+    }
+
+    #[test]
+    fn xor() {
+        let mut builder = GadgetBuilder::new();
+        let (x, y) = (builder.wire(), builder.wire());
+        let xor = builder.xor(x.into(), y.into());
+        let gadget = builder.build();
+
+        let mut values00 = wire_values!(x => 0.into(), y => 0.into());
+        assert!(gadget.execute(&mut values00));
+        assert_eq!(FieldElement::zero(), xor.evaluate(&values00));
+
+        let mut values01 = wire_values!(x => 0.into(), y => 1.into());
+        assert!(gadget.execute(&mut values01));
+        assert_eq!(FieldElement::one(), xor.evaluate(&values01));
+
+        let mut values10 = wire_values!(x => 1.into(), y => 0.into());
+        assert!(gadget.execute(&mut values10));
+        assert_eq!(FieldElement::one(), xor.evaluate(&values10));
+
+        let mut values11 = wire_values!(x => 1.into(), y => 1.into());
+        assert!(gadget.execute(&mut values11));
+        assert_eq!(FieldElement::zero(), xor.evaluate(&values11));
     }
 
     #[test]
