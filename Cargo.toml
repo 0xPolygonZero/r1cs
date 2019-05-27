@@ -6,3 +6,4 @@ authors = ["Daniel Lubarov <daniel@mirprotocol.org>", "Brendan Farmer <brendan@m
 [dependencies]
 itertools = "0.8.0"
 num = "0.2.0"
+num-traits = "0.2.8"

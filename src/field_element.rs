@@ -5,6 +5,8 @@ use std::str::FromStr;
 
 use num::bigint::ParseBigIntError;
 use num::BigUint;
+use num_traits::One;
+use num_traits::Zero;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct FieldElement {
@@ -19,7 +21,7 @@ impl FieldElement {
     }
 
     pub fn max_value() -> BigUint {
-        FieldElement::size() - BigUint::from(1u64)
+        FieldElement::size() - BigUint::one()
     }
 
     /// The number of bits needed to encode each field element.
@@ -40,24 +42,29 @@ impl FieldElement {
         FieldElement::one().multiplicative_inverse()
     }
 
+    pub fn is_zero(&self) -> bool {
+        self.value.is_zero()
+    }
+
     pub fn multiplicative_inverse(&self) -> FieldElement {
         assert_ne!(*self, FieldElement::zero(), "Zero does not have a multiplicative inverse");
         // From Euler's theorem.
+        // TODO: Use a faster method.
         FieldElement::from(self.value.modpow(
-            &(FieldElement::size() - BigUint::from(2u64)),
+            &(FieldElement::size() - BigUint::from(2u128)),
             &FieldElement::size()))
     }
 
     /// Return the i'th least significant bit. So, for example, x.bit(0) returns the least
     /// significant bit of x.
     pub fn bit(&self, i: usize) -> bool {
-        (self.value.clone() >> i) & BigUint::from(1u64) == BigUint::from(1u64)
+        (self.value.clone() >> i) & BigUint::one() == BigUint::one()
     }
 }
 
 impl From<BigUint> for FieldElement {
     fn from(value: BigUint) -> FieldElement {
-        assert!(value >= BigUint::from(0u64));
+        assert!(value >= BigUint::zero());
         assert!(value < FieldElement::size());
         FieldElement { value }
     }
@@ -65,7 +72,7 @@ impl From<BigUint> for FieldElement {
 
 impl From<u128> for FieldElement {
     fn from(value: u128) -> FieldElement {
-        FieldElement::from(BigUint::from(value))
+        FieldElement { value: BigUint::from(value) }
     }
 }
 

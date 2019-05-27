@@ -1,6 +1,7 @@
 extern crate core;
 extern crate itertools;
 extern crate num;
+extern crate num_traits;
 
 #[macro_use]
 pub mod wire_values;
