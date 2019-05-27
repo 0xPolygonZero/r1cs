@@ -46,6 +46,10 @@ impl FieldElement {
         self.value.is_zero()
     }
 
+    pub fn is_nonzero(&self) -> bool {
+        !self.is_zero()
+    }
+
     pub fn is_one(&self) -> bool {
         self.value.is_one()
     }

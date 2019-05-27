@@ -94,62 +94,63 @@ impl GadgetBuilder {
 
     /// The conjunction of two binary values. Assumes both inputs are binary, otherwise the result
     /// is undefined.
-    pub fn and(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
-        self.product(a, b)
+    pub fn and(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        self.product(x, y)
     }
 
     /// The disjunction of two binary values. Assumes both inputs are binary, otherwise the result
     /// is undefined.
-    pub fn or(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
-        a.clone() + b.clone() - self.and(a, b)
+    pub fn or(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        x.clone() + y.clone() - self.and(x, y)
     }
 
     /// The exclusive disjunction of two binary values. Assumes both inputs are binary, otherwise
     /// the result is undefined.
-    pub fn xor(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
-        a.clone() + b.clone() - self.and(a, b) * 2u128
+    pub fn xor(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        x.clone() + y.clone() - self.and(x, y) * 2u128
+    }
+
+    /// if x == y { 1 } else { 0 }.
+    pub fn check_equal(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        self.check_zero(x - y)
     }
 
     /// if x == 0 { 1 } else { 0 }.
-    pub fn equal(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
-        self.equals_zero(a - b)
+    pub fn check_zero(&mut self, x: LinearCombination) -> LinearCombination {
+        LinearCombination::one() - self.check_nonzero(x)
     }
 
-    /// if x == 0 { 1 } else { 0 }.
-    pub fn equals_zero(&mut self, x: LinearCombination) -> LinearCombination {
-        // We will non-deterministically compute three wires:
-        // - z := if x == 0 { 1 } else { 0 }
-        // - y := if x == 0 { 42 } else { 1 / x } (42 being an arbitrary non-zero element)
-        // - y_inv := 1 / y
-        // And then add three constraints:
-        // - z must be binary
-        // - y must be non-zero (in other words, it must have an inverse)
-        // - x * y = 1 - z
-        // If x == 0, then the third constraint requires that z == 1.
-        // If x != 0, then the first constraint implies that z is in [0, 1]. If z == 1, then the
-        // third constraint would require that y == 0, which the second constraint prohibits.
-        // Ergo, z must always equal (x == 0) in order for the constraints to be satisfied.
-        let (y, z) = (self.wire(), self.wire());
+    /// if x != 0 { 1 } else { 0 }.
+    pub fn check_nonzero(&mut self, x: LinearCombination) -> LinearCombination {
+        // See the Pinocchio paper for an explanation.
+        let (y, m) = (self.wire(), self.wire());
+        self.assert_product(x.clone(), m.into(), y.into());
+        self.assert_product(LinearCombination::one() - y.into(), x.clone(), 0.into());
 
         {
-            let x = x.clone();
+            let y = y.clone();
             self.generator(
                 x.wires(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
-                    let z_value = if x_value.is_zero() { 1.into() } else { 0.into() };
-                    let y_value = if x_value.is_zero() { 42.into() } else { x_value.multiplicative_inverse() };
-                    values.set(z, z_value);
+                    let y_value: FieldElement = if x_value.is_nonzero() {
+                        1.into()
+                    } else {
+                        0.into()
+                    };
+                    let m_value: FieldElement = if x_value.is_nonzero() {
+                        y_value.clone() / x_value
+                    } else {
+                        // The value of m doesn't matter if x = 0.
+                        42.into()
+                    };
+                    values.set(m, m_value);
                     values.set(y, y_value);
                 },
             );
         }
 
-        self.assert_binary(z.into());
-        self.assert_nonzero(y.into());
-        self.assert_product(x.into(), y.into(), LinearCombination::one() - z.into());
-
-        z.into()
+        y.into()
     }
 
     /// x <= y
@@ -164,8 +165,8 @@ impl GadgetBuilder {
             let x_i: LinearCombination = x_bits[i].into();
             let y_i: LinearCombination = y_bits[i].into();
             let delta_i = x_i - y_i;
-            let lt_i = self.equal(delta_i.clone(), LinearCombination::neg_one());
-            let eq_i = self.equals_zero(delta_i);
+            let lt_i = self.check_equal(delta_i.clone(), LinearCombination::neg_one());
+            let eq_i = self.check_zero(delta_i);
             let carry = self.product(eq_i, status);
             status = self.or(lt_i, carry);
         }
@@ -350,7 +351,7 @@ mod tests {
     fn equal() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
-        let equal = builder.equal(x.into(), y.into());
+        let equal = builder.check_equal(x.into(), y.into());
         let gadget = builder.build();
 
         let mut values = wire_values!(x => 42.into(), y => 42.into());
