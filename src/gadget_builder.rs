@@ -135,8 +135,8 @@ impl GadgetBuilder {
                 x.wires(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
-                    let z_value = if x_value == 0.into() { 1.into() } else { 0.into() };
-                    let y_value = if x_value == 0.into() { 42.into() } else { x_value.multiplicative_inverse() };
+                    let z_value = if x_value.is_zero() { 1.into() } else { 0.into() };
+                    let y_value = if x_value.is_zero() { 42.into() } else { x_value.multiplicative_inverse() };
                     values.set(z, z_value);
                     values.set(y, y_value);
                 },

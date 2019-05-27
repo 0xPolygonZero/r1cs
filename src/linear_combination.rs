@@ -164,7 +164,7 @@ impl fmt::Display for LinearCombination {
             .map(|(k, v)| {
                 if *k == Wire::ONE {
                     format!("{}", v)
-                } else if *v == FieldElement::one() {
+                } else if v.is_one() {
                     format!("{}", k)
                 } else {
                     format!("{} * {}", k, v)

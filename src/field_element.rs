@@ -46,6 +46,10 @@ impl FieldElement {
         self.value.is_zero()
     }
 
+    pub fn is_one(&self) -> bool {
+        self.value.is_one()
+    }
+
     pub fn multiplicative_inverse(&self) -> FieldElement {
         assert_ne!(*self, FieldElement::zero(), "Zero does not have a multiplicative inverse");
         // From Euler's theorem.
@@ -58,7 +62,7 @@ impl FieldElement {
     /// Return the i'th least significant bit. So, for example, x.bit(0) returns the least
     /// significant bit of x.
     pub fn bit(&self, i: usize) -> bool {
-        (self.value.clone() >> i) & BigUint::one() == BigUint::one()
+        ((self.value.clone() >> i) & BigUint::one()).is_one()
     }
 }
 
@@ -88,7 +92,7 @@ impl Neg for FieldElement {
     type Output = FieldElement;
 
     fn neg(self) -> FieldElement {
-        if self == FieldElement::zero() {
+        if self.is_zero() {
             self
         } else {
             FieldElement::from(FieldElement::size() - self.value)
@@ -223,7 +227,7 @@ mod tests {
 impl fmt::Display for FieldElement {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         // As a UX optimization, display "-1" for the largest field element.
-        let s = if *self == -FieldElement::one() {
+        let s = if self.is_one() {
             "-1".to_string()
         } else {
             self.value.to_string()
