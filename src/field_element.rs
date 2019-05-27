@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::Formatter;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl};
 use std::str::FromStr;
 
 use num::bigint::ParseBigIntError;
@@ -24,8 +24,8 @@ impl FieldElement {
         FieldElement::size() - BigUint::one()
     }
 
-    /// The number of bits needed to encode each field element.
-    pub fn bits() -> usize {
+    /// The number of bits needed to encode every field element.
+    pub fn max_bits() -> usize {
         FieldElement::max_value().bits()
     }
 
@@ -57,6 +57,11 @@ impl FieldElement {
         FieldElement::from(self.value.modpow(
             &(FieldElement::size() - BigUint::from(2u128)),
             &FieldElement::size()))
+    }
+
+    /// The number of bits needed to encode this particular field element.
+    pub fn bits(&self) -> usize {
+        self.value.bits()
     }
 
     /// Return the i'th least significant bit. So, for example, x.bit(0) returns the least
@@ -147,6 +152,14 @@ impl Div<FieldElement> for FieldElement {
 
     fn div(self, rhs: FieldElement) -> FieldElement {
         self * rhs.multiplicative_inverse()
+    }
+}
+
+impl Shl<usize> for FieldElement {
+    type Output = FieldElement;
+
+    fn shl(self, rhs: usize) -> FieldElement {
+        FieldElement::from(self.value << rhs)
     }
 }
 

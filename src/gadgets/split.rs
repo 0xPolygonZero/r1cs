@@ -20,6 +20,7 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
             x.wires(),
             move |values: &mut WireValues| {
                 let value = x.evaluate(values);
+                assert!(value.bits() <= bits);
                 for i in 0..bits {
                     let bit_value = FieldElement::from(value.bit(i) as u128);
                     values.set(bit_wires[i], bit_value);

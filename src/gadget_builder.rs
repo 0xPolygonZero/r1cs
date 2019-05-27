@@ -6,6 +6,8 @@ use linear_combination::LinearCombination;
 use wire::Wire;
 use wire_values::WireValues;
 use witness_generator::WitnessGenerator;
+use std::collections::HashMap;
+use itertools::enumerate;
 
 pub struct GadgetBuilder {
     next_wire_index: u32,
@@ -154,7 +156,7 @@ impl GadgetBuilder {
     pub fn le(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
         // TODO: This is a super naive implementation. Should only need 1 constraint per compared
         // bit, or less using a non-deterministic method like jsnark.
-        let bits = FieldElement::bits();
+        let bits = FieldElement::max_bits();
         let x_bits = split(self, x, bits);
         let y_bits = split(self, y, bits);
         let mut status = LinearCombination::one();
@@ -214,6 +216,20 @@ impl GadgetBuilder {
     pub fn assert_le(&mut self, x: LinearCombination, y: LinearCombination) {
         let le = self.le(x, y);
         self.assert_true(le);
+    }
+
+    /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
+    pub fn split(&mut self, x: LinearCombination, bits: usize) -> Vec<Wire> {
+        split(self, x, bits)
+    }
+
+    /// Join a vector of bit wires into the field element it encodes.
+    pub fn join(&mut self, bits: Vec<Wire>) -> LinearCombination {
+        let mut coefficients = HashMap::new();
+        for (i, bit) in enumerate(bits) {
+            coefficients.insert(bit, FieldElement::one() << i);
+        }
+        LinearCombination::new(coefficients)
     }
 
     pub fn build(self) -> Gadget {
