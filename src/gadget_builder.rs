@@ -24,21 +24,23 @@ impl GadgetBuilder {
         }
     }
 
-    /// Add a wire to the gadget. It will start with no associated constraints, but constraints can
-    /// be added later using the assert_* methods.
+    /// Add a wire to the gadget. It will start with no generator and no associated constraints.
     pub fn wire(&mut self) -> Wire {
         let index = self.next_wire_index;
         self.next_wire_index += 1;
-        Wire { index: index }
+        Wire { index }
     }
 
+    /// Add `n` wires to the gadget. They will start with no generator and no associated
+    /// constraints.
     pub fn wires(&mut self, n: usize) -> Vec<Wire> {
         (0..n).map(|_i| self.wire()).collect()
     }
 
-    pub fn generator<T>(&mut self, inputs: Vec<Wire>, generate: T)
+    /// Add a generator function for setting certain wire values.
+    pub fn generator<T>(&mut self, dependencies: Vec<Wire>, generate: T)
         where T: Fn(&mut WireValues) + 'static {
-        self.witness_generators.push(WitnessGenerator::new(inputs, generate));
+        self.witness_generators.push(WitnessGenerator::new(dependencies, generate));
     }
 
     /// The product of two terms.
@@ -111,17 +113,17 @@ impl GadgetBuilder {
     }
 
     /// if x == y { 1 } else { 0 }.
-    pub fn check_equal(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
-        self.check_zero(x - y)
+    pub fn equal(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        self.zero(x - y)
     }
 
     /// if x == 0 { 1 } else { 0 }.
-    pub fn check_zero(&mut self, x: LinearCombination) -> LinearCombination {
-        LinearCombination::one() - self.check_nonzero(x)
+    pub fn zero(&mut self, x: LinearCombination) -> LinearCombination {
+        LinearCombination::one() - self.nonzero(x)
     }
 
     /// if x != 0 { 1 } else { 0 }.
-    pub fn check_nonzero(&mut self, x: LinearCombination) -> LinearCombination {
+    pub fn nonzero(&mut self, x: LinearCombination) -> LinearCombination {
         // See the Pinocchio paper for an explanation.
         let (y, m) = (self.wire(), self.wire());
         self.assert_product(x.clone(), m.into(), y.into());
@@ -160,13 +162,14 @@ impl GadgetBuilder {
         let bits = FieldElement::max_bits();
         let x_bits = split(self, x, bits);
         let y_bits = split(self, y, bits);
+
         let mut status = LinearCombination::one();
         for i in 0..bits {
             let x_i: LinearCombination = x_bits[i].into();
             let y_i: LinearCombination = y_bits[i].into();
             let delta_i = x_i - y_i;
-            let lt_i = self.check_equal(delta_i.clone(), LinearCombination::neg_one());
-            let eq_i = self.check_zero(delta_i);
+            let lt_i = self.equal(delta_i.clone(), LinearCombination::neg_one());
+            let eq_i = self.zero(delta_i);
             let carry = self.product(eq_i, status);
             status = self.or(lt_i, carry);
         }
@@ -351,12 +354,20 @@ mod tests {
     fn equal() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
-        let equal = builder.check_equal(x.into(), y.into());
+        let equal = builder.equal(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values = wire_values!(x => 42.into(), y => 42.into());
-        assert!(gadget.execute(&mut values));
-        assert_eq!(FieldElement::one(), equal.evaluate(&values));
+        let mut values_7_7 = wire_values!(x => 7.into(), y => 7.into());
+        assert!(gadget.execute(&mut values_7_7));
+        assert_eq!(FieldElement::one(), equal.evaluate(&values_7_7));
+
+        let mut values_6_7 = wire_values!(x => 6.into(), y => 7.into());
+        assert!(gadget.execute(&mut values_6_7));
+        assert_eq!(FieldElement::zero(), equal.evaluate(&values_6_7));
+
+        let mut values_7_13 = wire_values!(x => 7.into(), y => 13.into());
+        assert!(gadget.execute(&mut values_7_13));
+        assert_eq!(FieldElement::zero(), equal.evaluate(&values_7_13));
     }
 
     #[test]
