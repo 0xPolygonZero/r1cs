@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use num::BigUint;
 
-use field_element::FieldElement;
 use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
 use wire::Wire;
 use wire_values::WireValues;
 
-// TODO: Moving to GadgetBuilder.
 pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> Vec<Wire> {
     let bit_wires = builder.wires(bits);
 
@@ -22,7 +20,7 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
                 let value = x.evaluate(values);
                 assert!(value.bits() <= bits);
                 for i in 0..bits {
-                    let bit_value = FieldElement::from(value.bit(i) as u128);
+                    let bit_value = value.bit(i).into();
                     values.set(bit_wires[i], bit_value);
                 }
             },
@@ -40,6 +38,9 @@ pub fn split(builder: &mut GadgetBuilder, x: LinearCombination, bits: usize) -> 
     }
     let weighted_sum = LinearCombination::new(bit_weights);
     builder.assert_equal(x.into(), weighted_sum);
+
+    // TODO: Needs a comparison to verify that no overflow occurred, i.e., that the sum is less than
+    // the prime field size.
 
     bit_wires
 }

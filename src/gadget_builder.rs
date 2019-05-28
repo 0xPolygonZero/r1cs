@@ -6,7 +6,6 @@ use linear_combination::LinearCombination;
 use wire::Wire;
 use wire_values::WireValues;
 use witness_generator::WitnessGenerator;
-use std::collections::HashMap;
 use itertools::enumerate;
 
 pub struct GadgetBuilder {
@@ -62,7 +61,7 @@ impl GadgetBuilder {
                 move |values: &mut WireValues| {
                     let product_value = a.evaluate(values) * b.evaluate(values);
                     values.set(product, product_value);
-                }
+                },
             );
         }
 
@@ -155,25 +154,142 @@ impl GadgetBuilder {
         y.into()
     }
 
+    /// x < y
+    pub fn lt(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        self.cmp(x, y, true, true)
+    }
+
     /// x <= y
     pub fn le(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
-        // TODO: This is a super naive implementation. Should only need 1 constraint per compared
-        // bit, or less using a non-deterministic method like jsnark.
-        let bits = FieldElement::max_bits();
-        let x_bits = split(self, x, bits);
-        let y_bits = split(self, y, bits);
+        self.cmp(x, y, true, false)
+    }
 
-        let mut status = LinearCombination::one();
-        for i in 0..bits {
-            let x_i: LinearCombination = x_bits[i].into();
-            let y_i: LinearCombination = y_bits[i].into();
-            let delta_i = x_i - y_i;
-            let lt_i = self.equal(delta_i.clone(), LinearCombination::neg_one());
-            let eq_i = self.zero(delta_i);
-            let carry = self.product(eq_i, status);
-            status = self.or(lt_i, carry);
+    /// x > y
+    pub fn gt(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        self.cmp(x, y, false, true)
+    }
+
+    /// x >= y
+    pub fn ge(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        self.cmp(x, y, false, false)
+    }
+
+    fn cmp(&mut self, x: LinearCombination, y: LinearCombination,
+           less: bool, strict: bool) -> LinearCombination {
+        let bits = FieldElement::max_bits();
+        let x_bits = self.split(x.into(), bits);
+        let y_bits = self.split(y.into(), bits);
+        self.cmp_binary(x_bits, y_bits, less, strict)
+    }
+
+    // TODO constraints: 5*chunks + 5 + other comparison
+    fn cmp_binary(&mut self, x_bits: Vec<Wire>, y_bits: Vec<Wire>,
+                  less: bool, strict: bool) -> LinearCombination {
+        assert_eq!(x_bits.len(), y_bits.len());
+
+        // We will chunk both bit vectors, then have the prover supply a mask which identifies the
+        // first pair of chunks to differ. Credit to Ahmed Kosba who described this technique.
+        let chunk_bits = GadgetBuilder::cmp_chunk_bits();
+        let x_chunks: Vec<LinearCombination> = x_bits.chunks(chunk_bits)
+            .map(LinearCombination::join_bits)
+            .collect();
+        let y_chunks: Vec<LinearCombination> = y_bits.chunks(chunk_bits)
+            .map(LinearCombination::join_bits)
+            .collect();
+        let chunks = x_chunks.len();
+
+        // Create a mask bit for each chunk index. masks[i] must equal 1 iff i is the first index
+        // where the chunks differ, otherwise 0. If no chunks differ, all masks must equal 0.
+        let mask = self.wires(chunks);
+        // Each mask must equal 0 or 1.
+        for &m in &mask {
+            self.assert_binary(m.into());
         }
-        status
+        // The sum of all masks must equal 0 or 1, so that at most one mask can equal 1.
+        let diff_exists = LinearCombination::sum(&mask);
+        self.assert_binary(diff_exists.clone());
+
+        {
+            let x_chunks = x_chunks.clone();
+            let y_chunks = y_chunks.clone();
+            let mask = mask.clone();
+            self.generator(
+                [x_bits, y_bits].concat(),
+                move |values: &mut WireValues| {
+                    let mut seen_diff: bool = false;
+                    for (i, &mask_bit) in enumerate(&mask) {
+                        let x_chunk_value = x_chunks[i].evaluate(values);
+                        let y_chunk_value = y_chunks[i].evaluate(values);
+                        let diff = x_chunk_value != y_chunk_value;
+                        let mask_bit_value = diff && !seen_diff;
+                        seen_diff |= diff;
+                        values.set(mask_bit, mask_bit_value.into());
+                    }
+                }
+            );
+        }
+
+        // Get the chunks that differ (or zero if none) by computing the dot product of the mask
+        // vector with x_chunks and y_chunks, respectively.
+        let mut x_diff_chunk = LinearCombination::zero();
+        let mut y_diff_chunk = LinearCombination::zero();
+        for i in 0..chunks {
+            x_diff_chunk += self.product(mask[i].into(), x_chunks[i].clone());
+            y_diff_chunk += self.product(mask[i].into(), y_chunks[i].clone());
+        }
+
+        // Verify that any pairs of chunk before a mask bit of 1 are equal.
+        let mut no_diff_yet = LinearCombination::one();
+        for i in 0..chunks {
+            no_diff_yet -= mask[i].into();
+            // Require that no_diff_yet * x_chunk = no_diff_yet * y_chunk.
+            let x_if_no_diff_yet = self.product(no_diff_yet.clone(), x_chunks[i].clone());
+            self.assert_product(no_diff_yet.clone(), y_chunks[i].clone(), x_if_no_diff_yet);
+        }
+
+        // If the mask has a 1 bit, then the corresponding pair of chunks must differ. In other
+        // words, their difference must be non-zero.
+        let nonzero = self._if(diff_exists,
+                               x_diff_chunk.clone() - y_diff_chunk.clone(),
+                               // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
+                               42.into());
+        self.assert_nonzero(nonzero);
+
+        // Finally, apply a different comparison algorithm to the (small) differing chunks.
+        self.cmp_subtractive(x_diff_chunk, y_diff_chunk, less, strict, chunk_bits)
+    }
+
+    fn cmp_subtractive(&mut self, x: LinearCombination, y: LinearCombination,
+                   less: bool, strict: bool, bits: usize) -> LinearCombination {
+        // An as example, assume less=false and strict=false. In that case, we compute
+        //     2^bits + x - y
+        // And check the most significant bit, i.e., the one with index `bits`.
+        // x >= y iff that bit is set. The other cases are similar.
+        let base = LinearCombination::from(
+            (FieldElement::one() << bits) - FieldElement::from(strict));
+        let z = base + if less { y - x } else { x - y };
+        self.split(z, bits + 1)[bits].into()
+    }
+
+    /// The number of constraints used by `cmp_binary`, given a certain chunk size.
+    fn cmp_constraints(chunk_bits: usize) -> usize {
+        let chunks = (FieldElement::max_bits() + chunk_bits - 1) / chunk_bits;
+        // TODO: Double check this formula after implementing cmp_binary.
+        4 * chunks + 3 + chunk_bits
+    }
+
+    /// The optimal number of bits per chunk for the comparison algorithm used in `cmp_binary`.
+    fn cmp_chunk_bits() -> usize {
+        let mut best_chunk_bits = 1;
+        let mut best_constraints = GadgetBuilder::cmp_constraints(1);
+        for chunk_bits in 2..FieldElement::max_bits() {
+            let constraints = GadgetBuilder::cmp_constraints(chunk_bits);
+            if constraints < best_constraints {
+                best_chunk_bits = chunk_bits;
+                best_constraints = constraints;
+            }
+        }
+        best_chunk_bits
     }
 
     /// if c { x } else { y }. Assumes c is binary.
@@ -217,23 +333,14 @@ impl GadgetBuilder {
         self.assert_equal(x, 1.into());
     }
 
-    pub fn assert_le(&mut self, x: LinearCombination, y: LinearCombination) {
-        let le = self.le(x, y);
-        self.assert_true(le);
+    /// Assert that x == 0.
+    pub fn assert_false(&mut self, x: LinearCombination) {
+        self.assert_equal(x, 0.into());
     }
 
     /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
     pub fn split(&mut self, x: LinearCombination, bits: usize) -> Vec<Wire> {
         split(self, x, bits)
-    }
-
-    /// Join a vector of bit wires into the field element it encodes.
-    pub fn join(&mut self, bits: Vec<Wire>) -> LinearCombination {
-        let mut coefficients = HashMap::new();
-        for (i, bit) in enumerate(bits) {
-            coefficients.insert(bit, FieldElement::one() << i);
-        }
-        LinearCombination::new(coefficients)
     }
 
     pub fn build(self) -> Gadget {
@@ -249,6 +356,8 @@ mod tests {
     use field_element::FieldElement;
     use gadget_builder::GadgetBuilder;
     use wire_values::WireValues;
+    use linear_combination::LinearCombination;
+    use std::borrow::Borrow;
 
     #[test]
     fn assert_binary_0_1() {
@@ -371,14 +480,35 @@ mod tests {
     }
 
     #[test]
-    fn assert_le_equal() {
+    fn comparisons() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
-        builder.assert_le(x.into(), y.into());
+        let lt = builder.lt(x.into(), y.into());
+        let le = builder.le(x.into(), y.into());
+        let gt = builder.gt(x.into(), y.into());
+        let ge = builder.ge(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values = wire_values!(x => 42.into(), y => 42.into());
-        assert!(gadget.execute(&mut values));
+        let mut values_42_63 = wire_values!(x => 42.into(), y => 63.into());
+        assert!(gadget.execute(&mut values_42_63));
+        assert_1(&lt, &values_42_63);
+        assert_1(&le, &values_42_63);
+        assert_0(&gt, &values_42_63);
+        assert_0(&ge, &values_42_63);
+
+        let mut values_42_42 = wire_values!(x => 42.into(), y => 42.into());
+        assert!(gadget.execute(&mut values_42_42));
+        assert_0(&lt, &values_42_42);
+        assert_1(&le, &values_42_42);
+        assert_0(&gt, &values_42_42);
+        assert_1(&ge, &values_42_42);
+
+        let mut values_42_41 = wire_values!(x => 42.into(), y => 41.into());
+        assert!(gadget.execute(&mut values_42_41));
+        assert_0(&lt, &values_42_41);
+        assert_0(&le, &values_42_41);
+        assert_1(&gt, &values_42_41);
+        assert_1(&ge, &values_42_41);
     }
 
     #[test]
@@ -391,5 +521,13 @@ mod tests {
 
         let mut values = wire_values!(x => 0.into());
         gadget.execute(&mut values);
+    }
+
+    fn assert_1<T: Borrow<LinearCombination>>(x: T, values: &WireValues) {
+        assert_eq!(FieldElement::one(), x.borrow().evaluate(values));
+    }
+
+    fn assert_0<T: Borrow<LinearCombination>>(x: T, values: &WireValues) {
+        assert_eq!(FieldElement::zero(), x.borrow().evaluate(values));
     }
 }

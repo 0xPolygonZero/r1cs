@@ -22,6 +22,26 @@ impl LinearCombination {
         LinearCombination { coefficients: nonzero_coefficients }
     }
 
+    /// The sum of zero or more wires, each with an implied coefficient of 1.
+    pub fn sum<'a, T>(wires: T) -> Self
+        where T: IntoIterator<Item=&'a Wire> {
+        LinearCombination {
+            coefficients: wires.into_iter()
+                .map(|&v| (v, FieldElement::one()))
+                .collect()
+        }
+    }
+
+    /// Join a vector of bit wires into the field element it encodes.
+    pub fn join_bits<'a, T>(bit_wires: T) -> Self
+        where T: IntoIterator<Item=&'a Wire> {
+        LinearCombination {
+            coefficients: bit_wires.into_iter().enumerate()
+                .map(|(i, w)| (w.clone(), FieldElement::one() << i))
+                .collect()
+        }
+    }
+
     pub fn zero() -> Self {
         LinearCombination::from(0u128)
     }

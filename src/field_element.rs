@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::Formatter;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, SubAssign, Sub};
 use std::str::FromStr;
 
 use num::bigint::ParseBigIntError;
@@ -89,6 +89,12 @@ impl From<u128> for FieldElement {
     }
 }
 
+impl From<bool> for FieldElement {
+    fn from(value: bool) -> FieldElement {
+        FieldElement::from(value as u128)
+    }
+}
+
 impl FromStr for FieldElement {
     type Err = ParseBigIntError;
 
@@ -120,6 +126,20 @@ impl Add<FieldElement> for FieldElement {
 impl AddAssign for FieldElement {
     fn add_assign(&mut self, rhs: FieldElement) {
         *self = self.clone() + rhs;
+    }
+}
+
+impl Sub<FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: FieldElement) -> FieldElement {
+        self + -rhs
+    }
+}
+
+impl SubAssign for FieldElement {
+    fn sub_assign(&mut self, rhs: FieldElement) {
+        *self = self.clone() - rhs;
     }
 }
 
