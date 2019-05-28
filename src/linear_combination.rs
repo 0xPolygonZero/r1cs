@@ -43,7 +43,7 @@ impl LinearCombination {
     }
 
     pub fn zero() -> Self {
-        LinearCombination::from(0u128)
+        LinearCombination { coefficients: HashMap::new() }
     }
 
     pub fn one() -> Self {

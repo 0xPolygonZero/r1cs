@@ -182,7 +182,6 @@ impl GadgetBuilder {
         self.cmp_binary(x_bits, y_bits, less, strict)
     }
 
-    // TODO constraints: 5*chunks + 5 + other comparison
     fn cmp_binary(&mut self, x_bits: Vec<Wire>, y_bits: Vec<Wire>,
                   less: bool, strict: bool) -> LinearCombination {
         assert_eq!(x_bits.len(), y_bits.len());
@@ -217,7 +216,7 @@ impl GadgetBuilder {
                 [x_bits, y_bits].concat(),
                 move |values: &mut WireValues| {
                     let mut seen_diff: bool = false;
-                    for (i, &mask_bit) in enumerate(&mask) {
+                    for (i, &mask_bit) in enumerate(&mask).rev() {
                         let x_chunk_value = x_chunks[i].evaluate(values);
                         let y_chunk_value = y_chunks[i].evaluate(values);
                         let diff = x_chunk_value != y_chunk_value;
@@ -238,13 +237,16 @@ impl GadgetBuilder {
             y_diff_chunk += self.product(mask[i].into(), y_chunks[i].clone());
         }
 
-        // Verify that any pairs of chunk before a mask bit of 1 are equal.
-        let mut no_diff_yet = LinearCombination::one();
-        for i in 0..chunks {
-            no_diff_yet -= mask[i].into();
-            // Require that no_diff_yet * x_chunk = no_diff_yet * y_chunk.
-            let x_if_no_diff_yet = self.product(no_diff_yet.clone(), x_chunks[i].clone());
-            self.assert_product(no_diff_yet.clone(), y_chunks[i].clone(), x_if_no_diff_yet);
+        // Verify that any more significant pairs of chunks are equal.
+        // diff_seen tracks whether a mask bit of 1 has been observed for a less significant bit.
+        let mut diff_seen: LinearCombination = mask[0].into();
+        for i in 1..chunks {
+            // If diff_seen = 1, we require that x_chunk = y_chunk.
+            // Equivalently, we require that diff_seen * x_chunk = diff_seen * y_chunk.
+            let x_if_diff_seen = self.product(diff_seen.clone(), x_chunks[i].clone());
+            self.assert_product(diff_seen.clone(), y_chunks[i].clone(), x_if_diff_seen);
+
+            diff_seen += mask[i].into();
         }
 
         // If the mask has a 1 bit, then the corresponding pair of chunks must differ. In other
@@ -274,8 +276,7 @@ impl GadgetBuilder {
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.
     fn cmp_constraints(chunk_bits: usize) -> usize {
         let chunks = (FieldElement::max_bits() + chunk_bits - 1) / chunk_bits;
-        // TODO: Double check this formula after implementing cmp_binary.
-        4 * chunks + 3 + chunk_bits
+        5 * chunks + 6 + chunk_bits
     }
 
     /// The optimal number of bits per chunk for the comparison algorithm used in `cmp_binary`.
@@ -509,6 +510,20 @@ mod tests {
         assert_0(&le, &values_42_41);
         assert_1(&gt, &values_42_41);
         assert_1(&ge, &values_42_41);
+
+        // This is a white box sort of test. Since the implementation is based on chunks of roughly
+        // 32 bits each, all the numbers in the preceding tests will fit into the least significant
+        // chunk. So let's try some larger numbers. In particular, let's have x < y but have the
+        // least significant chunk of y exceed that of x, to make sure the more significant chunk
+        // takes precedence.
+        let mut values_large_lt = wire_values!(
+            x => FieldElement::from(1u128 << 80 | 1u128),
+            y => FieldElement::from(1u128 << 81));
+        assert!(gadget.execute(&mut values_large_lt));
+        assert_1(&lt, &values_large_lt);
+        assert_1(&le, &values_large_lt);
+        assert_0(&gt, &values_large_lt);
+        assert_0(&ge, &values_large_lt);
     }
 
     #[test]
