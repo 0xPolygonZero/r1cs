@@ -62,10 +62,11 @@ impl GadgetBuilder {
     fn cmp_binary(&mut self, x_bits: Vec<Wire>, y_bits: Vec<Wire>,
                   less: bool, strict: bool) -> LinearCombination {
         assert_eq!(x_bits.len(), y_bits.len());
+        let operand_bits = x_bits.len();
 
         // We will chunk both bit vectors, then have the prover supply a mask which identifies the
         // first pair of chunks to differ. Credit to Ahmed Kosba who described this technique.
-        let chunk_bits = GadgetBuilder::cmp_chunk_bits();
+        let chunk_bits = GadgetBuilder::cmp_chunk_bits(operand_bits);
         let x_chunks: Vec<LinearCombination> = x_bits.chunks(chunk_bits)
             .map(LinearCombination::join_bits)
             .collect();
@@ -123,13 +124,16 @@ impl GadgetBuilder {
             diff_seen += mask[i].into();
         }
 
-        // If the mask has a 1 bit, then the corresponding pair of chunks must differ. In other
-        // words, their difference must be non-zero.
-        let nonzero = self._if(diff_exists,
-                               diff_chunk.clone(),
-                               // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
-                               42.into());
-        self.assert_nonzero(nonzero);
+        // If the mask has a 1 bit, then the corresponding pair of chunks must differ. We only need
+        // this check for non-strict comparisons though, since for strict comparisons, the
+        // comparison operation applied to the selected chunks will enforce that they differ.
+        if !strict {
+            let nonzero = self._if(diff_exists,
+                                   diff_chunk.clone(),
+                                   // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
+                                   42.into());
+            self.assert_nonzero(nonzero);
+        }
 
         // Finally, apply a different comparison algorithm to the (small) differing chunks.
         self.cmp_subtractive(diff_chunk, less, strict, chunk_bits)
@@ -149,17 +153,17 @@ impl GadgetBuilder {
     }
 
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.
-    fn cmp_constraints(chunk_bits: usize) -> usize {
-        let chunks = (FieldElement::max_bits() + chunk_bits - 1) / chunk_bits;
-        3 * chunks + 5 + chunk_bits
+    fn cmp_constraints(operand_bits: usize, chunk_bits: usize) -> usize {
+        let chunks = (operand_bits + chunk_bits - 1) / chunk_bits;
+        3 * chunks + 2 + chunk_bits
     }
 
     /// The optimal number of bits per chunk for the comparison algorithm used in `cmp_binary`.
-    fn cmp_chunk_bits() -> usize {
+    fn cmp_chunk_bits(operand_bits: usize) -> usize {
         let mut best_chunk_bits = 1;
-        let mut best_constraints = GadgetBuilder::cmp_constraints(1);
+        let mut best_constraints = GadgetBuilder::cmp_constraints(operand_bits, 1);
         for chunk_bits in 2..FieldElement::max_bits() {
-            let constraints = GadgetBuilder::cmp_constraints(chunk_bits);
+            let constraints = GadgetBuilder::cmp_constraints(operand_bits, chunk_bits);
             if constraints < best_constraints {
                 best_chunk_bits = chunk_bits;
                 best_constraints = constraints;
