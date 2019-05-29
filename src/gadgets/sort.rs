@@ -23,8 +23,7 @@ pub fn sort(builder: &mut GadgetBuilder, original: Vec<Wire>) -> Vec<Wire> {
     // TODO: Verify that `sorted` is a permutation of `original`.
 
     for i in 0..n-1 {
-        let le = builder.le(sorted[i].into(), sorted[i + 1].into());
-        builder.assert_true(le)
+        builder.assert_le(sorted[i].into(), sorted[i + 1].into());
     }
 
     sorted

@@ -50,10 +50,11 @@ impl WireValues {
     }
 }
 
+#[macro_export]
 macro_rules! wire_values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = WireValues::new();
+            let mut values = ::wire_values::WireValues::new();
             $(
                 values.set($wire, $value);
             )*
