@@ -200,7 +200,7 @@ impl GadgetBuilder {
         // Create a mask bit for each chunk index. masks[i] must equal 1 iff i is the first index
         // where the chunks differ, otherwise 0. If no chunks differ, all masks must equal 0.
         let mask = self.wires(chunks);
-        // Each mask must equal 0 or 1.
+        // Each mask bit wire must equal 0 or 1.
         for &m in &mask {
             self.assert_binary(m.into());
         }
@@ -242,10 +242,10 @@ impl GadgetBuilder {
         let mut diff_seen: LinearCombination = mask[0].into();
         for i in 1..chunks {
             // If diff_seen = 1, we require that x_chunk = y_chunk.
-            // Equivalently, we require that diff_seen * x_chunk = diff_seen * y_chunk.
-            let x_if_diff_seen = self.product(diff_seen.clone(), x_chunks[i].clone());
-            self.assert_product(diff_seen.clone(), y_chunks[i].clone(), x_if_diff_seen);
-
+            // Equivalently, we require that diff_seen * (x_chunk - y_chunk) = 0.
+            self.assert_product(diff_seen.clone(),
+                                x_chunks[i].clone() - y_chunks[i].clone(),
+                                0.into());
             diff_seen += mask[i].into();
         }
 
@@ -276,7 +276,7 @@ impl GadgetBuilder {
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.
     fn cmp_constraints(chunk_bits: usize) -> usize {
         let chunks = (FieldElement::max_bits() + chunk_bits - 1) / chunk_bits;
-        5 * chunks + 6 + chunk_bits
+        4 * chunks + 7 + chunk_bits
     }
 
     /// The optimal number of bits per chunk for the comparison algorithm used in `cmp_binary`.
