@@ -44,11 +44,11 @@ impl GadgetBuilder {
 
     /// The product of two terms.
     pub fn product(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
-        if a == 1.into() {
-            return b;
+        if let Some(c) = a.as_constant() {
+            return b * c;
         }
-        if b == 1.into() {
-            return a;
+        if let Some(c) = b.as_constant() {
+            return a * c;
         }
 
         let product = self.wire();
@@ -228,13 +228,10 @@ impl GadgetBuilder {
             );
         }
 
-        // Get the chunks that differ (or zero if none) by computing the dot product of the mask
-        // vector with x_chunks and y_chunks, respectively.
-        let mut x_diff_chunk = LinearCombination::zero();
-        let mut y_diff_chunk = LinearCombination::zero();
+        // Compute the dot product of the mask vector with (x_chunks - y_chunks).
+        let mut diff_chunk = LinearCombination::zero();
         for i in 0..chunks {
-            x_diff_chunk += self.product(mask[i].into(), x_chunks[i].clone());
-            y_diff_chunk += self.product(mask[i].into(), y_chunks[i].clone());
+            diff_chunk += self.product(mask[i].into(), x_chunks[i].clone() - y_chunks[i].clone());
         }
 
         // Verify that any more significant pairs of chunks are equal.
@@ -252,31 +249,32 @@ impl GadgetBuilder {
         // If the mask has a 1 bit, then the corresponding pair of chunks must differ. In other
         // words, their difference must be non-zero.
         let nonzero = self._if(diff_exists,
-                               x_diff_chunk.clone() - y_diff_chunk.clone(),
+                               diff_chunk.clone(),
                                // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
                                42.into());
         self.assert_nonzero(nonzero);
 
         // Finally, apply a different comparison algorithm to the (small) differing chunks.
-        self.cmp_subtractive(x_diff_chunk, y_diff_chunk, less, strict, chunk_bits)
+        self.cmp_subtractive(diff_chunk, less, strict, chunk_bits)
     }
 
-    fn cmp_subtractive(&mut self, x: LinearCombination, y: LinearCombination,
-                   less: bool, strict: bool, bits: usize) -> LinearCombination {
+    /// Given a diff of `x - y`, compare `x` and `y`.
+    fn cmp_subtractive(&mut self, diff: LinearCombination,
+                       less: bool, strict: bool, bits: usize) -> LinearCombination {
         // An as example, assume less=false and strict=false. In that case, we compute
         //     2^bits + x - y
         // And check the most significant bit, i.e., the one with index `bits`.
         // x >= y iff that bit is set. The other cases are similar.
         let base = LinearCombination::from(
             (FieldElement::one() << bits) - FieldElement::from(strict));
-        let z = base + if less { y - x } else { x - y };
+        let z = base + if less { -diff } else { diff };
         self.split(z, bits + 1)[bits].into()
     }
 
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.
     fn cmp_constraints(chunk_bits: usize) -> usize {
         let chunks = (FieldElement::max_bits() + chunk_bits - 1) / chunk_bits;
-        4 * chunks + 7 + chunk_bits
+        3 * chunks + 5 + chunk_bits
     }
 
     /// The optimal number of bits per chunk for the comparison algorithm used in `cmp_binary`.

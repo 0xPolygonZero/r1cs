@@ -59,6 +59,15 @@ impl LinearCombination {
         self.coefficients.len()
     }
 
+    /// Return Some(c) if this is a constant c, otherwise None.
+    pub fn as_constant(&self) -> Option<FieldElement> {
+        if self.num_terms() == 1 {
+            self.coefficients.get(&Wire::ONE).map(|c| c.clone())
+        } else {
+            None
+        }
+    }
+
     /// Return a vector of all wires involved in this linear combination.
     pub fn wires(&self) -> Vec<Wire> {
         self.coefficients.keys()
