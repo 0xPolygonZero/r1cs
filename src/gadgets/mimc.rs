@@ -1,5 +1,3 @@
-use num::bigint::RandBigInt;
-
 use field_element::FieldElement;
 use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
@@ -19,7 +17,7 @@ impl GadgetBuilder {
             let round_constant = if r == 0 {
                 FieldElement::zero()
             } else {
-                FieldElement::from(rng.gen_biguint(1000))
+                FieldElement::random(&mut rng)
             };
 
             // Add the key and the random round constant to the current value.

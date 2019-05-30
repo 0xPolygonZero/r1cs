@@ -1,12 +1,15 @@
 use std::fmt;
 use std::fmt::Formatter;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, SubAssign, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
 use std::str::FromStr;
 
 use num::bigint::ParseBigIntError;
+use num::bigint::RandBigInt;
 use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
+
+use rand::Rng;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct FieldElement {
@@ -40,6 +43,16 @@ impl FieldElement {
     /// The additive inverse of 1.
     pub fn neg_one() -> Self {
         FieldElement::one().multiplicative_inverse()
+    }
+
+    /// Return a random field element, uniformly distributed in [0, size()).
+    pub fn random(rng: &mut impl Rng) -> Self {
+        loop {
+            let r = rng.gen_biguint(FieldElement::max_bits());
+            if r < FieldElement::size() {
+                return FieldElement::from(r);
+            }
+        }
     }
 
     pub fn is_zero(&self) -> bool {
