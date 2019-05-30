@@ -57,7 +57,8 @@ impl FieldElement {
     pub fn multiplicative_inverse(&self) -> FieldElement {
         assert_ne!(*self, FieldElement::zero(), "Zero does not have a multiplicative inverse");
         // From Euler's theorem.
-        // TODO: Use a faster method.
+        // TODO: Use a faster method, like the one described in "Fast Modular Reciprocals".
+        // Or just wait for https://github.com/rust-num/num-bigint/issues/60
         FieldElement::from(self.value.modpow(
             &(FieldElement::size() - BigUint::from(2u128)),
             &FieldElement::size()))

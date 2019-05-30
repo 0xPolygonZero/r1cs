@@ -52,7 +52,6 @@ impl GadgetBuilder {
 mod tests {
     use field_element::FieldElement;
     use gadget_builder::GadgetBuilder;
-    use wire_values::WireValues;
 
     #[test]
     fn split_19_32() {
@@ -61,8 +60,7 @@ mod tests {
         let bit_wires = builder.split(wire.into(), 32);
         let gadget = builder.build();
 
-        let mut wire_values = WireValues::new();
-        wire_values.set(wire.clone(), 19.into());
+        let mut wire_values = wire_values!(wire.clone() => 19.into());
         assert!(gadget.execute(&mut wire_values));
 
         let false_element: FieldElement = 0.into();
