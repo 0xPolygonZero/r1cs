@@ -9,7 +9,7 @@ impl GadgetBuilder {
     }
 }
 
-struct MerkleMembershipProofPart {
+pub struct MerkleMembershipProofPart {
     is_left: LinearCombination,
     other_hash: LinearCombination,
 }

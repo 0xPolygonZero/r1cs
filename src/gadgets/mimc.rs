@@ -7,6 +7,7 @@ use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 
 impl GadgetBuilder {
+    /// The MiMC block cipher.
     pub fn mimc(&mut self, key: LinearCombination, input: LinearCombination)
                 -> LinearCombination {
         // Our source of randomness for the round constants will be ChaCha20 with a seed of 0.
@@ -30,6 +31,15 @@ impl GadgetBuilder {
 
         // Final key addition, as per the spec.
         current + key.clone()
+    }
+
+    /// A one-way compression function built from MiMC.
+    ///
+    /// This uses the addition variant of Davies-Meyer, unlike MiMChash as described in the MiMC
+    /// paper, which uses the sponge framework.
+    pub fn mimc_dm_hash(&mut self, x: LinearCombination, y: LinearCombination)
+                        -> LinearCombination {
+        self.mimc(x, y.clone()) + y
     }
 }
 
