@@ -33,7 +33,7 @@ impl GadgetBuilder {
     /// x^p for a constant p.
     pub fn exp(&mut self, x: LinearCombination, p: usize) -> LinearCombination {
         // This is exponentiation by squaring. Generate a list squares where squares[i] = x^(2^i).
-        let mut squares = vec!(x);
+        let mut squares = vec![x];
         let mut i = 1;
         loop {
             let q = 1 << i;
