@@ -1,26 +1,27 @@
 use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
 use wire_values::WireValues;
+use itertools::enumerate;
 
 impl GadgetBuilder {
-    /// The product of two terms.
-    pub fn product(&mut self, a: LinearCombination, b: LinearCombination) -> LinearCombination {
-        if let Some(c) = a.as_constant() {
-            return b * c;
+    /// x * y
+    pub fn product(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        if let Some(c) = x.as_constant() {
+            return y * c;
         }
-        if let Some(c) = b.as_constant() {
-            return a * c;
+        if let Some(c) = y.as_constant() {
+            return x * c;
         }
 
         let product = self.wire();
-        self.assert_product(a.clone(), b.clone(), product.into());
+        self.assert_product(x.clone(), y.clone(), product.into());
 
         {
             let product = product.clone();
             self.generator(
-                [a.wires(), b.wires()].concat(),
+                [x.wires(), y.wires()].concat(),
                 move |values: &mut WireValues| {
-                    let product_value = a.evaluate(values) * b.evaluate(values);
+                    let product_value = x.evaluate(values) * y.evaluate(values);
                     values.set(product, product_value);
                 },
             );
@@ -29,7 +30,33 @@ impl GadgetBuilder {
         product.into()
     }
 
-    /// 1 / x. Assumes x is non-zero. If x is zero, the gadget will not be satisfiable.
+    /// x^p for a constant p.
+    pub fn exp(&mut self, x: LinearCombination, p: usize) -> LinearCombination {
+        // This is exponentiation by squaring. Generate a list squares where squares[i] = x^(2^i).
+        let mut squares = vec!(x);
+        let mut i = 1;
+        loop {
+            let q = 1 << i;
+            if q > p {
+                break;
+            }
+            let square = squares[i - 1].clone();
+            squares.push(self.product(square.clone(), square));
+            i += 1;
+        }
+
+        // Now, for each 1 bit of p, multiply by the associated square power.
+        let mut product = LinearCombination::one();
+        for (i, square) in enumerate(squares) {
+            let b = (p >> i) & 1 != 0;
+            if b {
+                product = self.product(product.clone(), square);
+            }
+        }
+        product
+    }
+
+    /// 1 / x. Assumes x is non-zero. If x is zero, the resulting gadget will not be satisfiable.
     pub fn inverse(&mut self, x: LinearCombination) -> LinearCombination {
         let x_inv = self.wire();
 

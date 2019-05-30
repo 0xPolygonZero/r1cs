@@ -2,6 +2,8 @@ extern crate core;
 extern crate itertools;
 extern crate num;
 extern crate num_traits;
+extern crate rand;
+extern crate rand_chacha;
 
 #[macro_use]
 pub mod wire_values;
