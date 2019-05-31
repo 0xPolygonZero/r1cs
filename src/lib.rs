@@ -17,6 +17,7 @@ pub mod gadget_builder_arithmetic;
 pub mod gadget_builder_compare;
 pub mod gadget_builder_split;
 pub mod linear_combination;
+pub mod mir;
 pub mod wire;
 pub mod witness_generator;
 pub mod gadgets;
