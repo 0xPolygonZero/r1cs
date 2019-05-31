@@ -35,9 +35,19 @@ impl GadgetBuilder {
     ///
     /// This uses the addition variant of Davies-Meyer, unlike MiMChash as described in the MiMC
     /// paper, which uses the sponge framework.
-    pub fn mimc_dm_hash(&mut self, x: LinearCombination, y: LinearCombination)
-                        -> LinearCombination {
+    pub fn mimc_compress(&mut self, x: LinearCombination, y: LinearCombination)
+                         -> LinearCombination {
         self.mimc(x, y.clone()) + y
+    }
+
+    /// A hash function built from MiMC.
+    ///
+    /// Note that this differs from MiMChash as described in the MiMC paper, which uses the sponge
+    /// framework. Our version combines the Merkle–Damgård construction with the addition variant of
+    /// Davies-Meyer.
+    pub fn mimc_hash<'a, T>(&mut self, blocks: T) -> LinearCombination
+        where T: IntoIterator<Item=&'a LinearCombination> {
+        self.merkle_damgard(blocks, GadgetBuilder::mimc_compress)
     }
 }
 

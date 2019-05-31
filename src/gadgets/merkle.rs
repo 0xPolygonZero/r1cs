@@ -1,12 +1,13 @@
 use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
 
-type HashFunction = fn(&mut GadgetBuilder, LinearCombination, LinearCombination) -> LinearCombination;
+type CompressionFunction = fn(&mut GadgetBuilder, LinearCombination, LinearCombination)
+                              -> LinearCombination;
 
 impl GadgetBuilder {
     // TODO: Take a Lemma parameter instead? Since this will likely only be called from merkle_root.
     fn merkle_step(&mut self, subject_hash: LinearCombination, sibling_hash: LinearCombination,
-                   subject_is_left: LinearCombination, hash_function: HashFunction,
+                   subject_is_left: LinearCombination, hash_function: CompressionFunction,
     ) -> LinearCombination {
         self.assert_binary(subject_is_left.clone());
         let subject_is_right = LinearCombination::one() - subject_is_left.clone();
@@ -19,7 +20,7 @@ impl GadgetBuilder {
 
     /// Verify a membership proof for any binary Merkle tree.
     pub fn merkle_root<'a, T>(&mut self, leaf_hash: LinearCombination, proof: T,
-                              hash_function: HashFunction) -> LinearCombination
+                              hash_function: CompressionFunction) -> LinearCombination
         where T: IntoIterator<Item=&'a Lemma> {
         let mut current = leaf_hash;
         for lemma in proof {
