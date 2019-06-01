@@ -1,5 +1,5 @@
 use linear_combination::LinearCombination;
-use mir::record::{RecordOpening, Record};
+use mir::record::{RecordOpening, record_commitment};
 use gadget_builder::GadgetBuilder;
 
 struct Inputs {
@@ -46,14 +46,4 @@ fn mir_transaction(builder: &mut GadgetBuilder, inputs: Inputs) -> Outputs {
     }
 
     Outputs { record_commitments_added, record_commitments_removed }
-}
-
-fn record_commitment(builder: &mut GadgetBuilder, record_opening: RecordOpening)
-                     -> LinearCombination {
-    let hash = record_hash(builder, record_opening.record);
-    builder.mimc_compress(hash, record_opening.opening)
-}
-
-fn record_hash(builder: &mut GadgetBuilder, record: Record) -> LinearCombination {
-    builder.mimc_hash(&record.serialize())
 }
