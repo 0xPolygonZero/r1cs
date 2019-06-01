@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn assert_too_large() {
+    fn insert_too_large() {
         let mut trie = Trie::new(4);
         trie.insert(&[false, true, false, true, false]);
     }
