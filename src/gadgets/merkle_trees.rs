@@ -10,6 +10,7 @@ pub struct MembershipProof {
 
 /// A piece of the Merkle proof corresponding to a single layer of the tree.
 pub struct MembershipLemma {
+    // TODO: subject_is_right more canonical? call it subject_index?
     subject_is_left: LinearCombination,
     sibling_hash: LinearCombination,
 }
@@ -70,7 +71,7 @@ mod tests {
         let mut builder = GadgetBuilder::new();
         let (subject, sibling, is_left) = (builder.wire(), builder.wire(), builder.wire());
         let lemma = MembershipLemma { subject_is_left: is_left.into(), sibling_hash: sibling.into() };
-        let parent_hash = builder.merkle_step(subject.into(), lemma, test_hash);
+        let parent_hash = builder.merkle_step(subject.into(), lemma, test_compress);
         let gadget = builder.build();
 
         let mut values_3_4 = wire_values!(
@@ -101,7 +102,7 @@ mod tests {
             MembershipLemma { subject_is_left: is_left_3.into(), sibling_hash: sibling_3.into() },
         ];
         let proof = MembershipProof { lemmas };
-        let root_hash = builder.merkle_root(leaf.into(), proof, test_hash);
+        let root_hash = builder.merkle_root(leaf.into(), proof, test_compress);
         let gadget = builder.build();
 
         let mut values = wire_values!(
@@ -118,9 +119,9 @@ mod tests {
         assert_eq!(FieldElement::from(31), root_hash.evaluate(&values));
     }
 
-    // A dummy hash function which returns 2x + y.
-    fn test_hash(_builder: &mut GadgetBuilder, x: LinearCombination, y: LinearCombination)
-                 -> LinearCombination {
+    // A dummy compression function which returns 2x + y.
+    fn test_compress(_builder: &mut GadgetBuilder, x: LinearCombination, y: LinearCombination)
+                     -> LinearCombination {
         x * 2 + y
     }
 }
