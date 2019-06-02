@@ -17,6 +17,7 @@ pub struct TrieDeletionProof {
 }
 
 /// A piece of the Merkle proof corresponding to a single layer of the tree.
+#[derive(Clone, Debug)]
 pub struct Lemma {
     subject_is_right: LinearCombination,
     sibling: LinearCombination,
@@ -52,7 +53,7 @@ impl GadgetBuilder {
         let mut current_with_value = LinearCombination::one();
 
         for lemma in proof.lemmas {
-            current_without_value = self.merkle_step(current_without_value, lemma, compress);
+            current_without_value = self.merkle_step(current_without_value, lemma.clone(), compress);
             current_with_value = self.merkle_step(current_with_value, lemma, compress);
         }
 
@@ -68,7 +69,7 @@ impl GadgetBuilder {
         let mut current_without_value = LinearCombination::zero();
 
         for lemma in proof.lemmas {
-            current_with_value = self.merkle_step(current_with_value, lemma, compress);
+            current_with_value = self.merkle_step(current_with_value, lemma.clone(), compress);
             current_without_value = self.merkle_step(current_without_value, lemma, compress);
         }
 

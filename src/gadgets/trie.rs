@@ -118,7 +118,7 @@ impl Node {
 
 #[cfg(test)]
 mod tests {
-    use mir::trie::Trie;
+    use gadgets::trie::Trie;
     use field_element::FieldElement;
 
     #[test]
