@@ -1,5 +1,7 @@
 use field_element::FieldElement;
 
+/// A Merkle trie for storing a set of binary values. Each instance has a fixed height, `bits`; all
+/// inserted values must have that exact bit length.
 #[derive(Debug)]
 pub struct Trie {
     bits: usize,
@@ -13,6 +15,16 @@ impl Trie {
         Trie { bits, root: Node::Empty }
     }
 
+    /// Merkle roots are computed in the following way. A leaf is assigned a value 1 if its position
+    /// in the tree (i.e., its pattern of left and right branches) corresponds to a member of the
+    /// set, otherwise it is assigned 0. A non-leaf node is assigned compress(left, right), where
+    /// left and right correspond to the node's children.
+    ///
+    /// If a node is empty (i.e., the set contains no values prefixed with the node's position), it
+    /// is assigned a value as if it had two empty nodes as children, even though no such children
+    /// are stored in memory. This simplifies certain authenticated operations. For example, to
+    /// prove that a set S does not contain a value x, we can prove inclusion of a leaf node whose
+    /// position is x and whose value is zero, even though such a node is not stored in memory.
     pub fn merkle_root(&self, compress: CompressionFunction) -> FieldElement {
         self.root.hash(self.bits, compress)
     }
