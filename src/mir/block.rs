@@ -1,7 +1,7 @@
 use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
 use wire_values::WireValues;
-use gadgets::merkle_trees::{TrieDeletionProof, TrieInsertionProof};
+use gadgets::merkle_proofs::{TrieDeletionProof, TrieInsertionProof};
 
 /// The depth of the record commitment trie.
 const RECORD_DEPTH: usize = 64;

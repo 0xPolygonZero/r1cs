@@ -22,9 +22,13 @@ impl Trie {
     ///
     /// If a node is empty (i.e., the set contains no values prefixed with the node's position), it
     /// is assigned a value as if it had two empty nodes as children, even though no such children
-    /// are stored in memory. This simplifies certain authenticated operations. For example, to
-    /// prove that a set S does not contain a value x, we can prove inclusion of a leaf node whose
-    /// position is x and whose value is zero, even though such a node is not stored in memory.
+    /// are stored in memory. This simplifies certain authenticated operations.
+    ///
+    /// For example, suppose we have a trie with Merkle root 123, and we wish to prove that
+    /// inserting a value x results in a root of 456. We could prove that the trie with root 123
+    /// contains a 0 at x's position (even though no such leaf is stored in memory), and the trie
+    /// with root 456 contains a 1 at x's position. The verifier would accept iff both membership
+    /// proofs were valid and they were identical except for the leaf value.
     pub fn merkle_root(&self, compress: CompressionFunction) -> FieldElement {
         self.root.hash(self.bits, compress)
     }

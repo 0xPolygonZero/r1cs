@@ -5,37 +5,25 @@ type CompressionFunction = fn(&mut GadgetBuilder, LinearCombination, LinearCombi
                               -> LinearCombination;
 
 pub struct MembershipProof {
-    lemmas: Vec<MembershipLemma>,
+    lemmas: Vec<Lemma>,
+}
+
+pub struct TrieInsertionProof {
+    lemmas: Vec<Lemma>,
+}
+
+pub struct TrieDeletionProof {
+    lemmas: Vec<Lemma>,
 }
 
 /// A piece of the Merkle proof corresponding to a single layer of the tree.
-pub struct MembershipLemma {
+pub struct Lemma {
     subject_is_right: LinearCombination,
     sibling: LinearCombination,
 }
 
-pub struct TrieInsertionProof {
-    lemmas: Vec<TrieInsertionLemma>,
-}
-
-pub struct TrieInsertionLemma {
-    subject_is_right: LinearCombination,
-    old_sibling: LinearCombination,
-    new_sibling: LinearCombination,
-}
-
-pub struct TrieDeletionProof {
-    lemmas: Vec<TrieDeletionLemma>,
-}
-
-pub struct TrieDeletionLemma {
-    subject_is_right: LinearCombination,
-    old_sibling: LinearCombination,
-    new_sibling: LinearCombination,
-}
-
 impl GadgetBuilder {
-    fn merkle_step(&mut self, subject: LinearCombination, lemma: MembershipLemma,
+    fn merkle_step(&mut self, subject: LinearCombination, lemma: Lemma,
                    compress: CompressionFunction) -> LinearCombination {
         self.assert_binary(lemma.subject_is_right.clone());
         let subject_is_left = LinearCombination::one() - lemma.subject_is_right.clone();
@@ -55,6 +43,38 @@ impl GadgetBuilder {
         }
         current
     }
+
+    /// Verify a trie insertion proof and compute the new root.
+    pub fn merkle_trie_insert(&mut self, value: LinearCombination, old_root: LinearCombination,
+                              proof: TrieInsertionProof, compress: CompressionFunction)
+                              -> LinearCombination {
+        let mut current_without_value = LinearCombination::zero();
+        let mut current_with_value = LinearCombination::one();
+
+        for lemma in proof.lemmas {
+            current_without_value = self.merkle_step(current_without_value, lemma, compress);
+            current_with_value = self.merkle_step(current_with_value, lemma, compress);
+        }
+
+        self.assert_equal(current_without_value, old_root);
+        current_with_value
+    }
+
+    /// Verify a trie deletion proof and compute the new root.
+    pub fn merkle_trie_delete(&mut self, value: LinearCombination, old_root: LinearCombination,
+                              proof: TrieDeletionProof, compress: CompressionFunction)
+                              -> LinearCombination {
+        let mut current_with_value = LinearCombination::one();
+        let mut current_without_value = LinearCombination::zero();
+
+        for lemma in proof.lemmas {
+            current_with_value = self.merkle_step(current_with_value, lemma, compress);
+            current_without_value = self.merkle_step(current_without_value, lemma, compress);
+        }
+
+        self.assert_equal(current_with_value, old_root);
+        current_without_value
+    }
 }
 
 #[cfg(test)]
@@ -62,13 +82,13 @@ mod tests {
     use gadget_builder::GadgetBuilder;
     use linear_combination::LinearCombination;
     use field_element::FieldElement;
-    use gadgets::merkle_trees::{MembershipLemma, MembershipProof};
+    use gadgets::merkle_proofs::{Lemma, MembershipProof};
 
     #[test]
     fn mimc_merkle_step() {
         let mut builder = GadgetBuilder::new();
         let (subject, sibling, is_right) = (builder.wire(), builder.wire(), builder.wire());
-        let lemma = MembershipLemma { subject_is_right: is_right.into(), sibling: sibling.into() };
+        let lemma = Lemma { subject_is_right: is_right.into(), sibling: sibling.into() };
         let parent_hash = builder.merkle_step(subject.into(), lemma, test_compress);
         let gadget = builder.build();
 
@@ -95,9 +115,9 @@ mod tests {
         let (sibling_2, is_right_2) = (builder.wire(), builder.wire());
         let (sibling_3, is_right_3) = (builder.wire(), builder.wire());
         let lemmas = vec![
-            MembershipLemma { subject_is_right: is_right_1.into(), sibling: sibling_1.into() },
-            MembershipLemma { subject_is_right: is_right_2.into(), sibling: sibling_2.into() },
-            MembershipLemma { subject_is_right: is_right_3.into(), sibling: sibling_3.into() },
+            Lemma { subject_is_right: is_right_1.into(), sibling: sibling_1.into() },
+            Lemma { subject_is_right: is_right_2.into(), sibling: sibling_2.into() },
+            Lemma { subject_is_right: is_right_3.into(), sibling: sibling_3.into() },
         ];
         let proof = MembershipProof { lemmas };
         let root_hash = builder.merkle_root(leaf.into(), proof, test_compress);
