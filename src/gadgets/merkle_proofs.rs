@@ -1,80 +1,78 @@
 use gadget_builder::GadgetBuilder;
 use linear_combination::LinearCombination;
+use wire::Wire;
 
 type CompressionFunction = fn(&mut GadgetBuilder, LinearCombination, LinearCombination)
                               -> LinearCombination;
 
-pub struct MembershipProof {
-    lemmas: Vec<Lemma>,
+/// The path from a leaf to the root of a binary Merkle tree.
+#[derive(Clone)]
+pub struct MerklePath {
+    prefix: Vec<Wire>,
+    siblings: Vec<LinearCombination>,
 }
 
-pub struct TrieInsertionProof {
-    lemmas: Vec<Lemma>,
-}
-
-pub struct TrieDeletionProof {
-    lemmas: Vec<Lemma>,
-}
-
-/// A piece of the Merkle proof corresponding to a single layer of the tree.
-#[derive(Clone, Debug)]
-pub struct Lemma {
-    subject_is_right: LinearCombination,
-    sibling: LinearCombination,
+impl MerklePath {
+    pub fn new(prefix: Vec<Wire>, siblings: Vec<LinearCombination>) -> Self {
+        assert_eq!(prefix.len(), siblings.len());
+        MerklePath { prefix, siblings }
+    }
 }
 
 impl GadgetBuilder {
-    fn merkle_step(&mut self, subject: LinearCombination, lemma: Lemma,
-                   compress: CompressionFunction) -> LinearCombination {
-        self.assert_binary(lemma.subject_is_right.clone());
-        let subject_is_left = LinearCombination::one() - lemma.subject_is_right.clone();
-        let left = self.product(subject_is_left.clone(), subject.clone())
-            + self.product(lemma.subject_is_right.clone(), lemma.sibling.clone());
-        let right = self.product(lemma.subject_is_right, subject)
-            + self.product(subject_is_left, lemma.sibling);
+    /// Update an intermediate hash value in a Merkle trie, given the sibling at the current layer.
+    fn merkle_trie_step(&mut self, node: LinearCombination, sibling: LinearCombination,
+                        prefix_bit: Wire, compress: CompressionFunction) -> LinearCombination {
+        let node_is_right = prefix_bit;
+        let node_is_left = LinearCombination::one() - LinearCombination::from(node_is_right);
+        let left = self.product(node_is_left.clone(), node.clone())
+            + self.product(node_is_right.into(), sibling.clone());
+        let right = self.product(node_is_right.into(), node)
+            + self.product(node_is_left, sibling);
         compress(self, left, right)
     }
 
-    /// Verify a membership proof for any binary Merkle tree.
-    pub fn merkle_root(&mut self, leaf: LinearCombination, proof: MembershipProof,
-                       compress: CompressionFunction) -> LinearCombination {
-        let mut current = leaf;
-        for lemma in proof.lemmas {
-            current = self.merkle_step(current, lemma, compress)
+    /// Compute the Merkle root given a leaf value (0 or 1), a prefix and each sibling. Each wire in
+    /// the prefix list must be 0 or 1; it is assumed that this is enforced elsewhere, e.g. by a
+    /// split gate. The prefix list and the sibling list are ordered from the bottom of the tree to
+    /// the top.
+    fn merkle_trie_root(&mut self, leaf: bool, path: MerklePath, compress: CompressionFunction)
+                        -> LinearCombination {
+        let mut current = if leaf { LinearCombination::one() } else { LinearCombination::zero() };
+        for (prefix_bit, sibling) in path.prefix.iter().zip(path.siblings.iter()) {
+            current = self.merkle_trie_step(current, sibling.clone(), prefix_bit.clone(), compress);
         }
         current
     }
 
-    /// Verify a trie insertion proof and compute the new root.
-    pub fn merkle_trie_insert(&mut self, value: LinearCombination, old_root: LinearCombination,
-                              proof: TrieInsertionProof, compress: CompressionFunction)
-                              -> LinearCombination {
-        let mut current_without_value = LinearCombination::zero();
-        let mut current_with_value = LinearCombination::one();
-
-        for lemma in proof.lemmas {
-            current_without_value = self.merkle_step(current_without_value, lemma.clone(), compress);
-            current_with_value = self.merkle_step(current_with_value, lemma, compress);
-        }
-
-        self.assert_equal(current_without_value, old_root);
-        current_with_value
+    /// Assert that a given prefix is present in the trie with the given root.
+    pub fn merkle_trie_assert_membership(&mut self, path: MerklePath, root: LinearCombination,
+                                         compress: CompressionFunction) {
+        let root_with_prefix = self.merkle_trie_root(true, path, compress);
+        self.assert_equal(root_with_prefix, root);
     }
 
-    /// Verify a trie deletion proof and compute the new root.
-    pub fn merkle_trie_delete(&mut self, value: LinearCombination, old_root: LinearCombination,
-                              proof: TrieDeletionProof, compress: CompressionFunction)
-                              -> LinearCombination {
-        let mut current_with_value = LinearCombination::one();
-        let mut current_without_value = LinearCombination::zero();
+    /// Assert that a given prefix is not present in the trie with the given root.
+    pub fn merkle_trie_assert_nonmembership(&mut self, path: MerklePath, root: LinearCombination,
+                                            compress: CompressionFunction) {
+        let root_without_prefix = self.merkle_trie_root(false, path, compress);
+        self.assert_equal(root_without_prefix, root);
+    }
 
-        for lemma in proof.lemmas {
-            current_with_value = self.merkle_step(current_with_value, lemma.clone(), compress);
-            current_without_value = self.merkle_step(current_without_value, lemma, compress);
-        }
+    /// Compute the Merkle roots before and after a prefix was inserted.
+    pub fn merkle_trie_insert(&mut self, path: MerklePath, compress: CompressionFunction)
+                              -> (LinearCombination, LinearCombination) {
+        let root_without_prefix = self.merkle_trie_root(false, path.clone(), compress);
+        let root_with_prefix = self.merkle_trie_root(true, path, compress);
+        (root_without_prefix, root_with_prefix)
+    }
 
-        self.assert_equal(current_with_value, old_root);
-        current_without_value
+    /// Compute the Merkle roots before and after a prefix was deleted.
+    pub fn merkle_trie_delete(&mut self, path: MerklePath, compress: CompressionFunction)
+                              -> (LinearCombination, LinearCombination) {
+        let mut root_without_prefix = self.merkle_trie_root(false, path.clone(), compress);
+        let mut root_with_prefix = self.merkle_trie_root(true, path, compress);
+        (root_with_prefix, root_without_prefix)
     }
 }
 
@@ -83,25 +81,25 @@ mod tests {
     use gadget_builder::GadgetBuilder;
     use linear_combination::LinearCombination;
     use field_element::FieldElement;
-    use gadgets::merkle_proofs::{Lemma, MembershipProof};
+    use gadgets::merkle_proofs::MerklePath;
 
     #[test]
     fn mimc_merkle_step() {
         let mut builder = GadgetBuilder::new();
-        let (subject, sibling, is_right) = (builder.wire(), builder.wire(), builder.wire());
-        let lemma = Lemma { subject_is_right: is_right.into(), sibling: sibling.into() };
-        let parent_hash = builder.merkle_step(subject.into(), lemma, test_compress);
+        let (node, sibling, is_right) = (builder.wire(), builder.wire(), builder.wire());
+        let parent_hash = builder.merkle_trie_step(
+            node.into(), sibling.into(), is_right, test_compress);
         let gadget = builder.build();
 
         let mut values_3_4 = wire_values!(
-            subject => 3.into(),
+            node => 3.into(),
             sibling => 4.into(),
             is_right => 0.into());
         assert!(gadget.execute(&mut values_3_4));
         assert_eq!(FieldElement::from(10), parent_hash.evaluate(&values_3_4));
 
         let mut values_4_3 = wire_values!(
-            subject => 3.into(),
+            node => 3.into(),
             sibling => 4.into(),
             is_right => 1.into());
         assert!(gadget.execute(&mut values_4_3));
@@ -111,21 +109,16 @@ mod tests {
     #[test]
     fn mimc_merkle_root() {
         let mut builder = GadgetBuilder::new();
-        let leaf = builder.wire();
         let (sibling_1, is_right_1) = (builder.wire(), builder.wire());
         let (sibling_2, is_right_2) = (builder.wire(), builder.wire());
         let (sibling_3, is_right_3) = (builder.wire(), builder.wire());
-        let lemmas = vec![
-            Lemma { subject_is_right: is_right_1.into(), sibling: sibling_1.into() },
-            Lemma { subject_is_right: is_right_2.into(), sibling: sibling_2.into() },
-            Lemma { subject_is_right: is_right_3.into(), sibling: sibling_3.into() },
-        ];
-        let proof = MembershipProof { lemmas };
-        let root_hash = builder.merkle_root(leaf.into(), proof, test_compress);
+        let path = MerklePath::new(
+            vec![is_right_1, is_right_2, is_right_3],
+            vec![sibling_1.into(), sibling_2.into(), sibling_3.into()]);
+        let root_hash = builder.merkle_trie_root(true, path, test_compress);
         let gadget = builder.build();
 
         let mut values = wire_values!(
-            leaf => 1.into(),
             sibling_1 => 3.into(),
             is_right_1 => 0.into(),
             sibling_2 => 3.into(),

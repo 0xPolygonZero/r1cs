@@ -76,9 +76,40 @@ impl GadgetBuilder {
         x_inv.into()
     }
 
+    /// x / y. Assumes y is non-zero. If y is zero, the resulting gadget will not be satisfiable.
     pub fn quotient(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
         let y_inv = self.inverse(y);
         self.product(x, y_inv)
+    }
+
+    /// x mod y.
+    pub fn modulus(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        // We will non-deterministically compute a quotient q and remainder r such that:
+        //     y * q = x - r
+        //     r < y
+
+        let q = self.wire();
+        let r = self.wire();
+        self.assert_product(y.clone(), q.into(), x.clone() - LinearCombination::from(r));
+        self.assert_lt(r.into(), y.clone());
+
+        self.generator(
+            [x.wires(), y.wires()].concat(),
+            move |values: &mut WireValues| {
+                let x_value = x.evaluate(values);
+                let y_value = y.evaluate(values);
+                values.set(q, x_value.integer_division(y_value.clone()));
+                values.set(r, x_value.integer_modulus(y_value));
+            }
+        );
+
+        r.into()
+    }
+
+    /// if x | y { 1 } else { 0 }.
+    pub fn divides(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+        let m = self.modulus(y, x);
+        self.zero(m)
     }
 }
 

@@ -77,6 +77,14 @@ impl FieldElement {
             &FieldElement::size()))
     }
 
+    pub fn integer_division(&self, rhs: FieldElement) -> FieldElement {
+        FieldElement::from(self.value.clone() / rhs.value)
+    }
+
+    pub fn integer_modulus(&self, rhs: FieldElement) -> FieldElement {
+        FieldElement::from(self.value.clone() % rhs.value)
+    }
+
     /// The number of bits needed to encode this particular field element.
     pub fn bits(&self) -> usize {
         self.value.bits()
