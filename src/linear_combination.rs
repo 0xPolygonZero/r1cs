@@ -3,10 +3,11 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use field_element::FieldElement;
-use wire::Wire;
-use wire_values::WireValues;
 use itertools::Itertools;
+
+use crate::field_element::FieldElement;
+use crate::wire::Wire;
+use crate::wire_values::WireValues;
 
 /// A linear combination of wires.
 #[derive(Clone, Debug, Eq, PartialEq)]

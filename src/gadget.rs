@@ -1,6 +1,6 @@
-use constraint::Constraint;
-use wire_values::WireValues;
-use witness_generator::WitnessGenerator;
+use crate::constraint::Constraint;
+use crate::wire_values::WireValues;
+use crate::witness_generator::WitnessGenerator;
 
 pub struct Gadget {
     pub constraints: Vec<Constraint>,
@@ -40,8 +40,8 @@ impl Gadget {
 
 #[cfg(test)]
 mod tests {
-    use gadget_builder::GadgetBuilder;
-    use wire_values::WireValues;
+    use crate::gadget_builder::GadgetBuilder;
+    use crate::wire_values::WireValues;
 
     #[test]
     fn constraint_not_satisfied() {
@@ -50,7 +50,7 @@ mod tests {
         builder.assert_equal(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values = wire_values!(x => 42.into(), y => 43.into());
+        let mut values = values!(x => 42.into(), y => 43.into());
         let constraints_satisfied = gadget.execute(&mut values);
         assert!(!constraints_satisfied);
     }
@@ -63,7 +63,7 @@ mod tests {
         builder.assert_product(x.into(), y.into(), z.into());
         let gadget = builder.build();
 
-        let mut values = wire_values!(x => 2.into(), y => 3.into());
+        let mut values = values!(x => 2.into(), y => 3.into());
         gadget.execute(&mut values);
     }
 

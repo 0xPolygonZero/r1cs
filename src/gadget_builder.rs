@@ -1,10 +1,10 @@
-use constraint::Constraint;
-use field_element::FieldElement;
-use gadget::Gadget;
-use linear_combination::LinearCombination;
-use wire::Wire;
-use wire_values::WireValues;
-use witness_generator::WitnessGenerator;
+use crate::constraint::Constraint;
+use crate::field_element::FieldElement;
+use crate::gadget::Gadget;
+use crate::linear_combination::LinearCombination;
+use crate::wire::Wire;
+use crate::wire_values::WireValues;
+use crate::witness_generator::WitnessGenerator;
 
 pub struct GadgetBuilder {
     next_wire_index: u32,
@@ -144,8 +144,8 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use field_element::FieldElement;
-    use gadget_builder::GadgetBuilder;
+    use crate::field_element::FieldElement;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn assert_binary_0_1() {
@@ -155,11 +155,11 @@ mod tests {
         let gadget = builder.build();
 
         // With x = 0, the constraint should be satisfied.
-        let mut values0 = wire_values!(x => 0.into());
+        let mut values0 = values!(x => 0.into());
         assert!(gadget.execute(&mut values0));
 
         // With x = 1, the constraint should be satisfied.
-        let mut values1 = wire_values!(x => 1.into());
+        let mut values1 = values!(x => 1.into());
         assert!(gadget.execute(&mut values1));
     }
 
@@ -171,7 +171,7 @@ mod tests {
         let gadget = builder.build();
 
         // With x = 2, the constraint should NOT be satisfied.
-        let mut values2 = wire_values!(x => 2.into());
+        let mut values2 = values!(x => 2.into());
         assert!(!gadget.execute(&mut values2));
     }
 
@@ -182,15 +182,15 @@ mod tests {
         let equal = builder.equal(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values_7_7 = wire_values!(x => 7.into(), y => 7.into());
+        let mut values_7_7 = values!(x => 7.into(), y => 7.into());
         assert!(gadget.execute(&mut values_7_7));
         assert_eq!(FieldElement::one(), equal.evaluate(&values_7_7));
 
-        let mut values_6_7 = wire_values!(x => 6.into(), y => 7.into());
+        let mut values_6_7 = values!(x => 6.into(), y => 7.into());
         assert!(gadget.execute(&mut values_6_7));
         assert_eq!(FieldElement::zero(), equal.evaluate(&values_6_7));
 
-        let mut values_7_13 = wire_values!(x => 7.into(), y => 13.into());
+        let mut values_7_13 = values!(x => 7.into(), y => 13.into());
         assert!(gadget.execute(&mut values_7_13));
         assert_eq!(FieldElement::zero(), equal.evaluate(&values_7_13));
     }

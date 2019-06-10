@@ -1,6 +1,6 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
-use std::cmp::Ordering;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Wire {

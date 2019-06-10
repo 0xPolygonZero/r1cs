@@ -8,7 +8,6 @@ use num::bigint::RandBigInt;
 use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
-
 use rand::Rng;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -216,7 +215,7 @@ mod tests {
 
     use itertools::assert_equal;
 
-    use field_element::FieldElement;
+    use crate::field_element::FieldElement;
 
     #[test]
     fn addition() {

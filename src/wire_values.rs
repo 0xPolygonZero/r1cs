@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use field_element::FieldElement;
-use wire::Wire;
+use crate::field_element::FieldElement;
+use crate::wire::Wire;
 
 pub struct WireValues {
     values: HashMap<Wire, FieldElement>,
@@ -51,10 +51,10 @@ impl WireValues {
 }
 
 #[macro_export]
-macro_rules! wire_values {
+macro_rules! values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = ::wire_values::WireValues::new();
+            let mut values = $crate::wire_values::WireValues::new();
             $(
                 values.set($wire, $value);
             )*

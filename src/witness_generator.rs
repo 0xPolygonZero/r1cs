@@ -1,5 +1,5 @@
-use wire::Wire;
-use wire_values::WireValues;
+use crate::wire::Wire;
+use crate::wire_values::WireValues;
 
 pub struct WitnessGenerator {
     inputs: Vec<Wire>,

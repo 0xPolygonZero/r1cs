@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use num::BigUint;
 
-use gadget_builder::GadgetBuilder;
-use linear_combination::LinearCombination;
-use wire::Wire;
-use wire_values::WireValues;
+use crate::gadget_builder::GadgetBuilder;
+use crate::linear_combination::LinearCombination;
+use crate::wire::Wire;
+use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
@@ -50,8 +50,8 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use field_element::FieldElement;
-    use gadget_builder::GadgetBuilder;
+    use crate::field_element::FieldElement;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn split_19_32() {
@@ -60,7 +60,7 @@ mod tests {
         let bit_wires = builder.split(wire.into(), 32);
         let gadget = builder.build();
 
-        let mut wire_values = wire_values!(wire.clone() => 19.into());
+        let mut wire_values = values!(wire.clone() => 19.into());
         assert!(gadget.execute(&mut wire_values));
 
         let false_element: FieldElement = 0.into();

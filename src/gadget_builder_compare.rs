@@ -1,10 +1,10 @@
 use itertools::enumerate;
 
-use field_element::FieldElement;
-use gadget_builder::GadgetBuilder;
-use linear_combination::LinearCombination;
-use wire::Wire;
-use wire_values::WireValues;
+use crate::field_element::FieldElement;
+use crate::gadget_builder::GadgetBuilder;
+use crate::linear_combination::LinearCombination;
+use crate::wire::Wire;
+use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// Assert that x < y.
@@ -177,10 +177,10 @@ impl GadgetBuilder {
 mod tests {
     use std::borrow::Borrow;
 
-    use field_element::FieldElement;
-    use gadget_builder::GadgetBuilder;
-    use linear_combination::LinearCombination;
-    use wire_values::WireValues;
+    use crate::field_element::FieldElement;
+    use crate::gadget_builder::GadgetBuilder;
+    use crate::linear_combination::LinearCombination;
+    use crate::wire_values::WireValues;
 
     #[test]
     fn comparisons() {
@@ -192,21 +192,21 @@ mod tests {
         let ge = builder.ge(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values_42_63 = wire_values!(x => 42.into(), y => 63.into());
+        let mut values_42_63 = values!(x => 42.into(), y => 63.into());
         assert!(gadget.execute(&mut values_42_63));
         assert_1(&lt, &values_42_63);
         assert_1(&le, &values_42_63);
         assert_0(&gt, &values_42_63);
         assert_0(&ge, &values_42_63);
 
-        let mut values_42_42 = wire_values!(x => 42.into(), y => 42.into());
+        let mut values_42_42 = values!(x => 42.into(), y => 42.into());
         assert!(gadget.execute(&mut values_42_42));
         assert_0(&lt, &values_42_42);
         assert_1(&le, &values_42_42);
         assert_0(&gt, &values_42_42);
         assert_1(&ge, &values_42_42);
 
-        let mut values_42_41 = wire_values!(x => 42.into(), y => 41.into());
+        let mut values_42_41 = values!(x => 42.into(), y => 41.into());
         assert!(gadget.execute(&mut values_42_41));
         assert_0(&lt, &values_42_41);
         assert_0(&le, &values_42_41);
@@ -218,7 +218,7 @@ mod tests {
         // chunk. So let's try some larger numbers. In particular, let's have x < y but have the
         // least significant chunk of y exceed that of x, to make sure the more significant chunk
         // takes precedence.
-        let mut values_large_lt = wire_values!(
+        let mut values_large_lt = values!(
             x => FieldElement::from(1u128 << 80 | 1u128),
             y => FieldElement::from(1u128 << 81));
         assert!(gadget.execute(&mut values_large_lt));

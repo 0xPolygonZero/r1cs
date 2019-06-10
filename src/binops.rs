@@ -1,5 +1,5 @@
-use gadget_builder::GadgetBuilder;
-use linear_combination::LinearCombination;
+use crate::gadget_builder::GadgetBuilder;
+use crate::linear_combination::LinearCombination;
 
 impl GadgetBuilder {
     /// The conjunction of two binary values. Assumes both inputs are binary, otherwise the result
@@ -23,8 +23,8 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use gadget_builder::GadgetBuilder;
-    use field_element::FieldElement;
+    use crate::field_element::FieldElement;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn and() {
@@ -33,19 +33,19 @@ mod tests {
         let and = builder.and(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values00 = wire_values!(x => 0.into(), y => 0.into());
+        let mut values00 = values!(x => 0.into(), y => 0.into());
         assert!(gadget.execute(&mut values00));
         assert_eq!(FieldElement::zero(), and.evaluate(&values00));
 
-        let mut values01 = wire_values!(x => 0.into(), y => 1.into());
+        let mut values01 = values!(x => 0.into(), y => 1.into());
         assert!(gadget.execute(&mut values01));
         assert_eq!(FieldElement::zero(), and.evaluate(&values01));
 
-        let mut values10 = wire_values!(x => 1.into(), y => 0.into());
+        let mut values10 = values!(x => 1.into(), y => 0.into());
         assert!(gadget.execute(&mut values10));
         assert_eq!(FieldElement::zero(), and.evaluate(&values10));
 
-        let mut values11 = wire_values!(x => 1.into(), y => 1.into());
+        let mut values11 = values!(x => 1.into(), y => 1.into());
         assert!(gadget.execute(&mut values11));
         assert_eq!(FieldElement::one(), and.evaluate(&values11));
     }
@@ -57,19 +57,19 @@ mod tests {
         let or = builder.or(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values00 = wire_values!(x => 0.into(), y => 0.into());
+        let mut values00 = values!(x => 0.into(), y => 0.into());
         assert!(gadget.execute(&mut values00));
         assert_eq!(FieldElement::zero(), or.evaluate(&values00));
 
-        let mut values01 = wire_values!(x => 0.into(), y => 1.into());
+        let mut values01 = values!(x => 0.into(), y => 1.into());
         assert!(gadget.execute(&mut values01));
         assert_eq!(FieldElement::one(), or.evaluate(&values01));
 
-        let mut values10 = wire_values!(x => 1.into(), y => 0.into());
+        let mut values10 = values!(x => 1.into(), y => 0.into());
         assert!(gadget.execute(&mut values10));
         assert_eq!(FieldElement::one(), or.evaluate(&values10));
 
-        let mut values11 = wire_values!(x => 1.into(), y => 1.into());
+        let mut values11 = values!(x => 1.into(), y => 1.into());
         assert!(gadget.execute(&mut values11));
         assert_eq!(FieldElement::one(), or.evaluate(&values11));
     }
@@ -81,19 +81,19 @@ mod tests {
         let xor = builder.xor(x.into(), y.into());
         let gadget = builder.build();
 
-        let mut values00 = wire_values!(x => 0.into(), y => 0.into());
+        let mut values00 = values!(x => 0.into(), y => 0.into());
         assert!(gadget.execute(&mut values00));
         assert_eq!(FieldElement::zero(), xor.evaluate(&values00));
 
-        let mut values01 = wire_values!(x => 0.into(), y => 1.into());
+        let mut values01 = values!(x => 0.into(), y => 1.into());
         assert!(gadget.execute(&mut values01));
         assert_eq!(FieldElement::one(), xor.evaluate(&values01));
 
-        let mut values10 = wire_values!(x => 1.into(), y => 0.into());
+        let mut values10 = values!(x => 1.into(), y => 0.into());
         assert!(gadget.execute(&mut values10));
         assert_eq!(FieldElement::one(), xor.evaluate(&values10));
 
-        let mut values11 = wire_values!(x => 1.into(), y => 1.into());
+        let mut values11 = values!(x => 1.into(), y => 1.into());
         assert!(gadget.execute(&mut values11));
         assert_eq!(FieldElement::zero(), xor.evaluate(&values11));
     }

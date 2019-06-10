@@ -2,10 +2,10 @@
 name = "rusty-gadgets"
 version = "0.1.0"
 authors = ["Daniel Lubarov <daniel@mirprotocol.org>", "Brendan Farmer <brendan@mirprotocol.org>"]
+edition = "2018"
 
 [dependencies]
 itertools = "0.8.0"
 num = { version = "0.2.0", features = ["rand"] }
 num-traits = "0.2.8"
 rand = "0.6.5"
-rand_chacha = "0.1.1"

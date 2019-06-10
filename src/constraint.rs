@@ -1,7 +1,8 @@
-use linear_combination::LinearCombination;
-use wire_values::WireValues;
 use std::fmt;
 use std::fmt::Formatter;
+
+use crate::linear_combination::LinearCombination;
+use crate::wire_values::WireValues;
 
 /// An R1CS constraint, of the form a * b = c, where a, b, and c are linear combinations of wires.
 #[derive(Clone, Debug)]

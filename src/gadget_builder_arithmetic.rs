@@ -1,7 +1,8 @@
-use gadget_builder::GadgetBuilder;
-use linear_combination::LinearCombination;
-use wire_values::WireValues;
 use itertools::enumerate;
+
+use crate::gadget_builder::GadgetBuilder;
+use crate::linear_combination::LinearCombination;
+use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// x * y
@@ -115,7 +116,7 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use gadget_builder::GadgetBuilder;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     #[should_panic]
@@ -125,7 +126,7 @@ mod tests {
         builder.inverse(x.into());
         let gadget = builder.build();
 
-        let mut values = wire_values!(x => 0.into());
+        let mut values = values!(x => 0.into());
         gadget.execute(&mut values);
     }
 }
