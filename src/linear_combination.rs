@@ -100,10 +100,22 @@ impl From<Wire> for LinearCombination {
     }
 }
 
+impl From<&Wire> for LinearCombination {
+    fn from(wire: &Wire) -> Self {
+        LinearCombination::from(*wire)
+    }
+}
+
 impl From<FieldElement> for LinearCombination {
     fn from(value: FieldElement) -> Self {
         LinearCombination::new(
             [(Wire::ONE, value)].iter().cloned().collect())
+    }
+}
+
+impl From<&FieldElement> for LinearCombination {
+    fn from(value: &FieldElement) -> Self {
+        LinearCombination::from(value.clone())
     }
 }
 
