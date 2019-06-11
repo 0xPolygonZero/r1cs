@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/mir-protocol/r1cs"
 keywords = ["r1cs", "crypto", "snarks"]
 categories = ["cryptography"]
-maintenance = "actively-developed"
+maintenance = { status = "actively-developed" }
 edition = "2018"
 
 [dependencies]
