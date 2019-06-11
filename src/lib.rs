@@ -1,9 +1,3 @@
-extern crate core;
-extern crate itertools;
-extern crate num;
-extern crate num_traits;
-extern crate rand;
-
 #[macro_use]
 pub mod wire_values;
 
@@ -18,4 +12,3 @@ pub mod gadget_builder_split;
 pub mod linear_combination;
 pub mod wire;
 pub mod witness_generator;
-
