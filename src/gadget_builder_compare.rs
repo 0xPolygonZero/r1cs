@@ -146,6 +146,8 @@ impl GadgetBuilder {
         //     2^bits + x - y
         // And check the most significant bit, i.e., the one with index `bits`.
         // x >= y iff that bit is set. The other cases are similar.
+        // TODO: If `bits` is very large, base might not fit in a field element. Need to generalize
+        // this to work with arbitrary bit widths, or at least an assertion to fail gracefully.
         let base = LinearCombination::from(
             (FieldElement::one() << bits) - FieldElement::from(strict));
         let z = base + if less { -diff } else { diff };
