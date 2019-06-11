@@ -1,7 +1,7 @@
 #[macro_use]
 pub mod wire_values;
 
-pub mod binops;
+pub mod gadget_builder_binary;
 pub mod constraint;
 pub mod field_element;
 pub mod gadget;
