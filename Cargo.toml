@@ -1,10 +1,10 @@
 [package]
-name = "rusty-gadgets"
+name = "r1cs"
 description = "A library for building R1CS gadgets"
 version = "0.1.0"
 authors = ["Daniel Lubarov <daniel@mirprotocol.org>", "Brendan Farmer <brendan@mirprotocol.org>"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/mir-protocol/rusty-gadgets"
+repository = "https://github.com/mir-protocol/r1cs"
 keywords = ["r1cs", "crypto", "snarks"]
 categories = ["cryptography"]
 maintenance = "actively-developed"
