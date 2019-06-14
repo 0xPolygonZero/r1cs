@@ -6,7 +6,6 @@ use num_traits::One;
 use crate::bits::BinaryExpression;
 use crate::expression::Expression;
 use crate::gadget_builder::GadgetBuilder;
-use crate::wire::Wire;
 use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
@@ -47,7 +46,6 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
 
     #[test]

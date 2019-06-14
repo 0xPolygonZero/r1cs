@@ -29,7 +29,6 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
 
     #[test]

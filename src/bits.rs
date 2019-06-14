@@ -8,9 +8,7 @@
 //! 1.
 
 use std::collections::HashSet;
-use std::ops::Deref;
 
-use itertools::enumerate;
 use num::BigUint;
 use num_traits::{One, Zero};
 
@@ -99,6 +97,7 @@ pub struct BinaryExpression {
 }
 
 impl BinaryExpression {
+    // TODO remove
     pub fn new(bits: Vec<BooleanExpression>) -> Self {
         BinaryExpression { bits }
     }
@@ -106,6 +105,14 @@ impl BinaryExpression {
     /// The number of bits.
     pub fn len(&self) -> usize {
         self.bits.len()
+    }
+
+    /// Truncate the bit vector, discarding the more significant bits while keeping the less
+    /// significant bits.
+    pub fn truncated(&self, l: usize) -> Self {
+        let mut truncated_bits = self.bits.clone();
+        truncated_bits.truncate(l);
+        BinaryExpression { bits: truncated_bits }
     }
 
     pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression> {

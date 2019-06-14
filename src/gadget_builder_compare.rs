@@ -5,7 +5,6 @@ use itertools::enumerate;
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
 use crate::expression::Expression;
-use crate::wire::Wire;
 use crate::wire_values::WireValues;
 use crate::bits::{BinaryExpression, BooleanExpression};
 
@@ -185,7 +184,6 @@ mod tests {
 
     use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::expression::Expression;
     use crate::wire_values::WireValues;
     use crate::bits::BooleanExpression;
 
