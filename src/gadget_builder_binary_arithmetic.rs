@@ -5,13 +5,13 @@ impl GadgetBuilder {
     /// Add two binary values in a widening manner. The result will be one bit longer than the
     /// longer of the two inputs.
     pub fn binary_sum(&mut self, x: BinaryExpression, y: BinaryExpression) -> BinaryExpression {
-        let l = x.len().max(y.len());
+        let l = x.len().max(y.len()) + 1;
+
         unimplemented!("TODO")
     }
 
     /// Add two binary values, ignoring any overflow.
     pub fn binary_sum_ignoring_overflow(&mut self, x: BinaryExpression, y: BinaryExpression) -> BinaryExpression {
-        // TODO: Not optimal; bit of unused computation
         let sum = self.binary_sum(x, y);
         sum.truncated(sum.len() - 1)
     }
