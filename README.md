@@ -1,6 +1,10 @@
 # Rusty Gadgets
 
-This is a rust library for building R1CS gadgets.
+This is a rust library for building R1CS gadgets, which are useful in SNARKs and other argument systems.
+
+An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode the following NP-complete decision problem: does there exist a witness `w` such that `Aw ∘ Bw = Cw`?
+
+An R1CS gadget is comprised of an R1CS instance and a witness generator which, given certain inputs, generates a complete witness which satisfies the instance.
 
 
 ## Basic example
@@ -27,6 +31,13 @@ assert!(constraints_satisfied);
 // Check the result.
 assert_eq!(FieldElement::from(125), x_cubed.evaluate(&values));
 ```
+
+
+## Binary arithmetic
+
+The example above involved native field arithmetic, but this library also supports binary arithmetic.
+
+TODO: Add an example.
 
 
 ## Non-determinism

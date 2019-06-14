@@ -1,12 +1,14 @@
+//! This module extends GadgetBuilder with native field arithmetic methods.
+
 use itertools::enumerate;
 
 use crate::gadget_builder::GadgetBuilder;
-use crate::linear_combination::LinearCombination;
+use crate::expression::Expression;
 use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// x * y
-    pub fn product(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn product(&mut self, x: Expression, y: Expression) -> Expression {
         if let Some(c) = x.as_constant() {
             return y * c;
         }
@@ -20,7 +22,7 @@ impl GadgetBuilder {
         {
             let product = product.clone();
             self.generator(
-                [x.wires(), y.wires()].concat(),
+                [x.dependencies(), y.dependencies()].concat(),
                 move |values: &mut WireValues| {
                     let product_value = x.evaluate(values) * y.evaluate(values);
                     values.set(product, product_value);
@@ -32,7 +34,7 @@ impl GadgetBuilder {
     }
 
     /// x^p for a constant p.
-    pub fn exp(&mut self, x: LinearCombination, p: usize) -> LinearCombination {
+    pub fn exp(&mut self, x: Expression, p: usize) -> Expression {
         // This is exponentiation by squaring. Generate a list squares where squares[i] = x^(2^i).
         let mut squares = vec![x];
         let mut i = 1;
@@ -47,7 +49,7 @@ impl GadgetBuilder {
         }
 
         // Now, for each 1 bit of p, multiply by the associated square power.
-        let mut product = LinearCombination::one();
+        let mut product = Expression::one();
         for (i, square) in enumerate(squares) {
             let b = (p >> i) & 1 != 0;
             if b {
@@ -58,13 +60,13 @@ impl GadgetBuilder {
     }
 
     /// 1 / x. Assumes x is non-zero. If x is zero, the resulting gadget will not be satisfiable.
-    pub fn inverse(&mut self, x: LinearCombination) -> LinearCombination {
+    pub fn inverse(&mut self, x: Expression) -> Expression {
         let x_inv = self.wire();
 
         {
             let x = x.clone();
             self.generator(
-                x.wires(),
+                x.dependencies(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
                     let inverse_value = x_value.multiplicative_inverse();
@@ -78,24 +80,24 @@ impl GadgetBuilder {
     }
 
     /// x / y. Assumes y is non-zero. If y is zero, the resulting gadget will not be satisfiable.
-    pub fn quotient(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn quotient(&mut self, x: Expression, y: Expression) -> Expression {
         let y_inv = self.inverse(y);
         self.product(x, y_inv)
     }
 
     /// x mod y.
-    pub fn modulus(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn modulus(&mut self, x: Expression, y: Expression) -> Expression {
         // We will non-deterministically compute a quotient q and remainder r such that:
         //     y * q = x - r
         //     r < y
 
         let q = self.wire();
         let r = self.wire();
-        self.assert_product(y.clone(), q.into(), x.clone() - LinearCombination::from(r));
+        self.assert_product(y.clone(), q.into(), x.clone() - Expression::from(r));
         self.assert_lt(r.into(), y.clone());
 
         self.generator(
-            [x.wires(), y.wires()].concat(),
+            [x.dependencies(), y.dependencies()].concat(),
             move |values: &mut WireValues| {
                 let x_value = x.evaluate(values);
                 let y_value = y.evaluate(values);
@@ -108,7 +110,7 @@ impl GadgetBuilder {
     }
 
     /// if x | y { 1 } else { 0 }.
-    pub fn divides(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn divides(&mut self, x: Expression, y: Expression) -> Expression {
         let m = self.modulus(y, x);
         self.zero(m)
     }

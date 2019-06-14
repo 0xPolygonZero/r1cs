@@ -1,10 +1,11 @@
 use crate::constraint::Constraint;
 use crate::field_element::FieldElement;
 use crate::gadget::Gadget;
-use crate::linear_combination::LinearCombination;
+use crate::expression::Expression;
 use crate::wire::Wire;
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
+use crate::bits::{BooleanWire, BinaryWire, BooleanExpression};
 
 pub struct GadgetBuilder {
     next_wire_index: u32,
@@ -12,6 +13,7 @@ pub struct GadgetBuilder {
     witness_generators: Vec<WitnessGenerator>,
 }
 
+/// A utility for building `Gadget`s. See the readme for examples.
 impl GadgetBuilder {
     pub fn new() -> Self {
         GadgetBuilder {
@@ -28,10 +30,22 @@ impl GadgetBuilder {
         Wire { index }
     }
 
+    /// Add a wire to the gadget, whose value is constrained to equal 0 or 1.
+    pub fn boolean_wire(&mut self) -> BooleanWire {
+        let w = self.wire();
+        self.assert_boolean(w.into());
+        BooleanWire::new_unsafe(w)
+    }
+
     /// Add `n` wires to the gadget. They will start with no generator and no associated
     /// constraints.
     pub fn wires(&mut self, n: usize) -> Vec<Wire> {
         (0..n).map(|_i| self.wire()).collect()
+    }
+
+    /// Add a binary wire comprised of `n` bits to the gadget.
+    pub fn binary_wire(&mut self, n: usize) -> BinaryWire {
+        BinaryWire { bits: (0..n).map(|_i| self.boolean_wire()).collect() }
     }
 
     /// Add a generator function for setting certain wire values.
@@ -41,26 +55,26 @@ impl GadgetBuilder {
     }
 
     /// if x == y { 1 } else { 0 }.
-    pub fn equal(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn equal(&mut self, x: Expression, y: Expression) -> Expression {
         self.zero(x - y)
     }
 
     /// if x == 0 { 1 } else { 0 }.
-    pub fn zero(&mut self, x: LinearCombination) -> LinearCombination {
-        LinearCombination::one() - self.nonzero(x)
+    pub fn zero(&mut self, x: Expression) -> Expression {
+        Expression::one() - self.nonzero(x)
     }
 
     /// if x != 0 { 1 } else { 0 }.
-    pub fn nonzero(&mut self, x: LinearCombination) -> LinearCombination {
+    pub fn nonzero(&mut self, x: Expression) -> Expression {
         // See the Pinocchio paper for an explanation.
         let (y, m) = (self.wire(), self.wire());
         self.assert_product(x.clone(), m.into(), y.into());
-        self.assert_product(LinearCombination::one() - y.into(), x.clone(), 0.into());
+        self.assert_product(Expression::one() - y.into(), x.clone(), 0.into());
 
         {
             let y = y.clone();
             self.generator(
-                x.wires(),
+                x.dependencies(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
                     let y_value: FieldElement = if x_value.is_nonzero() {
@@ -84,54 +98,55 @@ impl GadgetBuilder {
     }
 
     /// if c { x } else { y }. Assumes c is binary.
-    pub fn _if(&mut self, c: LinearCombination,
-               x: LinearCombination, y: LinearCombination) -> LinearCombination {
-        let not_c = LinearCombination::one() - c.clone();
-        self.product(c, x) + self.product(not_c, y)
+    pub fn _if(&mut self, c: BooleanExpression,
+               x: Expression, y: Expression) -> Expression {
+        let not_c = self.not(c.clone());
+        self.product(c.expression().clone(), x) + self.product(not_c.expression().clone(), y)
     }
 
     /// Assert that x * y = z;
-    pub fn assert_product(&mut self, x: LinearCombination, y: LinearCombination,
-                          z: LinearCombination) {
+    pub fn assert_product(&mut self, x: Expression, y: Expression,
+                          z: Expression) {
         self.constraints.push(Constraint { a: x, b: y, c: z });
     }
 
     /// Assert that the given quantity is in [0, 1].
-    pub fn assert_binary(&mut self, a: LinearCombination) {
-        self.assert_product(a.clone(), a - 1.into(), 0.into());
+    pub fn assert_boolean(&mut self, x: Expression) -> BooleanExpression {
+        self.assert_product(x.clone(), x.clone() - 1.into(), 0.into());
+        BooleanExpression::new_unsafe(x)
     }
 
     /// Assert that x == y.
-    pub fn assert_equal(&mut self, x: LinearCombination, y: LinearCombination) {
+    pub fn assert_equal(&mut self, x: Expression, y: Expression) {
         self.constraints.push(Constraint { a: x, b: 1.into(), c: y });
     }
 
     /// Assert that x != y.
-    pub fn assert_nonequal(&mut self, x: LinearCombination, y: LinearCombination) {
+    pub fn assert_nonequal(&mut self, x: Expression, y: Expression) {
         let difference = x - y;
         self.assert_nonzero(difference);
     }
 
     /// Assert that x == 0.
-    pub fn assert_zero(&mut self, x: LinearCombination) {
+    pub fn assert_zero(&mut self, x: Expression) {
         self.assert_equal(x, 0.into());
     }
 
     /// Assert that x != 0.
-    pub fn assert_nonzero(&mut self, x: LinearCombination) {
+    pub fn assert_nonzero(&mut self, x: Expression) {
         // A field element is non-zero iff it has a multiplicative inverse.
         // We don't care what the inverse is, but calling inverse(x) will require that it exists.
         self.inverse(x);
     }
 
     /// Assert that x == 1.
-    pub fn assert_true(&mut self, x: LinearCombination) {
-        self.assert_equal(x, 1.into());
+    pub fn assert_true(&mut self, x: BooleanExpression) {
+        self.assert_equal(x.expression().clone(), 1.into());
     }
 
     /// Assert that x == 0.
-    pub fn assert_false(&mut self, x: LinearCombination) {
-        self.assert_equal(x, 0.into());
+    pub fn assert_false(&mut self, x: BooleanExpression) {
+        self.assert_equal(x.expression().clone(), 0.into());
     }
 
     pub fn build(self) -> Gadget {
@@ -151,7 +166,7 @@ mod tests {
     fn assert_binary_0_1() {
         let mut builder = GadgetBuilder::new();
         let x = builder.wire();
-        builder.assert_binary(x.into());
+        builder.assert_boolean(x.into());
         let gadget = builder.build();
 
         // With x = 0, the constraint should be satisfied.
@@ -167,7 +182,7 @@ mod tests {
     fn assert_binary_2() {
         let mut builder = GadgetBuilder::new();
         let x = builder.wire();
-        builder.assert_binary(x.into());
+        builder.assert_boolean(x.into());
         let gadget = builder.build();
 
         // With x = 2, the constraint should NOT be satisfied.

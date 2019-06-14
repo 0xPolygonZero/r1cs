@@ -1,5 +1,9 @@
 use std::collections::HashMap;
 
+use num::BigUint;
+use num_traits::One;
+
+use crate::bits::{BinaryWire, BooleanWire, BooleanExpression};
 use crate::field_element::FieldElement;
 use crate::wire::Wire;
 
@@ -19,6 +23,10 @@ impl WireValues {
         self.values[wire].clone()
     }
 
+    pub fn get_boolean(&self, wire: BooleanWire) -> bool {
+        BooleanExpression::from(wire).evaluate(self)
+    }
+
     pub fn get_all<'a, I>(&self, wires: I) -> Vec<FieldElement>
         where I: Iterator<Item=&'a Wire> {
         wires.map(|w| self.get(&w)).collect()
@@ -27,6 +35,19 @@ impl WireValues {
     pub fn set(&mut self, wire: Wire, value: FieldElement) {
         let old_value = self.values.insert(wire, value);
         assert!(old_value.is_none());
+    }
+
+    pub fn set_boolean(&mut self, wire: BooleanWire, value: bool) {
+        self.set(wire.wire(), value.into());
+    }
+
+    pub fn set_binary_unsigned(&mut self, wire: BinaryWire, value: BigUint) {
+        let l = wire.len();
+        assert!(value.bits() <= l, "Value does not fit");
+        for i in 0..l {
+            let value = ((value.clone() >> i) & BigUint::one()).is_one();
+            self.set_boolean(wire.bits[i].clone(), value);
+        }
     }
 
     pub fn set_all<W, F>(&mut self, mut wires: W, mut values: F)
@@ -57,6 +78,32 @@ macro_rules! values {
             let mut values = $crate::wire_values::WireValues::new();
             $(
                 values.set($wire, $value);
+            )*
+            values
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! boolean_values {
+    ( $( $wire:expr => $value:expr ),* ) => {
+        {
+            let mut values = $crate::wire_values::WireValues::new();
+            $(
+                values.set_boolean($wire, $value);
+            )*
+            values
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! binary_unsigned_values {
+    ( $( $wire:expr => $value:expr ),* ) => {
+        {
+            let mut values = $crate::wire_values::WireValues::new();
+            $(
+                values.set_binary_unsigned($wire, $value);
             )*
             values
         }

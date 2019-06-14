@@ -1,11 +1,15 @@
+//! This module extends GadgetBuilder with bitwise operations such as rotations, bitwise AND, and
+//! so forth.
+
 use crate::gadget_builder::GadgetBuilder;
-use crate::linear_combination::LinearCombination;
+use crate::expression::Expression;
 use crate::wire::Wire;
+use crate::bits::BinaryExpression;
 
 impl GadgetBuilder {
     /// ~x
-    pub fn bitwise_not(&mut self, x: Vec<Wire>) -> Vec<LinearCombination> {
-        x.iter().map(|w| LinearCombination::one() - LinearCombination::from(w)).collect()
+    pub fn bitwise_not(&mut self, x: Vec<Wire>) -> Vec<Expression> {
+        x.iter().map(|w| Expression::one() - Expression::from(w)).collect()
     }
 
     /// Rotate bits in the direction of greater significance.
@@ -22,12 +26,13 @@ impl GadgetBuilder {
         }).collect()
     }
 
-    pub fn bitwise_and(&mut self, x: Vec<Wire>, y: Vec<Wire>) -> Vec<LinearCombination> {
+    pub fn bitwise_and(&mut self, x: BinaryExpression, y: BinaryExpression) -> BinaryExpression {
         assert_eq!(x.len(), y.len());
         let l = x.len();
-        (0..l).map(|i| {
-            self.and(x[i].into(), y[i].into())
-        }).collect()
+        let bits = (0..l).map(|i| {
+            self.and(x.bits[i].clone(), y.bits[i].clone())
+        }).collect();
+        BinaryExpression { bits }
     }
 }
 

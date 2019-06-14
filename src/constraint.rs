@@ -1,15 +1,15 @@
 use std::fmt;
 use std::fmt::Formatter;
 
-use crate::linear_combination::LinearCombination;
+use crate::expression::Expression;
 use crate::wire_values::WireValues;
 
 /// An R1CS constraint, of the form a * b = c, where a, b, and c are linear combinations of wires.
 #[derive(Clone, Debug)]
 pub struct Constraint {
-    pub a: LinearCombination,
-    pub b: LinearCombination,
-    pub c: LinearCombination,
+    pub a: Expression,
+    pub b: Expression,
+    pub c: Expression,
 }
 
 impl Constraint {

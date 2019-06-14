@@ -1,77 +1,82 @@
+//! This module extends GadgetBuilder with methods for comparing native field elements.
+
 use itertools::enumerate;
 
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
-use crate::linear_combination::LinearCombination;
+use crate::expression::Expression;
 use crate::wire::Wire;
 use crate::wire_values::WireValues;
+use crate::bits::{BinaryExpression, BooleanExpression};
 
 impl GadgetBuilder {
     /// Assert that x < y.
-    pub fn assert_lt(&mut self, x: LinearCombination, y: LinearCombination) {
+    pub fn assert_lt(&mut self, x: Expression, y: Expression) {
         let lt = self.lt(x, y);
         self.assert_true(lt);
     }
 
     /// Assert that x <= y.
-    pub fn assert_le(&mut self, x: LinearCombination, y: LinearCombination) {
+    pub fn assert_le(&mut self, x: Expression, y: Expression) {
         let le = self.le(x, y);
         self.assert_true(le);
     }
 
     /// Assert that x > y.
-    pub fn assert_gt(&mut self, x: LinearCombination, y: LinearCombination) {
+    pub fn assert_gt(&mut self, x: Expression, y: Expression) {
         let gt = self.gt(x, y);
         self.assert_true(gt);
     }
 
     /// Assert that x >= y.
-    pub fn assert_ge(&mut self, x: LinearCombination, y: LinearCombination) {
+    pub fn assert_ge(&mut self, x: Expression, y: Expression) {
         let ge = self.ge(x, y);
         self.assert_true(ge);
     }
 
     /// x < y
-    pub fn lt(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn lt(&mut self, x: Expression, y: Expression) -> BooleanExpression {
         self.cmp(x, y, true, true)
     }
 
     /// x <= y
-    pub fn le(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn le(&mut self, x: Expression, y: Expression) -> BooleanExpression {
         self.cmp(x, y, true, false)
     }
 
     /// x > y
-    pub fn gt(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn gt(&mut self, x: Expression, y: Expression) -> BooleanExpression {
         self.cmp(x, y, false, true)
     }
 
     /// x >= y
-    pub fn ge(&mut self, x: LinearCombination, y: LinearCombination) -> LinearCombination {
+    pub fn ge(&mut self, x: Expression, y: Expression) -> BooleanExpression {
         self.cmp(x, y, false, false)
     }
 
-    fn cmp(&mut self, x: LinearCombination, y: LinearCombination,
-           less: bool, strict: bool) -> LinearCombination {
+    fn cmp(&mut self, x: Expression, y: Expression,
+           less: bool, strict: bool) -> BooleanExpression {
         let bits = FieldElement::max_bits();
         let x_bits = self.split(x.into(), bits);
         let y_bits = self.split(y.into(), bits);
         self.cmp_binary(x_bits, y_bits, less, strict)
     }
 
-    fn cmp_binary(&mut self, x_bits: Vec<Wire>, y_bits: Vec<Wire>,
-                  less: bool, strict: bool) -> LinearCombination {
+    fn cmp_binary(&mut self, x_bits: BinaryExpression, y_bits: BinaryExpression,
+                  less: bool, strict: bool) -> BooleanExpression {
         assert_eq!(x_bits.len(), y_bits.len());
         let operand_bits = x_bits.len();
 
         // We will chunk both bit vectors, then have the prover supply a mask which identifies the
         // first pair of chunks to differ. Credit to Ahmed Kosba who described this technique.
         let chunk_bits = GadgetBuilder::cmp_chunk_bits(operand_bits);
-        let x_chunks: Vec<LinearCombination> = x_bits.chunks(chunk_bits)
-            .map(LinearCombination::join_bits)
+        let x_chunks: Vec<Expression> = x_bits.chunks(chunk_bits)
+            .into_iter()
+            .map(|c| c.join())
             .collect();
-        let y_chunks: Vec<LinearCombination> = y_bits.chunks(chunk_bits)
-            .map(LinearCombination::join_bits)
+        let y_chunks: Vec<Expression> = y_bits.chunks(chunk_bits)
+            .into_iter()
+            .map(|c| c.join())
             .collect();
         let chunks = x_chunks.len();
 
@@ -80,18 +85,17 @@ impl GadgetBuilder {
         let mask = self.wires(chunks);
         // Each mask bit wire must equal 0 or 1.
         for &m in &mask {
-            self.assert_binary(m.into());
+            self.assert_boolean(m.into());
         }
         // The sum of all masks must equal 0 or 1, so that at most one mask can equal 1.
-        let diff_exists = LinearCombination::sum(&mask);
-        self.assert_binary(diff_exists.clone());
+        let diff_exists = self.assert_boolean(Expression::sum(&mask));
 
         {
             let x_chunks = x_chunks.clone();
             let y_chunks = y_chunks.clone();
             let mask = mask.clone();
             self.generator(
-                [x_bits, y_bits].concat(),
+                [x_bits.dependencies(), y_bits.dependencies()].concat(),
                 move |values: &mut WireValues| {
                     let mut seen_diff: bool = false;
                     for (i, &mask_bit) in enumerate(&mask).rev() {
@@ -107,14 +111,14 @@ impl GadgetBuilder {
         }
 
         // Compute the dot product of the mask vector with (x_chunks - y_chunks).
-        let mut diff_chunk = LinearCombination::zero();
+        let mut diff_chunk = Expression::zero();
         for i in 0..chunks {
             diff_chunk += self.product(mask[i].into(), x_chunks[i].clone() - y_chunks[i].clone());
         }
 
         // Verify that any more significant pairs of chunks are equal.
         // diff_seen tracks whether a mask bit of 1 has been observed for a less significant bit.
-        let mut diff_seen: LinearCombination = mask[0].into();
+        let mut diff_seen: Expression = mask[0].into();
         for i in 1..chunks {
             // If diff_seen = 1, we require that x_chunk = y_chunk.
             // Equivalently, we require that diff_seen * (x_chunk - y_chunk) = 0.
@@ -140,18 +144,18 @@ impl GadgetBuilder {
     }
 
     /// Given a diff of `x - y`, compare `x` and `y`.
-    fn cmp_subtractive(&mut self, diff: LinearCombination,
-                       less: bool, strict: bool, bits: usize) -> LinearCombination {
+    fn cmp_subtractive(&mut self, diff: Expression,
+                       less: bool, strict: bool, bits: usize) -> BooleanExpression {
         // An as example, assume less=false and strict=false. In that case, we compute
         //     2^bits + x - y
         // And check the most significant bit, i.e., the one with index `bits`.
         // x >= y iff that bit is set. The other cases are similar.
         // TODO: If `bits` is very large, base might not fit in a field element. Need to generalize
         // this to work with arbitrary bit widths, or at least an assertion to fail gracefully.
-        let base = LinearCombination::from(
+        let base = Expression::from(
             (FieldElement::one() << bits) - FieldElement::from(strict));
         let z = base + if less { -diff } else { diff };
-        self.split(z, bits + 1)[bits].into()
+        self.split(z, bits + 1).bits[bits].clone()
     }
 
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.
@@ -181,8 +185,9 @@ mod tests {
 
     use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::linear_combination::LinearCombination;
+    use crate::expression::Expression;
     use crate::wire_values::WireValues;
+    use crate::bits::BooleanExpression;
 
     #[test]
     fn comparisons() {
@@ -196,24 +201,24 @@ mod tests {
 
         let mut values_42_63 = values!(x => 42.into(), y => 63.into());
         assert!(gadget.execute(&mut values_42_63));
-        assert_1(&lt, &values_42_63);
-        assert_1(&le, &values_42_63);
-        assert_0(&gt, &values_42_63);
-        assert_0(&ge, &values_42_63);
+        assert_true(&lt, &values_42_63);
+        assert_true(&le, &values_42_63);
+        assert_false(&gt, &values_42_63);
+        assert_false(&ge, &values_42_63);
 
         let mut values_42_42 = values!(x => 42.into(), y => 42.into());
         assert!(gadget.execute(&mut values_42_42));
-        assert_0(&lt, &values_42_42);
-        assert_1(&le, &values_42_42);
-        assert_0(&gt, &values_42_42);
-        assert_1(&ge, &values_42_42);
+        assert_false(&lt, &values_42_42);
+        assert_true(&le, &values_42_42);
+        assert_false(&gt, &values_42_42);
+        assert_true(&ge, &values_42_42);
 
         let mut values_42_41 = values!(x => 42.into(), y => 41.into());
         assert!(gadget.execute(&mut values_42_41));
-        assert_0(&lt, &values_42_41);
-        assert_0(&le, &values_42_41);
-        assert_1(&gt, &values_42_41);
-        assert_1(&ge, &values_42_41);
+        assert_false(&lt, &values_42_41);
+        assert_false(&le, &values_42_41);
+        assert_true(&gt, &values_42_41);
+        assert_true(&ge, &values_42_41);
 
         // This is a white box sort of test. Since the implementation is based on chunks of roughly
         // 32 bits each, all the numbers in the preceding tests will fit into the least significant
@@ -224,17 +229,17 @@ mod tests {
             x => FieldElement::from(1u128 << 80 | 1u128),
             y => FieldElement::from(1u128 << 81));
         assert!(gadget.execute(&mut values_large_lt));
-        assert_1(&lt, &values_large_lt);
-        assert_1(&le, &values_large_lt);
-        assert_0(&gt, &values_large_lt);
-        assert_0(&ge, &values_large_lt);
+        assert_true(&lt, &values_large_lt);
+        assert_true(&le, &values_large_lt);
+        assert_false(&gt, &values_large_lt);
+        assert_false(&ge, &values_large_lt);
     }
 
-    fn assert_1<T: Borrow<LinearCombination>>(x: T, values: &WireValues) {
-        assert_eq!(FieldElement::one(), x.borrow().evaluate(values));
+    fn assert_true<T: Borrow<BooleanExpression>>(x: T, values: &WireValues) {
+        assert_eq!(true, x.borrow().evaluate(values));
     }
 
-    fn assert_0<T: Borrow<LinearCombination>>(x: T, values: &WireValues) {
-        assert_eq!(FieldElement::zero(), x.borrow().evaluate(values));
+    fn assert_false<T: Borrow<BooleanExpression>>(x: T, values: &WireValues) {
+        assert_eq!(false, x.borrow().evaluate(values));
     }
 }

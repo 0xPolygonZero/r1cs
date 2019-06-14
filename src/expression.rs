@@ -11,49 +11,39 @@ use crate::wire_values::WireValues;
 
 /// A linear combination of wires.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LinearCombination {
+pub struct Expression {
     coefficients: HashMap<Wire, FieldElement>,
 }
 
-impl LinearCombination {
+impl Expression {
     pub fn new(coefficients: HashMap<Wire, FieldElement>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
             .filter(|(_k, v)| *v != FieldElement::zero())
             .collect();
-        LinearCombination { coefficients: nonzero_coefficients }
+        Expression { coefficients: nonzero_coefficients }
     }
 
     /// The sum of zero or more wires, each with an implied coefficient of 1.
     pub fn sum<'a, T>(wires: T) -> Self
         where T: IntoIterator<Item=&'a Wire> {
-        LinearCombination {
+        Expression {
             coefficients: wires.into_iter()
                 .map(|&v| (v, FieldElement::one()))
                 .collect()
         }
     }
 
-    /// Join a vector of bit wires into the field element it encodes.
-    pub fn join_bits<'a, T>(bit_wires: T) -> Self
-        where T: IntoIterator<Item=&'a Wire> {
-        LinearCombination {
-            coefficients: bit_wires.into_iter().enumerate()
-                .map(|(i, w)| (w.clone(), FieldElement::one() << i))
-                .collect()
-        }
-    }
-
     pub fn zero() -> Self {
-        LinearCombination { coefficients: HashMap::new() }
+        Expression { coefficients: HashMap::new() }
     }
 
     pub fn one() -> Self {
-        LinearCombination::from(1u128)
+        Expression::from(1u128)
     }
 
     /// The additive inverse of 1.
     pub fn neg_one() -> Self {
-        -LinearCombination::one()
+        -Expression::one()
     }
 
     pub fn num_terms(&self) -> usize {
@@ -69,19 +59,11 @@ impl LinearCombination {
         }
     }
 
-    /// Return a vector of all wires involved in this linear combination.
-    pub fn wires(&self) -> Vec<Wire> {
+    /// Return a vector of all wires that this expression depends on.
+    pub fn dependencies(&self) -> Vec<Wire> {
         self.coefficients.keys()
             .map(|w| w.clone())
             .collect()
-    }
-
-    /// Return a vector of all wires involved in this linear combination, except for the special 1
-    /// wire.
-    pub fn variable_wires(&self) -> Vec<Wire> {
-        return self.wires().into_iter()
-            .filter(|&w| w != Wire::ONE)
-            .collect();
     }
 
     pub fn evaluate(&self, wire_values: &WireValues) -> FieldElement {
@@ -93,113 +75,113 @@ impl LinearCombination {
     }
 }
 
-impl From<Wire> for LinearCombination {
+impl From<Wire> for Expression {
     fn from(wire: Wire) -> Self {
-        LinearCombination::new(
+        Expression::new(
             [(wire, FieldElement::one())].iter().cloned().collect())
     }
 }
 
-impl From<&Wire> for LinearCombination {
+impl From<&Wire> for Expression {
     fn from(wire: &Wire) -> Self {
-        LinearCombination::from(*wire)
+        Expression::from(*wire)
     }
 }
 
-impl From<FieldElement> for LinearCombination {
+impl From<FieldElement> for Expression {
     fn from(value: FieldElement) -> Self {
-        LinearCombination::new(
+        Expression::new(
             [(Wire::ONE, value)].iter().cloned().collect())
     }
 }
 
-impl From<&FieldElement> for LinearCombination {
+impl From<&FieldElement> for Expression {
     fn from(value: &FieldElement) -> Self {
-        LinearCombination::from(value.clone())
+        Expression::from(value.clone())
     }
 }
 
-impl From<u128> for LinearCombination {
+impl From<u128> for Expression {
     fn from(value: u128) -> Self {
-        LinearCombination::from(FieldElement::from(value))
+        Expression::from(FieldElement::from(value))
     }
 }
 
-impl Neg for LinearCombination {
-    type Output = LinearCombination;
+impl Neg for Expression {
+    type Output = Expression;
 
-    fn neg(self) -> LinearCombination {
+    fn neg(self) -> Expression {
         self * -FieldElement::one()
     }
 }
 
-impl Add<LinearCombination> for LinearCombination {
-    type Output = LinearCombination;
+impl Add<Expression> for Expression {
+    type Output = Expression;
 
-    fn add(self, rhs: LinearCombination) -> LinearCombination {
+    fn add(self, rhs: Expression) -> Expression {
         let mut merged_coefficients = self.coefficients.clone();
         for (wire, coefficient) in rhs.coefficients {
             *merged_coefficients.entry(wire).or_insert(FieldElement::zero()) += coefficient
         }
-        LinearCombination::new(merged_coefficients)
+        Expression::new(merged_coefficients)
     }
 }
 
-impl AddAssign for LinearCombination {
-    fn add_assign(&mut self, rhs: LinearCombination) {
+impl AddAssign for Expression {
+    fn add_assign(&mut self, rhs: Expression) {
         *self = self.clone() + rhs;
     }
 }
 
-impl Sub<LinearCombination> for LinearCombination {
-    type Output = LinearCombination;
+impl Sub<Expression> for Expression {
+    type Output = Expression;
 
-    fn sub(self, rhs: LinearCombination) -> Self::Output {
+    fn sub(self, rhs: Expression) -> Self::Output {
         self + -rhs
     }
 }
 
-impl SubAssign for LinearCombination {
-    fn sub_assign(&mut self, rhs: LinearCombination) {
+impl SubAssign for Expression {
+    fn sub_assign(&mut self, rhs: Expression) {
         *self = self.clone() - rhs;
     }
 }
 
-impl Mul<FieldElement> for LinearCombination {
-    type Output = LinearCombination;
+impl Mul<FieldElement> for Expression {
+    type Output = Expression;
 
-    fn mul(self, rhs: FieldElement) -> LinearCombination {
-        LinearCombination::new(
+    fn mul(self, rhs: FieldElement) -> Expression {
+        Expression::new(
             self.coefficients.into_iter()
                 .map(|(k, v)| (k, v * rhs.clone()))
                 .collect())
     }
 }
 
-impl Mul<u128> for LinearCombination {
-    type Output = LinearCombination;
+impl Mul<u128> for Expression {
+    type Output = Expression;
 
-    fn mul(self, rhs: u128) -> LinearCombination {
-        LinearCombination::new(
+    fn mul(self, rhs: u128) -> Expression {
+        Expression::new(
             self.coefficients.into_iter()
                 .map(|(k, v)| (k, v * rhs.clone()))
                 .collect())
     }
 }
 
-impl MulAssign<FieldElement> for LinearCombination {
+impl MulAssign<FieldElement> for Expression {
     fn mul_assign(&mut self, rhs: FieldElement) {
         *self = self.clone() * rhs;
     }
 }
 
-impl MulAssign<u128> for LinearCombination {
+impl MulAssign<u128> for Expression {
     fn mul_assign(&mut self, rhs: u128) {
         *self = self.clone() * rhs;
     }
 }
 
-impl fmt::Display for LinearCombination {
+impl fmt::Display for Expression {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let term_strings: Vec<String> = self.coefficients.iter()
             .sorted_by(|(k1, _v1), (k2, _v2)| k1.cmp(k2))
