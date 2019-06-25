@@ -105,11 +105,6 @@ pub struct BinaryExpression {
 }
 
 impl BinaryExpression {
-    // TODO remove
-    pub fn new(bits: Vec<BooleanExpression>) -> Self {
-        BinaryExpression { bits }
-    }
-
     /// The number of bits.
     pub fn len(&self) -> usize {
         self.bits.len()
@@ -141,7 +136,7 @@ impl BinaryExpression {
     }
 
     pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression> {
-        self.bits.chunks(chunk_bits).map(|chunk| BinaryExpression::new(chunk.to_vec())).collect()
+        self.bits.chunks(chunk_bits).map(|chunk| BinaryExpression { bits: chunk.to_vec() }).collect()
     }
 
     /// Join these bits into the field element they encode.
@@ -176,7 +171,10 @@ impl BinaryExpression {
 
 impl From<BinaryWire> for BinaryExpression {
     fn from(wire: BinaryWire) -> Self {
-        BinaryExpression::new(
-            wire.bits.into_iter().map(|bool_wire| BooleanExpression::from(bool_wire)).collect())
+        BinaryExpression {
+            bits: wire.bits.into_iter()
+                .map(|bool_wire| BooleanExpression::from(bool_wire))
+                .collect()
+        }
     }
 }
