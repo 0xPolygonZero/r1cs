@@ -117,6 +117,7 @@ impl BinaryExpression {
 
     /// Truncate this bit vector, discarding the more significant bits while keeping the less
     /// significant bits.
+    // TODO: Convert to mutable.
     pub fn truncated(&self, l: usize) -> Self {
         assert!(l <= self.len());
         let mut truncated_bits = self.bits.clone();
@@ -125,6 +126,7 @@ impl BinaryExpression {
     }
 
     /// Pad this bit vector, adding 0 bits on the more significant side.
+    // TODO: Convert to mutable.
     pub fn padded(&self, l: usize) -> Self {
         assert!(l >= self.len());
         let mut padded_bits = self.bits.clone();
@@ -132,6 +134,10 @@ impl BinaryExpression {
             padded_bits.push(BooleanExpression::_false());
         }
         BinaryExpression { bits: padded_bits }
+    }
+
+    pub fn add_most_significant(&mut self, bit: BooleanExpression) {
+        self.bits.push(bit);
     }
 
     pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression> {

@@ -63,19 +63,17 @@ impl GadgetBuilder {
     pub fn inverse(&mut self, x: Expression) -> Expression {
         let x_inv = self.wire();
 
-        {
-            let x = x.clone();
-            self.generator(
-                x.dependencies(),
-                move |values: &mut WireValues| {
-                    let x_value = x.evaluate(values);
-                    let inverse_value = x_value.multiplicative_inverse();
-                    values.set(x_inv, inverse_value);
-                },
-            );
-        }
+        self.assert_product(x.clone(), x_inv.into(), 1.into());
 
-        self.assert_product(x, x_inv.into(), 1.into());
+        self.generator(
+            x.dependencies(),
+            move |values: &mut WireValues| {
+                let x_value = x.evaluate(values);
+                let inverse_value = x_value.multiplicative_inverse();
+                values.set(x_inv, inverse_value);
+            },
+        );
+
         x_inv.into()
     }
 
@@ -103,7 +101,7 @@ impl GadgetBuilder {
                 let y_value = y.evaluate(values);
                 values.set(q, x_value.integer_division(y_value.clone()));
                 values.set(r, x_value.integer_modulus(y_value));
-            }
+            },
         );
 
         r.into()

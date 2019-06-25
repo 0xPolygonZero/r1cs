@@ -54,6 +54,10 @@ impl FieldElement {
         }
     }
 
+    pub fn value(&self) -> &BigUint {
+        &self.value
+    }
+
     pub fn is_zero(&self) -> bool {
         self.value.is_zero()
     }
