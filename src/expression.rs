@@ -63,7 +63,7 @@ impl Expression {
     /// Return a vector of all wires that this expression depends on.
     pub fn dependencies(&self) -> Vec<Wire> {
         self.coefficients.keys()
-            .map(|w| w.clone())
+            .map(|w| *w)
             .collect()
     }
 
