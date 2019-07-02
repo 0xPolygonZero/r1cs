@@ -7,7 +7,7 @@ use crate::expression::Expression;
 impl GadgetBuilder {
     /// The negation of a boolean value.
     pub fn not(&mut self, x: BooleanExpression) -> BooleanExpression {
-        BooleanExpression::new_unsafe(Expression::one() - x.expression().clone())
+        BooleanExpression::new_unsafe(Expression::one() - x.expression())
     }
 
     /// The conjunction of two boolean values.
