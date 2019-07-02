@@ -132,10 +132,18 @@ impl Neg for FieldElement {
     type Output = FieldElement;
 
     fn neg(self) -> FieldElement {
+        -&self
+    }
+}
+
+impl Neg for &FieldElement {
+    type Output = FieldElement;
+
+    fn neg(self) -> FieldElement {
         if self.is_zero() {
-            self
+            FieldElement::zero()
         } else {
-            FieldElement::from(FieldElement::size() - self.value)
+            FieldElement::from(FieldElement::size() - &self.value)
         }
     }
 }
@@ -144,13 +152,43 @@ impl Add<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, rhs: FieldElement) -> FieldElement {
-        FieldElement::from((self.value + rhs.value) % FieldElement::size())
+        &self + &rhs
+    }
+}
+
+impl Add<&FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn add(self, rhs: &FieldElement) -> FieldElement {
+        &self + rhs
+    }
+}
+
+impl Add<FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn add(self, rhs: FieldElement) -> FieldElement {
+        self + &rhs
+    }
+}
+
+impl Add<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn add(self, rhs: &FieldElement) -> FieldElement {
+        FieldElement::from((&self.value + &rhs.value) % FieldElement::size())
     }
 }
 
 impl AddAssign for FieldElement {
     fn add_assign(&mut self, rhs: FieldElement) {
-        *self = self.clone() + rhs;
+        *self += &rhs;
+    }
+}
+
+impl AddAssign<&FieldElement> for FieldElement {
+    fn add_assign(&mut self, rhs: &FieldElement) {
+        *self = &*self + rhs;
     }
 }
 
@@ -158,13 +196,43 @@ impl Sub<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, rhs: FieldElement) -> FieldElement {
+        &self - &rhs
+    }
+}
+
+impl Sub<&FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: &FieldElement) -> FieldElement {
+        &self - rhs
+    }
+}
+
+impl Sub<FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: FieldElement) -> FieldElement {
+        self - &rhs
+    }
+}
+
+impl Sub<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: &FieldElement) -> FieldElement {
         self + -rhs
     }
 }
 
 impl SubAssign for FieldElement {
     fn sub_assign(&mut self, rhs: FieldElement) {
-        *self = self.clone() - rhs;
+        *self -= &rhs;
+    }
+}
+
+impl SubAssign<&FieldElement> for FieldElement {
+    fn sub_assign(&mut self, rhs: &FieldElement) {
+        *self = &*self - rhs;
     }
 }
 
@@ -172,7 +240,31 @@ impl Mul<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, rhs: FieldElement) -> FieldElement {
-        FieldElement::from((self.value * rhs.value) % FieldElement::size())
+        &self * &rhs
+    }
+}
+
+impl Mul<&FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: &FieldElement) -> FieldElement {
+        &self * rhs
+    }
+}
+
+impl Mul<FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: FieldElement) -> FieldElement {
+        self * &rhs
+    }
+}
+
+impl Mul<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: &FieldElement) -> FieldElement {
+        FieldElement::from((&self.value * &rhs.value) % FieldElement::size())
     }
 }
 
@@ -186,6 +278,12 @@ impl Mul<u128> for FieldElement {
 
 impl MulAssign for FieldElement {
     fn mul_assign(&mut self, rhs: FieldElement) {
+        *self *= &rhs;
+    }
+}
+
+impl MulAssign<&FieldElement> for FieldElement {
+    fn mul_assign(&mut self, rhs: &FieldElement) {
         *self = self.clone() * rhs;
     }
 }
@@ -200,6 +298,30 @@ impl Div<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn div(self, rhs: FieldElement) -> FieldElement {
+        &self / &rhs
+    }
+}
+
+impl Div<&FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn div(self, rhs: &FieldElement) -> FieldElement {
+        &self / rhs
+    }
+}
+
+impl Div<FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn div(self, rhs: FieldElement) -> FieldElement {
+        self / &rhs
+    }
+}
+
+impl Div<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn div(self, rhs: &FieldElement) -> FieldElement {
         self * rhs.multiplicative_inverse()
     }
 }
@@ -208,7 +330,15 @@ impl Shl<usize> for FieldElement {
     type Output = FieldElement;
 
     fn shl(self, rhs: usize) -> FieldElement {
-        FieldElement::from(self.value << rhs)
+        &self << rhs
+    }
+}
+
+impl Shl<usize> for &FieldElement {
+    type Output = FieldElement;
+
+    fn shl(self, rhs: usize) -> FieldElement {
+        FieldElement::from(self.value.clone() << rhs)
     }
 }
 
