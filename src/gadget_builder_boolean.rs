@@ -17,7 +17,10 @@ impl GadgetBuilder {
 
     /// The disjunction of two boolean values.
     pub fn or(&mut self, x: BooleanExpression, y: BooleanExpression) -> BooleanExpression {
-        BooleanExpression::new_unsafe(x.expression().clone() + y.expression().clone() - self.product(x.expression().clone(), y.expression().clone()))
+        BooleanExpression::new_unsafe(
+            x.expression()
+                + y.expression()
+                - self.product(x.expression().clone(), y.expression().clone()))
     }
 
     /// The exclusive disjunction of two boolean values.
