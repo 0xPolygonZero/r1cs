@@ -145,7 +145,7 @@ impl BinaryExpression {
         let mut sum = Expression::zero();
         for (i, bit) in self.bits.iter().enumerate() {
             let weight = FieldElement::one() << i;
-            sum += bit.expression.clone() * weight;
+            sum += &bit.expression * weight;
         }
         sum
     }

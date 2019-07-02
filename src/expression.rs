@@ -70,7 +70,7 @@ impl Expression {
     pub fn evaluate(&self, wire_values: &WireValues) -> FieldElement {
         let mut sum = FieldElement::zero();
         for (wire, coefficient) in &self.coefficients {
-            sum += wire_values.get(wire) * coefficient.clone();
+            sum += wire_values.get(wire) * coefficient;
         }
         sum
     }

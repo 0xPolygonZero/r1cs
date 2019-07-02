@@ -83,7 +83,7 @@ impl GadgetBuilder {
                         0.into()
                     };
                     let m_value: FieldElement = if x_value.is_nonzero() {
-                        y_value.clone() / x_value
+                        &y_value / x_value
                     } else {
                         // The value of m doesn't matter if x = 0.
                         42.into()
@@ -110,7 +110,7 @@ impl GadgetBuilder {
 
     /// Assert that the given quantity is in [0, 1].
     pub fn assert_boolean(&mut self, x: Expression) -> BooleanExpression {
-        self.assert_product(x.clone(), x.clone() - Expression::one(), 0.into());
+        self.assert_product(x.clone(), &x - Expression::one(), 0.into());
         BooleanExpression::new_unsafe(x)
     }
 
