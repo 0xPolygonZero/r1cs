@@ -124,7 +124,7 @@ impl GadgetBuilder {
             self.assert_product(diff_seen.clone(),
                                 x_chunks[i].clone() - y_chunks[i].clone(),
                                 0.into());
-            diff_seen += mask[i].into();
+            diff_seen += Expression::from(mask[i]);
         }
 
         // If the mask has a 1 bit, then the corresponding pair of chunks must differ. We only need

@@ -272,6 +272,14 @@ impl Mul<u128> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, rhs: u128) -> FieldElement {
+        &self * rhs
+    }
+}
+
+impl Mul<u128> for &FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: u128) -> FieldElement {
         self * FieldElement::from(rhs)
     }
 }

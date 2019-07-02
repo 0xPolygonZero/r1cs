@@ -69,7 +69,7 @@ impl GadgetBuilder {
         // See the Pinocchio paper for an explanation.
         let (y, m) = (self.wire(), self.wire());
         self.assert_product(x.clone(), m.into(), y.into());
-        self.assert_product(Expression::one() - y.into(), x.clone(), 0.into());
+        self.assert_product(Expression::one() - Expression::from(y), x.clone(), 0.into());
 
         {
             let y = y.clone();
@@ -98,21 +98,19 @@ impl GadgetBuilder {
     }
 
     /// if c { x } else { y }. Assumes c is binary.
-    pub fn _if(&mut self, c: BooleanExpression,
-               x: Expression, y: Expression) -> Expression {
+    pub fn _if(&mut self, c: BooleanExpression, x: Expression, y: Expression) -> Expression {
         let not_c = self.not(c.clone());
         self.product(c.expression().clone(), x) + self.product(not_c.expression().clone(), y)
     }
 
     /// Assert that x * y = z;
-    pub fn assert_product(&mut self, x: Expression, y: Expression,
-                          z: Expression) {
+    pub fn assert_product(&mut self, x: Expression, y: Expression, z: Expression) {
         self.constraints.push(Constraint { a: x, b: y, c: z });
     }
 
     /// Assert that the given quantity is in [0, 1].
     pub fn assert_boolean(&mut self, x: Expression) -> BooleanExpression {
-        self.assert_product(x.clone(), x.clone() - 1.into(), 0.into());
+        self.assert_product(x.clone(), x.clone() - Expression::one(), 0.into());
         BooleanExpression::new_unsafe(x)
     }
 
