@@ -1,14 +1,19 @@
 //! This module extends GadgetBuilder with native field arithmetic methods.
 
+use core::borrow::Borrow;
+
 use itertools::enumerate;
 
-use crate::gadget_builder::GadgetBuilder;
 use crate::expression::Expression;
+use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// x * y
-    pub fn product(&mut self, x: Expression, y: Expression) -> Expression {
+    pub fn product<E1, E2>(&mut self, x: E1, y: E2) -> Expression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
+        let x = x.borrow();
+        let y = y.borrow();
         if let Some(c) = x.as_constant() {
             return y * c;
         }
@@ -17,9 +22,12 @@ impl GadgetBuilder {
         }
 
         let product = self.wire();
-        self.assert_product(x.clone(), y.clone(), product.into());
+        let product_exp = Expression::from(product);
+        self.assert_product(x, y, &product_exp);
 
         {
+            let x = x.clone();
+            let y = y.clone();
             let product = product.clone();
             self.generator(
                 [x.dependencies(), y.dependencies()].concat(),
@@ -30,21 +38,22 @@ impl GadgetBuilder {
             );
         }
 
-        product.into()
+        product_exp
     }
 
     /// x^p for a constant p.
-    pub fn exp(&mut self, x: Expression, p: usize) -> Expression {
+    pub fn exp<E: Borrow<Expression>>(&mut self, x: E, p: usize) -> Expression {
         // This is exponentiation by squaring. Generate a list squares where squares[i] = x^(2^i).
-        let mut squares = vec![x];
+        let mut squares = vec![x.borrow().clone()];
         let mut i = 1;
         loop {
             let q = 1 << i;
             if q > p {
                 break;
             }
-            let square = squares[i - 1].clone();
-            squares.push(self.product(square.clone(), square));
+            let last = squares.last().unwrap();
+            let next = self.product(last, last);
+            squares.push(next);
             i += 1;
         }
 
@@ -60,10 +69,11 @@ impl GadgetBuilder {
     }
 
     /// 1 / x. Assumes x is non-zero. If x is zero, the resulting gadget will not be satisfiable.
-    pub fn inverse(&mut self, x: Expression) -> Expression {
-        let x_inv = self.wire();
+    pub fn inverse<E: Borrow<Expression>>(&mut self, x: E) -> Expression {
+        let x = x.borrow().clone();
 
-        self.assert_product(x.clone(), x_inv.into(), 1.into());
+        let x_inv = self.wire();
+        self.assert_product(&x, Expression::from(x_inv), Expression::one());
 
         self.generator(
             x.dependencies(),
@@ -78,37 +88,47 @@ impl GadgetBuilder {
     }
 
     /// x / y. Assumes y is non-zero. If y is zero, the resulting gadget will not be satisfiable.
-    pub fn quotient(&mut self, x: Expression, y: Expression) -> Expression {
+    pub fn quotient<E1, E2>(&mut self, x: E1, y: E2) -> Expression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let y_inv = self.inverse(y);
         self.product(x, y_inv)
     }
 
     /// x mod y.
-    pub fn modulus(&mut self, x: Expression, y: Expression) -> Expression {
+    pub fn modulus<E1, E2>(&mut self, x: E1, y: E2) -> Expression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         // We will non-deterministically compute a quotient q and remainder r such that:
         //     y * q = x - r
         //     r < y
 
+        let x = x.borrow();
+        let y = y.borrow();
+
         let q = self.wire();
         let r = self.wire();
-        self.assert_product(y.clone(), q.into(), x.clone() - Expression::from(r));
-        self.assert_lt(r.into(), y.clone());
+        self.assert_product(y, Expression::from(q), x - Expression::from(r));
+        self.assert_lt(Expression::from(r), y);
 
-        self.generator(
-            [x.dependencies(), y.dependencies()].concat(),
-            move |values: &mut WireValues| {
-                let x_value = x.evaluate(values);
-                let y_value = y.evaluate(values);
-                values.set(q, x_value.integer_division(y_value.clone()));
-                values.set(r, x_value.integer_modulus(y_value));
-            },
-        );
+        {
+            let x = x.clone();
+            let y = y.clone();
+            self.generator(
+                [x.dependencies(), y.dependencies()].concat(),
+                move |values: &mut WireValues| {
+                    let x_value = x.evaluate(values);
+                    let y_value = y.evaluate(values);
+                    values.set(q, x_value.integer_division(y_value.clone()));
+                    values.set(r, x_value.integer_modulus(y_value));
+                },
+            );
+        }
 
         r.into()
     }
 
     /// if x | y { 1 } else { 0 }.
-    pub fn divides(&mut self, x: Expression, y: Expression) -> Expression {
+    pub fn divides<E1, E2>(&mut self, x: E1, y: E2) -> Expression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let m = self.modulus(y, x);
         self.zero(m)
     }
@@ -117,13 +137,14 @@ impl GadgetBuilder {
 #[cfg(test)]
 mod tests {
     use crate::gadget_builder::GadgetBuilder;
+    use crate::expression::Expression;
 
     #[test]
     #[should_panic]
     fn invert_zero() {
         let mut builder = GadgetBuilder::new();
         let x = builder.wire();
-        builder.inverse(x.into());
+        builder.inverse(Expression::from(x));
         let gadget = builder.build();
 
         let mut values = values!(x => 0.into());

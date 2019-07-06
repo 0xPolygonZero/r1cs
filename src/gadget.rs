@@ -42,12 +42,13 @@ impl Gadget {
 mod tests {
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
+    use crate::expression::Expression;
 
     #[test]
     fn constraint_not_satisfied() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
-        builder.assert_equal(x.into(), y.into());
+        builder.assert_equal(Expression::from(x), Expression::from(y));
         let gadget = builder.build();
 
         let mut values = values!(x => 42.into(), y => 43.into());
@@ -60,7 +61,7 @@ mod tests {
     fn missing_generator() {
         let mut builder = GadgetBuilder::new();
         let (x, y, z) = (builder.wire(), builder.wire(), builder.wire());
-        builder.assert_product(x.into(), y.into(), z.into());
+        builder.assert_product(Expression::from(x), Expression::from(y), Expression::from(z));
         let gadget = builder.build();
 
         let mut values = values!(x => 2.into(), y => 3.into());
@@ -72,7 +73,7 @@ mod tests {
     fn missing_input() {
         let mut builder = GadgetBuilder::new();
         let x = builder.wire();
-        builder.inverse(x.into());
+        builder.inverse(Expression::from(x));
         let gadget = builder.build();
 
         let mut values = WireValues::new();

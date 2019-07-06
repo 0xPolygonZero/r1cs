@@ -1,44 +1,51 @@
 //! This module extends GadgetBuilder with boolean algebra methods.
 
+use core::borrow::Borrow;
+
 use crate::bits::BooleanExpression;
 use crate::gadget_builder::GadgetBuilder;
 use crate::expression::Expression;
 
 impl GadgetBuilder {
     /// The negation of a boolean value.
-    pub fn not(&mut self, x: BooleanExpression) -> BooleanExpression {
-        BooleanExpression::new_unsafe(Expression::one() - x.expression())
+    pub fn not<BE: Borrow<BooleanExpression>>(&mut self, x: BE) -> BooleanExpression {
+        BooleanExpression::new_unsafe(Expression::one() - x.borrow().expression())
     }
 
     /// The conjunction of two boolean values.
-    pub fn and(&mut self, x: BooleanExpression, y: BooleanExpression) -> BooleanExpression {
-        BooleanExpression::new_unsafe(self.product(x.expression().clone(), y.expression().clone()))
+    pub fn and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BooleanExpression>, BE2: Borrow<BooleanExpression> {
+        BooleanExpression::new_unsafe(self.product(x.borrow().expression(), y.borrow().expression()))
     }
 
     /// The disjunction of two boolean values.
-    pub fn or(&mut self, x: BooleanExpression, y: BooleanExpression) -> BooleanExpression {
+    pub fn or<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BooleanExpression>, BE2: Borrow<BooleanExpression> {
+        let x_exp = x.borrow().expression();
+        let y_exp = y.borrow().expression();
         BooleanExpression::new_unsafe(
-            x.expression()
-                + y.expression()
-                - self.product(x.expression().clone(), y.expression().clone()))
+            x_exp + y_exp - self.product(x_exp, y_exp))
     }
 
     /// The exclusive disjunction of two boolean values.
-    pub fn xor(&mut self, x: BooleanExpression, y: BooleanExpression) -> BooleanExpression {
-        BooleanExpression::new_unsafe(x.expression().clone() + y.expression().clone()
-            - self.product(x.expression().clone(), y.expression().clone()) * 2u128)
+    pub fn xor<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BooleanExpression>, BE2: Borrow<BooleanExpression> {
+        let x_exp = x.borrow().expression();
+        let y_exp = y.borrow().expression();
+        BooleanExpression::new_unsafe(x_exp + y_exp - self.product(x_exp, y_exp) * 2u128)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::gadget_builder::GadgetBuilder;
+    use crate::bits::BooleanExpression;
 
     #[test]
     fn and() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.boolean_wire(), builder.boolean_wire());
-        let and = builder.and(x.into(), y.into());
+        let and = builder.and(BooleanExpression::from(x), BooleanExpression::from(y));
         let gadget = builder.build();
 
         let mut values00 = boolean_values!(x => false, y => false);
@@ -62,7 +69,7 @@ mod tests {
     fn or() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.boolean_wire(), builder.boolean_wire());
-        let or = builder.or(x.into(), y.into());
+        let or = builder.or(BooleanExpression::from(x), BooleanExpression::from(y));
         let gadget = builder.build();
 
         let mut values00 = boolean_values!(x => false, y => false);
@@ -86,7 +93,7 @@ mod tests {
     fn xor() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.boolean_wire(), builder.boolean_wire());
-        let xor = builder.xor(x.into(), y.into());
+        let xor = builder.xor(BooleanExpression::from(x), BooleanExpression::from(y));
         let gadget = builder.build();
 
         let mut values00 = boolean_values!(x => false, y => false);

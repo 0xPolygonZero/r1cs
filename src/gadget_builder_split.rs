@@ -1,3 +1,6 @@
+//! This module extends GadgetBuilder with a method for splitting a field element into bits.
+
+use core::borrow::Borrow;
 use std::collections::HashMap;
 
 use num::BigUint;
@@ -10,11 +13,11 @@ use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
-    pub fn split(&mut self, x: Expression, bits: usize) -> BinaryExpression {
+    pub fn split<E: Borrow<Expression>>(&mut self, x: E, bits: usize) -> BinaryExpression {
         let binary_wire = self.binary_wire(bits);
 
         {
-            let x = x.clone();
+            let x = x.borrow().clone();
             let binary_wire = binary_wire.clone();
 
             self.generator(
@@ -35,7 +38,7 @@ impl GadgetBuilder {
             bit_weights.insert(wire.wire(), (BigUint::one() << i).into());
         }
         let weighted_sum = Expression::new(bit_weights);
-        self.assert_equal(x.into(), weighted_sum);
+        self.assert_equal(x, weighted_sum);
 
         // TODO: Needs a comparison to verify that no overflow occurred, i.e., that the sum is less
         // than the prime field size.
@@ -47,12 +50,13 @@ impl GadgetBuilder {
 #[cfg(test)]
 mod tests {
     use crate::gadget_builder::GadgetBuilder;
+    use crate::expression::Expression;
 
     #[test]
     fn split_19_32() {
         let mut builder = GadgetBuilder::new();
         let wire = builder.wire();
-        let bit_wires = builder.split(wire.into(), 32);
+        let bit_wires = builder.split(Expression::from(wire), 32);
         let gadget = builder.build();
 
         let mut wire_values = values!(wire.clone() => 19.into());

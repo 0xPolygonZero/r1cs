@@ -1,6 +1,8 @@
 //! This module extends GadgetBuilder with bitwise operations such as rotations, bitwise AND, and
 //! so forth.
 
+use core::borrow::Borrow;
+
 use crate::gadget_builder::GadgetBuilder;
 use crate::expression::Expression;
 use crate::wire::Wire;
@@ -14,19 +16,27 @@ impl GadgetBuilder {
 
     /// Rotate bits in the direction of greater significance.
     // TODO: Weird bit order issue...
-    pub fn bitwise_rotate_left(&mut self, x: Vec<Wire>, n: usize) -> Vec<Wire> {
+    pub fn bitwise_rotate_left<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
+                                                             -> BinaryExpression {
+        let x = x.borrow();
+
         let l = x.len();
         let n_min = n % l;
-        (0..l).map(|i| {
+        let bits = (0..l).map(|i| {
             if i >= n_min {
-                x[i - n_min]
+                x.bits[i - n_min].clone()
             } else {
-                x[i + l - n_min]
+                x.bits[i + l - n_min].clone()
             }
-        }).collect()
+        }).collect();
+        BinaryExpression { bits }
     }
 
-    pub fn bitwise_and(&mut self, x: BinaryExpression, y: BinaryExpression) -> BinaryExpression {
+    pub fn bitwise_and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let x = x.borrow();
+        let y = y.borrow();
+
         assert_eq!(x.len(), y.len());
         let l = x.len();
         let bits = (0..l).map(|i| {

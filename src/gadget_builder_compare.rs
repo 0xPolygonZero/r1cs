@@ -1,63 +1,73 @@
 //! This module extends GadgetBuilder with methods for comparing native field elements.
 
+use core::borrow::Borrow;
+
 use itertools::enumerate;
 
+use crate::bits::{BinaryExpression, BooleanExpression};
+use crate::expression::Expression;
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
-use crate::expression::Expression;
 use crate::wire_values::WireValues;
-use crate::bits::{BinaryExpression, BooleanExpression};
 
 impl GadgetBuilder {
     /// Assert that x < y.
-    pub fn assert_lt(&mut self, x: Expression, y: Expression) {
+    pub fn assert_lt<E1, E2>(&mut self, x: E1, y: E2)
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let lt = self.lt(x, y);
         self.assert_true(lt);
     }
 
     /// Assert that x <= y.
-    pub fn assert_le(&mut self, x: Expression, y: Expression) {
+    pub fn assert_le<E1, E2>(&mut self, x: E1, y: E2)
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let le = self.le(x, y);
         self.assert_true(le);
     }
 
     /// Assert that x > y.
-    pub fn assert_gt(&mut self, x: Expression, y: Expression) {
+    pub fn assert_gt<E1, E2>(&mut self, x: E1, y: E2)
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let gt = self.gt(x, y);
         self.assert_true(gt);
     }
 
     /// Assert that x >= y.
-    pub fn assert_ge(&mut self, x: Expression, y: Expression) {
+    pub fn assert_ge<E1, E2>(&mut self, x: E1, y: E2)
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let ge = self.ge(x, y);
         self.assert_true(ge);
     }
 
     /// x < y
-    pub fn lt(&mut self, x: Expression, y: Expression) -> BooleanExpression {
+    pub fn lt<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         self.cmp(x, y, true, true)
     }
 
     /// x <= y
-    pub fn le(&mut self, x: Expression, y: Expression) -> BooleanExpression {
+    pub fn le<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         self.cmp(x, y, true, false)
     }
 
     /// x > y
-    pub fn gt(&mut self, x: Expression, y: Expression) -> BooleanExpression {
+    pub fn gt<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         self.cmp(x, y, false, true)
     }
 
     /// x >= y
-    pub fn ge(&mut self, x: Expression, y: Expression) -> BooleanExpression {
+    pub fn ge<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         self.cmp(x, y, false, false)
     }
 
-    fn cmp(&mut self, x: Expression, y: Expression,
-           less: bool, strict: bool) -> BooleanExpression {
+    fn cmp<E1, E2>(&mut self, x: E1, y: E2, less: bool, strict: bool) -> BooleanExpression
+        where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let bits = FieldElement::max_bits();
-        let x_bits = self.split(x.into(), bits);
-        let y_bits = self.split(y.into(), bits);
+        let x_bits = self.split(x, bits);
+        let y_bits = self.split(y, bits);
         self.cmp_binary(x_bits, y_bits, less, strict)
     }
 
@@ -84,7 +94,7 @@ impl GadgetBuilder {
         let mask = self.wires(chunks);
         // Each mask bit wire must equal 0 or 1.
         for &m in &mask {
-            self.assert_boolean(m.into());
+            self.assert_boolean(Expression::from(m));
         }
         // The sum of all masks must equal 0 or 1, so that at most one mask can equal 1.
         let diff_exists = self.assert_boolean(Expression::sum(&mask));
@@ -105,14 +115,14 @@ impl GadgetBuilder {
                         seen_diff |= diff;
                         values.set(mask_bit, mask_bit_value.into());
                     }
-                }
+                },
             );
         }
 
         // Compute the dot product of the mask vector with (x_chunks - y_chunks).
         let mut diff_chunk = Expression::zero();
         for i in 0..chunks {
-            diff_chunk += self.product(mask[i].into(), x_chunks[i].clone() - y_chunks[i].clone());
+            diff_chunk += self.product(Expression::from(mask[i]), &x_chunks[i] - &y_chunks[i]);
         }
 
         // Verify that any more significant pairs of chunks are equal.
@@ -121,9 +131,9 @@ impl GadgetBuilder {
         for i in 1..chunks {
             // If diff_seen = 1, we require that x_chunk = y_chunk.
             // Equivalently, we require that diff_seen * (x_chunk - y_chunk) = 0.
-            self.assert_product(diff_seen.clone(),
-                                x_chunks[i].clone() - y_chunks[i].clone(),
-                                0.into());
+            self.assert_product(&diff_seen,
+                                &x_chunks[i] - &y_chunks[i],
+                                Expression::zero());
             diff_seen += Expression::from(mask[i]);
         }
 
@@ -132,9 +142,9 @@ impl GadgetBuilder {
         // comparison operation applied to the selected chunks will enforce that they differ.
         if !strict {
             let nonzero = self._if(diff_exists,
-                                   diff_chunk.clone(),
+                                   &diff_chunk,
                                    // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
-                                   42.into());
+                                   Expression::from(42));
             self.assert_nonzero(nonzero);
         }
 
@@ -182,19 +192,22 @@ impl GadgetBuilder {
 mod tests {
     use std::borrow::Borrow;
 
+    use crate::bits::BooleanExpression;
     use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
-    use crate::bits::BooleanExpression;
+    use crate::expression::Expression;
 
     #[test]
     fn comparisons() {
         let mut builder = GadgetBuilder::new();
         let (x, y) = (builder.wire(), builder.wire());
-        let lt = builder.lt(x.into(), y.into());
-        let le = builder.le(x.into(), y.into());
-        let gt = builder.gt(x.into(), y.into());
-        let ge = builder.ge(x.into(), y.into());
+        let x_exp = Expression::from(x);
+        let y_exp = Expression::from(y);
+        let lt = builder.lt(&x_exp, &y_exp);
+        let le = builder.le(&x_exp, &y_exp);
+        let gt = builder.gt(&x_exp, &y_exp);
+        let ge = builder.ge(&x_exp, &y_exp);
         let gadget = builder.build();
 
         let mut values_42_63 = values!(x => 42.into(), y => 63.into());
