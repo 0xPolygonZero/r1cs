@@ -7,6 +7,17 @@ An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode th
 An R1CS gadget is comprised of an R1CS instance and a witness generator which, given certain inputs, generates a complete witness which satisfies the instance.
 
 
+## Types
+
+A `Wire` represents an element of a witness vector in an R1CS instance. There are two kinds of wires: input wires and generated wires. This library does not have a notion of output wires; the output of a gadget is the entire witness vector.
+
+An `Expression` is a linear combination of wires.
+
+A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, `BooleanExpression` is an `Expression` which has been constrained to be binary.
+
+A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression` is a vector of `BooleanExpression`s.
+
+
 ## Basic example
 
 Here's a simple gadget which computes the cube of a field element:
@@ -34,11 +45,28 @@ assert_eq!(FieldElement::from(125), x_cubed.evaluate(&values));
 ```
 
 
-## Binary arithmetic
+## Boolean algebra
 
-The example above involved native field arithmetic, but this library also supports binary arithmetic.
+The example above involved native field arithmetic, but this library also supports boolean algebra. For example, here is a function which implements the boolean function `Maj`, as defined in the SHA-256 specification:
 
-TODO: Add an example.
+```rust
+fn maj(builder: &mut GadgetBuilder,
+       x: BooleanExpression,
+       y: BooleanExpression,
+       z: BooleanExpression) -> BooleanExpression {
+    let x_y = builder.and(&x, &y);
+    let x_z = builder.and(&x, &z);
+    let y_z = builder.and(&y, &z);
+    let x_y_xor_x_z = builder.xor(x_y, x_z);
+    builder.xor(x_y_xor_x_z, y_z)
+}
+```
+
+## Binary operations
+
+This library also supports bitwise operations, such as `bitwise_and`, and binary arithmetic operations, such as `binary_sum`.
+
+TODO: Add an example of binary arithmetic.
 
 
 ## Non-determinism
