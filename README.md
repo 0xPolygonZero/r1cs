@@ -15,8 +15,9 @@ Here's a simple gadget which computes the cube of a field element:
 // Create a gadget which takes a single input, x, and computes x*x*x.
 let mut builder = GadgetBuilder::new();
 let x = builder.wire();
-let x_squared = builder.product(x.into(), x.into());
-let x_cubed = builder.product(x_squared, x.into());
+let x_exp = Expression::from(x);
+let x_squared = builder.product(&x_exp, &x_exp);
+let x_cubed = builder.product(x_squared, x_exp);
 let gadget = builder.build();
 
 // This structure maps wires to their (field element) values. Since
