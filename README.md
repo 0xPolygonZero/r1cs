@@ -2,18 +2,16 @@
 
 This is a rust library for building R1CS gadgets, which are useful in SNARKs and other argument systems.
 
-An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode the following NP-complete decision problem: does there exist a witness `w` such that `Aw ∘ Bw = Cw`?
+An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode the following NP-complete decision problem: does there exist a witness vector `w` such that `Aw ∘ Bw = Cw`?
 
-An R1CS gadget is comprised of an R1CS instance and a witness generator which, given certain inputs, generates a complete witness which satisfies the instance.
+A *gadget* for some R1CS instance takes a set of inputs, which are a subset of the witness vector. If the given inputs are valid, it extends the input set into a complete witness vector which satisfies the R1CS instance.
 
 
 ## Types
 
-A `Wire` represents an element of a witness vector in an R1CS instance. There are two kinds of wires: input wires and generated wires. This library does not have a notion of output wires; the output of a gadget is the entire witness vector.
+A `Wire` represents an element of the witness vector. An `Expression` is a linear combination of wires.
 
-An `Expression` is a linear combination of wires.
-
-A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, `BooleanExpression` is an `Expression` which has been constrained to be binary.
+A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, a `BooleanExpression` is an `Expression` which has been constrained to be binary.
 
 A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression` is a vector of `BooleanExpression`s.
 
@@ -65,8 +63,6 @@ fn maj(builder: &mut GadgetBuilder,
 ## Binary operations
 
 This library also supports bitwise operations, such as `bitwise_and`, and binary arithmetic operations, such as `binary_sum`.
-
-TODO: Add an example of binary arithmetic.
 
 
 ## Non-determinism
