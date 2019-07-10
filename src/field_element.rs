@@ -9,6 +9,7 @@ use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
 use rand::Rng;
+use std::borrow::Borrow;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct FieldElement {
@@ -80,12 +81,12 @@ impl FieldElement {
             &FieldElement::size()))
     }
 
-    pub fn integer_division(&self, rhs: FieldElement) -> FieldElement {
-        FieldElement::from(self.value.clone() / rhs.value)
+    pub fn integer_division<F: Borrow<FieldElement>>(&self, rhs: F) -> FieldElement {
+        FieldElement::from(self.value.clone() / &rhs.borrow().value)
     }
 
-    pub fn integer_modulus(&self, rhs: FieldElement) -> FieldElement {
-        FieldElement::from(self.value.clone() % rhs.value)
+    pub fn integer_modulus<F: Borrow<FieldElement>>(&self, rhs: F) -> FieldElement {
+        FieldElement::from(self.value.clone() % &rhs.borrow().value)
     }
 
     /// The number of bits needed to encode this particular field element.

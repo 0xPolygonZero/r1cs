@@ -31,13 +31,12 @@ impl GadgetBuilder {
         let y_joined = y.join();
         let sum_joined = sum.join();
 
-        self.assert_equal(x_joined.clone() + y_joined.clone(), sum_joined);
+        self.assert_equal(&x_joined + &y_joined, sum_joined);
 
         self.generator(
             [x.dependencies(), y.dependencies()].concat(),
             move |values: &mut WireValues| {
-                let sum_value = (x_joined.clone() + y_joined.clone())
-                    .evaluate(values).value().clone();
+                let sum_value = (&x_joined + &y_joined).evaluate(values).value().clone();
                 values.set_binary_unsigned(sum_wire.clone(), sum_value);
             },
         );
@@ -56,7 +55,7 @@ impl GadgetBuilder {
     pub fn binary_sum_asserting_no_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
         where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
         let sum = self.binary_sum(x, y);
-        let overflow_bit = sum.bits[sum.len() - 1].clone();
+        let overflow_bit = &sum.bits[sum.len() - 1];
         self.assert_false(overflow_bit);
         sum.truncated(sum.len() - 1)
     }

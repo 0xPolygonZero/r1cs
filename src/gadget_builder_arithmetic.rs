@@ -62,7 +62,7 @@ impl GadgetBuilder {
         for (i, square) in enumerate(squares) {
             let b = (p >> i) & 1 != 0;
             if b {
-                product = self.product(product.clone(), square);
+                product = self.product(&product, square);
             }
         }
         product
@@ -117,7 +117,7 @@ impl GadgetBuilder {
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
                     let y_value = y.evaluate(values);
-                    values.set(q, x_value.integer_division(y_value.clone()));
+                    values.set(q, x_value.integer_division(&y_value));
                     values.set(r, x_value.integer_modulus(y_value));
                 },
             );
