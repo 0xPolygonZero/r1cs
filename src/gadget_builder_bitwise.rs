@@ -15,6 +15,7 @@ impl GadgetBuilder {
         BinaryExpression { bits }
     }
 
+    /// x & y
     pub fn bitwise_and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
         where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
         let x = x.borrow();
@@ -24,6 +25,34 @@ impl GadgetBuilder {
         let l = x.len();
         let bits = (0..l).map(|i| {
             self.and(x.bits[i].clone(), y.bits[i].clone())
+        }).collect();
+        BinaryExpression { bits }
+    }
+
+    /// x | y
+    pub fn bitwise_or<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let x = x.borrow();
+        let y = y.borrow();
+
+        assert_eq!(x.len(), y.len());
+        let l = x.len();
+        let bits = (0..l).map(|i| {
+            self.or(x.bits[i].clone(), y.bits[i].clone())
+        }).collect();
+        BinaryExpression { bits }
+    }
+
+    /// x | y
+    pub fn bitwise_xor<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let x = x.borrow();
+        let y = y.borrow();
+
+        assert_eq!(x.len(), y.len());
+        let l = x.len();
+        let bits = (0..l).map(|i| {
+            self.xor(x.bits[i].clone(), y.bits[i].clone())
         }).collect();
         BinaryExpression { bits }
     }
