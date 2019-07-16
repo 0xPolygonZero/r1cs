@@ -2,7 +2,6 @@
 pub mod wire_values;
 
 pub mod gadget_builder_boolean;
-pub mod bits;
 pub mod constraint;
 pub mod field_element;
 pub mod gadget;

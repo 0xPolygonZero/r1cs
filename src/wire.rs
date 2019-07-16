@@ -41,3 +41,38 @@ impl fmt::Display for Wire {
         }
     }
 }
+
+/// A `Wire` whose value is constrained to be binary.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub struct BooleanWire {
+    pub wire: Wire,
+}
+
+impl BooleanWire {
+    /// Construct a BooleanWire from an arbitrary wire. This is only safe if you separately
+    /// constrain the wire to equal 0 or 1.
+    ///
+    /// Users should not normally call this method directly; use a method like
+    /// `GadgetBuilder::boolean_wire()` instead.
+    pub fn new_unsafe(wire: Wire) -> Self {
+        BooleanWire { wire }
+    }
+
+    pub fn wire(&self) -> Wire {
+        self.wire.clone()
+    }
+}
+
+/// A "binary wire" which is comprised of several bits, each one being a boolean wire.
+#[derive(Clone, Debug)]
+pub struct BinaryWire {
+    /// The list of bits, ordered from least significant to most significant.
+    pub bits: Vec<BooleanWire>,
+}
+
+impl BinaryWire {
+    /// The number of bits.
+    pub fn len(&self) -> usize {
+        self.bits.len()
+    }
+}

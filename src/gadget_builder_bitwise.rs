@@ -3,8 +3,8 @@
 
 use core::borrow::Borrow;
 
-use crate::bits::BinaryExpression;
 use crate::gadget_builder::GadgetBuilder;
+use crate::expression::BinaryExpression;
 
 impl GadgetBuilder {
     /// ~x
@@ -60,7 +60,7 @@ impl GadgetBuilder {
 mod tests {
     use num::BigUint;
 
-    use crate::bits::BinaryExpression;
+    use crate::expression::BinaryExpression;
     use crate::gadget_builder::GadgetBuilder;
 
     #[test]

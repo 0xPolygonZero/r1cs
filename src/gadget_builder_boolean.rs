@@ -2,9 +2,8 @@
 
 use core::borrow::Borrow;
 
-use crate::bits::BooleanExpression;
 use crate::gadget_builder::GadgetBuilder;
-use crate::expression::Expression;
+use crate::expression::{Expression, BooleanExpression};
 
 impl GadgetBuilder {
     /// The negation of a boolean value.
@@ -39,7 +38,7 @@ impl GadgetBuilder {
 #[cfg(test)]
 mod tests {
     use crate::gadget_builder::GadgetBuilder;
-    use crate::bits::BooleanExpression;
+    use crate::expression::BooleanExpression;
 
     #[test]
     fn and() {

@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use num::BigUint;
 use num_traits::One;
 
-use crate::bits::{BinaryWire, BooleanWire, BooleanExpression};
 use crate::field_element::FieldElement;
-use crate::wire::Wire;
+use crate::wire::{Wire, BooleanWire, BinaryWire};
+use crate::expression::BooleanExpression;
 use std::borrow::Borrow;
 
 pub struct WireValues {

@@ -6,8 +6,7 @@ use std::collections::HashMap;
 use num::BigUint;
 use num_traits::One;
 
-use crate::bits::BinaryExpression;
-use crate::expression::Expression;
+use crate::expression::{Expression, BinaryExpression};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 

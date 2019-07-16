@@ -1,11 +1,10 @@
 use core::borrow::Borrow;
 
-use crate::bits::{BinaryWire, BooleanExpression, BooleanWire};
 use crate::constraint::Constraint;
-use crate::expression::Expression;
+use crate::expression::{Expression, BooleanExpression};
 use crate::field_element::FieldElement;
 use crate::gadget::Gadget;
-use crate::wire::Wire;
+use crate::wire::{Wire, BooleanWire, BinaryWire};
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
 
