@@ -6,6 +6,7 @@ use num_traits::One;
 use crate::bits::{BinaryWire, BooleanWire, BooleanExpression};
 use crate::field_element::FieldElement;
 use crate::wire::Wire;
+use std::borrow::Borrow;
 
 pub struct WireValues {
     values: HashMap<Wire, FieldElement>,
@@ -27,11 +28,6 @@ impl WireValues {
         BooleanExpression::from(wire).evaluate(self)
     }
 
-    pub fn get_all<'a, I>(&self, wires: I) -> Vec<FieldElement>
-        where I: Iterator<Item=&'a Wire> {
-        wires.map(|w| self.get(&w)).collect()
-    }
-
     pub fn set(&mut self, wire: Wire, value: FieldElement) {
         let old_value = self.values.insert(wire, value);
         assert!(old_value.is_none());
@@ -41,24 +37,17 @@ impl WireValues {
         self.set(wire.wire(), value.into());
     }
 
-    pub fn set_binary_unsigned(&mut self, wire: BinaryWire, value: BigUint) {
+    pub fn set_binary_unsigned<BW, BU>(&mut self, wire: BW, value: BU)
+        where BW: Borrow<BinaryWire>, BU: Borrow<BigUint> {
+        let wire = wire.borrow();
+        let value = value.borrow();
+
         let l = wire.len();
         assert!(value.bits() <= l, "Value does not fit");
-        for i in 0..l {
-            let value = ((value.clone() >> i) & BigUint::one()).is_one();
-            self.set_boolean(wire.bits[i].clone(), value);
-        }
-    }
 
-    pub fn set_all<W, F>(&mut self, mut wires: W, mut values: F)
-        where W: Iterator<Item=Wire>,
-              F: Iterator<Item=FieldElement> {
-        loop {
-            match (wires.next(), values.next()) {
-                (Some(wire), Some(value)) => self.set(wire, value),
-                (None, None) => break,
-                _ => panic!("different numbers of wires and values"),
-            }
+        for i in 0..l {
+            let value = ((value >> i) & BigUint::one()).is_one();
+            self.set_boolean(wire.bits[i], value);
         }
     }
 

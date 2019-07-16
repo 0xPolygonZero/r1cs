@@ -71,13 +71,39 @@ mod tests {
         let gadget = builder.build();
 
         // ~00010011 = 11101100.
-        let mut values = binary_unsigned_values!(x => 0b00010011u32.into());
+        let mut values = binary_unsigned_values!(x => BigUint::from(0b00010011u32));
         gadget.execute(&mut values);
         assert_eq!(BigUint::from(0b11101100u32), not_x.evaluate(&values));
     }
 
     #[test]
     fn bitwise_rotate_dec_significance() {
-        // TODO
+        let mut builder = GadgetBuilder::new();
+        let x = builder.binary_wire(8);
+        let x_rot = builder.bitwise_rotate_dec_significance(BinaryExpression::from(&x), 3);
+        let gadget = builder.build();
+
+        // 00000000 >> 3 = 00000000.
+        let mut values_zero = binary_unsigned_values!(&x => BigUint::from(0u32));
+        gadget.execute(&mut values_zero);
+        assert_eq!(BigUint::from(0u32), x_rot.evaluate(&values_zero));
+
+        // 00010011 >> 3 = 01100010.
+        let mut values_nonzero = binary_unsigned_values!(x => BigUint::from(0b00010011u32));
+        gadget.execute(&mut values_nonzero);
+        assert_eq!(BigUint::from(0b01100010u32), x_rot.evaluate(&values_nonzero));
+    }
+
+    #[test]
+    fn bitwise_rotate_dec_significance_multiple_wraps() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.binary_wire(8);
+        let x_rot = builder.bitwise_rotate_dec_significance(BinaryExpression::from(&x), 19);
+        let gadget = builder.build();
+
+        // 00010011 >> 19 = 00010011 >> 3 = 01100010.
+        let mut values = binary_unsigned_values!(x => BigUint::from(0b00010011u32));
+        gadget.execute(&mut values);
+        assert_eq!(BigUint::from(0b01100010u32), x_rot.evaluate(&values));
     }
 }
