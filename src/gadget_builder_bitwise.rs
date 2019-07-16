@@ -15,6 +15,19 @@ impl GadgetBuilder {
         BinaryExpression { bits }
     }
 
+    pub fn bitwise_and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let x = x.borrow();
+        let y = y.borrow();
+
+        assert_eq!(x.len(), y.len());
+        let l = x.len();
+        let bits = (0..l).map(|i| {
+            self.and(x.bits[i].clone(), y.bits[i].clone())
+        }).collect();
+        BinaryExpression { bits }
+    }
+
     /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
     /// in most programming languages.
     pub fn bitwise_rotate_dec_significance<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
@@ -38,19 +51,6 @@ impl GadgetBuilder {
             // This is equivalent to (i - n) mod l.
             let from_idx = (l + i - n % l) % l;
             x.bits[from_idx].clone()
-        }).collect();
-        BinaryExpression { bits }
-    }
-
-    pub fn bitwise_and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
-        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
-        let x = x.borrow();
-        let y = y.borrow();
-
-        assert_eq!(x.len(), y.len());
-        let l = x.len();
-        let bits = (0..l).map(|i| {
-            self.and(x.bits[i].clone(), y.bits[i].clone())
         }).collect();
         BinaryExpression { bits }
     }
