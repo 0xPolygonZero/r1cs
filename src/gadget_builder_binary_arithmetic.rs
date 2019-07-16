@@ -25,7 +25,7 @@ impl GadgetBuilder {
                 "Binary operands are too large to fit an a field element.");
 
         let sum_wire = self.binary_wire(sum_bits);
-        let sum = BinaryExpression::from(sum_wire.clone());
+        let sum = BinaryExpression::from(&sum_wire);
 
         let x_joined = x.join();
         let y_joined = y.join();

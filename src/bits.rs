@@ -77,9 +77,15 @@ impl BooleanExpression {
     }
 }
 
+impl From<&BooleanWire> for BooleanExpression {
+    fn from(wire: &BooleanWire) -> Self {
+        BooleanExpression::new_unsafe(wire.wire.into())
+    }
+}
+
 impl From<BooleanWire> for BooleanExpression {
     fn from(wire: BooleanWire) -> Self {
-        BooleanExpression::new_unsafe(wire.wire.into())
+        BooleanExpression::from(&wire)
     }
 }
 
@@ -169,12 +175,18 @@ impl BinaryExpression {
     }
 }
 
-impl From<BinaryWire> for BinaryExpression {
-    fn from(wire: BinaryWire) -> Self {
+impl From<&BinaryWire> for BinaryExpression {
+    fn from(wire: &BinaryWire) -> Self {
         BinaryExpression {
-            bits: wire.bits.into_iter()
+            bits: wire.bits.iter()
                 .map(|bool_wire| BooleanExpression::from(bool_wire))
                 .collect()
         }
+    }
+}
+
+impl From<BinaryWire> for BinaryExpression {
+    fn from(wire: BinaryWire) -> Self {
+        BinaryExpression::from(&wire)
     }
 }

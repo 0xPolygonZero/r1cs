@@ -3,31 +3,41 @@
 
 use core::borrow::Borrow;
 
-use crate::gadget_builder::GadgetBuilder;
-use crate::expression::Expression;
-use crate::wire::Wire;
 use crate::bits::BinaryExpression;
+use crate::gadget_builder::GadgetBuilder;
 
 impl GadgetBuilder {
     /// ~x
-    pub fn bitwise_not(&mut self, x: Vec<Wire>) -> Vec<Expression> {
-        x.iter().map(|w| Expression::one() - Expression::from(w)).collect()
+    pub fn bitwise_not<BE: Borrow<BinaryExpression>>(&mut self, x: BE) -> BinaryExpression {
+        let bits = x.borrow().bits.iter()
+            .map(|w| self.not(w))
+            .collect();
+        BinaryExpression { bits }
     }
 
-    /// Rotate bits in the direction of greater significance.
-    // TODO: Weird bit order issue...
-    pub fn bitwise_rotate_left<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
-                                                             -> BinaryExpression {
+    /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
+    /// in most programming languages.
+    pub fn bitwise_rotate_dec_significance<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
+                                                                         -> BinaryExpression {
         let x = x.borrow();
-
         let l = x.len();
-        let n_min = n % l;
         let bits = (0..l).map(|i| {
-            if i >= n_min {
-                x.bits[i - n_min].clone()
-            } else {
-                x.bits[i + l - n_min].clone()
-            }
+            let from_idx = (i + n) % l;
+            x.bits[from_idx].clone()
+        }).collect();
+        BinaryExpression { bits }
+    }
+
+    /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
+    /// in most programming languages.
+    pub fn bitwise_rotate_inc_significance<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
+                                                                         -> BinaryExpression {
+        let x = x.borrow();
+        let l = x.len();
+        let bits = (0..l).map(|i| {
+            // This is equivalent to (i - n) mod l.
+            let from_idx = (l + i - n % l) % l;
+            x.bits[from_idx].clone()
         }).collect();
         BinaryExpression { bits }
     }
@@ -48,16 +58,26 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
+    use num::BigUint;
+
+    use crate::bits::BinaryExpression;
     use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn bitwise_not() {
         let mut builder = GadgetBuilder::new();
-        let x = builder.wire();
-        builder.bitwise_not(vec![x]);
+        let x = builder.binary_wire(8);
+        let not_x = builder.bitwise_not(BinaryExpression::from(&x));
         let gadget = builder.build();
 
-        let mut values = values!(x => 5.into());
+        // ~00010011 = 11101100.
+        let mut values = binary_unsigned_values!(x => 0b00010011u32.into());
         gadget.execute(&mut values);
+        assert_eq!(BigUint::from(0b11101100u32), not_x.evaluate(&values));
+    }
+
+    #[test]
+    fn bitwise_rotate_dec_significance() {
+        // TODO
     }
 }
