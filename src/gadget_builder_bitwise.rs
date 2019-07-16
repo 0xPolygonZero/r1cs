@@ -106,6 +106,43 @@ mod tests {
     }
 
     #[test]
+    fn bitwise_and() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.binary_wire(8);
+        let y = builder.binary_wire(8);
+        let x_and_y = builder.bitwise_and(BinaryExpression::from(&x), BinaryExpression::from(&y));
+        let gadget = builder.build();
+
+        // 0 & 0 = 0.
+        let mut values_0_0 = binary_unsigned_values!(
+            &x => BigUint::from(0u32),
+            &y => BigUint::from(0u32));
+        gadget.execute(&mut values_0_0);
+        assert_eq!(BigUint::from(0u32), x_and_y.evaluate(&values_0_0));
+
+        // 255 & 0 = 0.
+        let mut values_255_0 = binary_unsigned_values!(
+            &x => BigUint::from(0b11111111u32),
+            &y => BigUint::from(0u32));
+        gadget.execute(&mut values_255_0);
+        assert_eq!(BigUint::from(0u32), x_and_y.evaluate(&values_255_0));
+
+        // 255 & 255 = 255.
+        let mut values_255_255 = binary_unsigned_values!(
+            &x => BigUint::from(0b11111111u32),
+            &y => BigUint::from(0b11111111u32));
+        gadget.execute(&mut values_255_255);
+        assert_eq!(BigUint::from(0b11111111u32), x_and_y.evaluate(&values_255_255));
+
+        // 11111100 & 00111111 = 00111100.
+        let mut values_11111100_00111111 = binary_unsigned_values!(
+            &x => BigUint::from(0b11111100u32),
+            &y => BigUint::from(0b00111111u32));
+        gadget.execute(&mut values_11111100_00111111);
+        assert_eq!(BigUint::from(0b00111100u32), x_and_y.evaluate(&values_11111100_00111111));
+    }
+
+    #[test]
     fn bitwise_rotate_dec_significance() {
         let mut builder = GadgetBuilder::new();
         let x = builder.binary_wire(8);
