@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
@@ -9,7 +10,6 @@ use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
 use rand::Rng;
-use std::borrow::Borrow;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct FieldElement {

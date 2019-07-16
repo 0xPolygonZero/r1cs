@@ -136,8 +136,8 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::gadget_builder::GadgetBuilder;
     use crate::expression::Expression;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     #[should_panic]

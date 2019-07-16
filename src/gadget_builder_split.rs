@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use num::BigUint;
 use num_traits::One;
 
-use crate::expression::{Expression, BinaryExpression};
+use crate::expression::{BinaryExpression, Expression};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
@@ -48,8 +48,8 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::gadget_builder::GadgetBuilder;
     use crate::expression::Expression;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn split_19_32() {

@@ -4,7 +4,7 @@ use core::borrow::Borrow;
 
 use itertools::enumerate;
 
-use crate::expression::{BooleanExpression, Expression, BinaryExpression};
+use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;

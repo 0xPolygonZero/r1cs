@@ -40,9 +40,9 @@ impl Gadget {
 
 #[cfg(test)]
 mod tests {
+    use crate::expression::Expression;
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
-    use crate::expression::Expression;
 
     #[test]
     fn constraint_not_satisfied() {

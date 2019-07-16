@@ -7,12 +7,12 @@
 //! need to go through a method like `assert_binary` which would constrain the input to equal 0 or
 //! 1.
 
-use std::collections::HashSet;
-
 use num::BigUint;
 use num_traits::{One, Zero};
+use std::collections::HashSet;
 
 use crate::expression::Expression;
 use crate::field_element::FieldElement;
 use crate::wire::Wire;
 use crate::wire_values::WireValues;
+

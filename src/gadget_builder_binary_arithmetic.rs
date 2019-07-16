@@ -1,9 +1,9 @@
 use core::borrow::Borrow;
 
+use crate::expression::BinaryExpression;
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
-use crate::expression::BinaryExpression;
 
 impl GadgetBuilder {
     /// Add two binary values in a widening manner. The result will be one bit longer than the

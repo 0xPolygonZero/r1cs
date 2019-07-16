@@ -3,8 +3,8 @@
 
 use core::borrow::Borrow;
 
-use crate::gadget_builder::GadgetBuilder;
 use crate::expression::BinaryExpression;
+use crate::gadget_builder::GadgetBuilder;
 
 impl GadgetBuilder {
     /// ~x

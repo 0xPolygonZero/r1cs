@@ -1,10 +1,10 @@
 use core::borrow::Borrow;
 
 use crate::constraint::Constraint;
-use crate::expression::{Expression, BooleanExpression};
+use crate::expression::{BooleanExpression, Expression};
 use crate::field_element::FieldElement;
 use crate::gadget::Gadget;
-use crate::wire::{Wire, BooleanWire, BinaryWire};
+use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
 
@@ -168,9 +168,9 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
+    use crate::expression::Expression;
     use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::expression::Expression;
 
     #[test]
     fn assert_binary_0_1() {

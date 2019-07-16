@@ -1,12 +1,12 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 
 use num::BigUint;
 use num_traits::One;
 
-use crate::field_element::FieldElement;
-use crate::wire::{Wire, BooleanWire, BinaryWire};
 use crate::expression::BooleanExpression;
-use std::borrow::Borrow;
+use crate::field_element::FieldElement;
+use crate::wire::{BinaryWire, BooleanWire, Wire};
 
 pub struct WireValues {
     values: HashMap<Wire, FieldElement>,
