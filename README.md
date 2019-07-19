@@ -11,7 +11,7 @@ A *gadget* for some R1CS instance takes a set of inputs, which are a subset of t
 
 A `Wire` represents an element of the witness vector. An `Expression` is a linear combination of wires.
 
-A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, a `BooleanExpression` is an `Expression` which has been constrained to be binary.
+A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, a `BooleanExpression` is an `Expression` which has been so constrained.
 
 A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression` is a vector of `BooleanExpression`s.
 
@@ -67,7 +67,29 @@ This library also supports bitwise operations, such as `bitwise_and`, and binary
 
 ## Non-determinism
 
-This library also supports non-deterministic computations. For a simple example, see `GadgetBuilder`'s `inverse` method, which is defined in in `gadget_builder_arithmetic.rs`.
+Suppose we wish to compute the multiplicative inverse of a field element `x`. While this is possible in a deterministic arithmetic circuit, it is prohibitively expensive. What we can do instead is have the user compute `x_inv = 1 / x`, provide the result as a witness element, and add a constraint in the R1CS instance to verify that `x * x_inv = 1`.
+
+`GadgetBuilder` supports such non-deterministic computations via its `generator` method, which can be used like so:
+
+```rust
+fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
+    let x_inv = builder.wire();
+    builder.assert_product(&x, Expression::from(x_inv), Expression::one());
+
+    builder.generator(
+        x.dependencies(),
+        move |values: &mut WireValues| {
+            let x_value = x.evaluate(values);
+            let inverse_value = x_value.multiplicative_inverse();
+            values.set(x_inv, inverse_value);
+        },
+    );
+
+    x_inv.into()
+}
+```
+
+Note that this is roughly equivalent to `GadgetBuilder`'s built-in `inverse` method, with slight modifications for readability.
 
 
 ## Disclaimer
