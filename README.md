@@ -77,7 +77,8 @@ fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
     let x_inv = builder.wire();
 
     // Add the constraint x * x_inv = 1.
-    builder.assert_product(&x, Expression::from(x_inv), Expression::one());
+    builder.assert_product(&x, Expression::from(x_inv),
+                           Expression::one());
 
     // Non-deterministically generate x_inv = 1 / x.
     builder.generator(
