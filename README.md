@@ -67,15 +67,19 @@ This library also supports bitwise operations, such as `bitwise_and`, and binary
 
 ## Non-determinism
 
-Suppose we wish to compute the multiplicative inverse of a field element `x`. While this is possible in a deterministic arithmetic circuit, it is prohibitively expensive. What we can do instead is have the user compute `x_inv = 1 / x`, provide the result as a witness element, and add a constraint in the R1CS instance to verify that `x * x_inv = 1`.
+Suppose we wish to compute the multiplicative inverse of a field element `x`. While this is possible to do in a deterministic arithmetic circuit, it is prohibitively expensive. What we can do instead is have the user compute `x_inv = 1 / x`, provide the result as a witness element, and add a constraint in the R1CS instance to verify that `x * x_inv = 1`.
 
 `GadgetBuilder` supports such non-deterministic computations via its `generator` method, which can be used like so:
 
 ```rust
 fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
+    // Create a new witness element for x_inv.
     let x_inv = builder.wire();
+
+    // Add the constraint x * x_inv = 1.
     builder.assert_product(&x, Expression::from(x_inv), Expression::one());
 
+    // Non-deterministically generate x_inv = 1 / x.
     builder.generator(
         x.dependencies(),
         move |values: &mut WireValues| {
@@ -85,6 +89,7 @@ fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
         },
     );
 
+    // Output x_inv.
     x_inv.into()
 }
 ```
