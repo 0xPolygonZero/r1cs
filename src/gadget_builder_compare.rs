@@ -189,13 +189,11 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Borrow;
-
-    use crate::expression::BooleanExpression;
     use crate::expression::Expression;
     use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::wire_values::WireValues;
+    use crate::test_util::assert_eq_false;
+    use crate::test_util::assert_eq_true;
 
     #[test]
     fn comparisons() {
@@ -211,24 +209,24 @@ mod tests {
 
         let mut values_42_63 = values!(x => 42.into(), y => 63.into());
         assert!(gadget.execute(&mut values_42_63));
-        assert_true(&lt, &values_42_63);
-        assert_true(&le, &values_42_63);
-        assert_false(&gt, &values_42_63);
-        assert_false(&ge, &values_42_63);
+        assert_eq_true(&lt, &values_42_63);
+        assert_eq_true(&le, &values_42_63);
+        assert_eq_false(&gt, &values_42_63);
+        assert_eq_false(&ge, &values_42_63);
 
         let mut values_42_42 = values!(x => 42.into(), y => 42.into());
         assert!(gadget.execute(&mut values_42_42));
-        assert_false(&lt, &values_42_42);
-        assert_true(&le, &values_42_42);
-        assert_false(&gt, &values_42_42);
-        assert_true(&ge, &values_42_42);
+        assert_eq_false(&lt, &values_42_42);
+        assert_eq_true(&le, &values_42_42);
+        assert_eq_false(&gt, &values_42_42);
+        assert_eq_true(&ge, &values_42_42);
 
         let mut values_42_41 = values!(x => 42.into(), y => 41.into());
         assert!(gadget.execute(&mut values_42_41));
-        assert_false(&lt, &values_42_41);
-        assert_false(&le, &values_42_41);
-        assert_true(&gt, &values_42_41);
-        assert_true(&ge, &values_42_41);
+        assert_eq_false(&lt, &values_42_41);
+        assert_eq_false(&le, &values_42_41);
+        assert_eq_true(&gt, &values_42_41);
+        assert_eq_true(&ge, &values_42_41);
 
         // This is a white box sort of test. Since the implementation is based on chunks of roughly
         // 32 bits each, all the numbers in the preceding tests will fit into the least significant
@@ -239,17 +237,9 @@ mod tests {
             x => FieldElement::from(1u128 << 80 | 1u128),
             y => FieldElement::from(1u128 << 81));
         assert!(gadget.execute(&mut values_large_lt));
-        assert_true(&lt, &values_large_lt);
-        assert_true(&le, &values_large_lt);
-        assert_false(&gt, &values_large_lt);
-        assert_false(&ge, &values_large_lt);
-    }
-
-    fn assert_true<T: Borrow<BooleanExpression>>(x: T, values: &WireValues) {
-        assert_eq!(true, x.borrow().evaluate(values));
-    }
-
-    fn assert_false<T: Borrow<BooleanExpression>>(x: T, values: &WireValues) {
-        assert_eq!(false, x.borrow().evaluate(values));
+        assert_eq_true(&lt, &values_large_lt);
+        assert_eq_true(&le, &values_large_lt);
+        assert_eq_false(&gt, &values_large_lt);
+        assert_eq_false(&ge, &values_large_lt);
     }
 }

@@ -4,7 +4,7 @@ use core::borrow::Borrow;
 
 use itertools::enumerate;
 
-use crate::expression::Expression;
+use crate::expression::{BooleanExpression, Expression};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
@@ -127,7 +127,7 @@ impl GadgetBuilder {
     }
 
     /// if x | y { 1 } else { 0 }.
-    pub fn divides<E1, E2>(&mut self, x: E1, y: E2) -> Expression
+    pub fn divides<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
         where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let m = self.modulus(y, x);
         self.zero(m)
@@ -138,6 +138,7 @@ impl GadgetBuilder {
 mod tests {
     use crate::expression::Expression;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::{assert_eq_false, assert_eq_true};
 
     #[test]
     #[should_panic]
@@ -149,5 +150,26 @@ mod tests {
 
         let mut values = values!(x => 0.into());
         gadget.execute(&mut values);
+    }
+
+    #[test]
+    fn divides() {
+        let mut builder = GadgetBuilder::new();
+        let x = builder.wire();
+        let y = builder.wire();
+        let divides = builder.divides(Expression::from(x), Expression::from(y));
+        let gadget = builder.build();
+
+        let mut values_1_1 = values!(x => 1.into(), y => 1.into());
+        gadget.execute(&mut values_1_1);
+        assert_eq_true(&divides, &values_1_1);
+
+        let mut values_3_6 = values!(x => 3.into(), y => 6.into());
+        gadget.execute(&mut values_3_6);
+        assert_eq_true(&divides, &values_3_6);
+
+        let mut values_3_7 = values!(x => 3.into(), y => 7.into());
+        gadget.execute(&mut values_3_7);
+        assert_eq_false(&divides, &values_3_7);
     }
 }

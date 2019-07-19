@@ -55,35 +55,39 @@ impl GadgetBuilder {
         self.witness_generators.push(WitnessGenerator::new(dependencies, generate));
     }
 
-    /// if x == y { 1 } else { 0 }.
-    pub fn equal<E1, E2>(&mut self, x: E1, y: E2) -> Expression
+    /// x == y
+    pub fn equal<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
         where E1: Borrow<Expression>, E2: Borrow<Expression> {
         self.zero(x.borrow() - y.borrow())
     }
 
-    /// if x == 0 { 1 } else { 0 }.
-    pub fn zero<E: Borrow<Expression>>(&mut self, x: E) -> Expression {
-        Expression::one() - self.nonzero(x)
+    /// x == 0
+    pub fn zero<E: Borrow<Expression>>(&mut self, x: E) -> BooleanExpression {
+        let nonzero = self.nonzero(x);
+        self.not(nonzero)
     }
 
-    /// if x != 0 { 1 } else { 0 }.
-    pub fn nonzero<E: Borrow<Expression>>(&mut self, x: E) -> Expression {
+    /// x != 0
+    pub fn nonzero<E: Borrow<Expression>>(&mut self, x: E) -> BooleanExpression {
+        let x = x.borrow();
+
         // See the Pinocchio paper for an explanation.
         let (y, m) = (self.wire(), self.wire());
-        self.assert_product(x.borrow(), Expression::from(m), Expression::from(y));
-        self.assert_product(Expression::one() - Expression::from(y), x.borrow(), Expression::zero());
+        let (y_exp, m_exp) = (Expression::from(y), Expression::from(m));
+        self.assert_product(x, m_exp, &y_exp);
+        self.assert_product(Expression::one() - &y_exp, x, Expression::zero());
 
         {
-            let x = x.borrow().clone();
+            let x = x.clone();
             let y = y.clone();
             self.generator(
                 x.dependencies(),
                 move |values: &mut WireValues| {
                     let x_value = x.evaluate(values);
-                    let y_value: FieldElement = if x_value.is_nonzero() {
-                        1.into()
+                    let y_value = if x_value.is_nonzero() {
+                        FieldElement::one()
                     } else {
-                        0.into()
+                        FieldElement::zero()
                     };
                     let m_value: FieldElement = if x_value.is_nonzero() {
                         &y_value / x_value
@@ -97,7 +101,8 @@ impl GadgetBuilder {
             );
         }
 
-        y.into()
+        // y can only be 0 or 1 based on the constraints above.
+        BooleanExpression::new_unsafe(y_exp)
     }
 
     /// if c { x } else { y }. Assumes c is binary.
@@ -169,8 +174,8 @@ impl GadgetBuilder {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::{assert_eq_false, assert_eq_true};
 
     #[test]
     fn assert_binary_0_1() {
@@ -209,14 +214,14 @@ mod tests {
 
         let mut values_7_7 = values!(x => 7.into(), y => 7.into());
         assert!(gadget.execute(&mut values_7_7));
-        assert_eq!(FieldElement::one(), equal.evaluate(&values_7_7));
+        assert_eq_true(&equal, &values_7_7);
 
         let mut values_6_7 = values!(x => 6.into(), y => 7.into());
         assert!(gadget.execute(&mut values_6_7));
-        assert_eq!(FieldElement::zero(), equal.evaluate(&values_6_7));
+        assert_eq_false(&equal, &values_6_7);
 
         let mut values_7_13 = values!(x => 7.into(), y => 13.into());
         assert!(gadget.execute(&mut values_7_13));
-        assert_eq!(FieldElement::zero(), equal.evaluate(&values_7_13));
+        assert_eq_false(&equal, &values_7_13);
     }
 }

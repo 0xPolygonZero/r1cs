@@ -14,3 +14,6 @@ pub mod gadget_builder_split;
 pub mod expression;
 pub mod wire;
 pub mod witness_generator;
+
+#[cfg(test)]
+mod test_util;
