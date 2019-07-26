@@ -106,10 +106,12 @@ impl GadgetBuilder {
     }
 
     /// if c { x } else { y }. Assumes c is binary.
-    pub fn _if<BE, E1, E2>(&mut self, c: BE, x: E1, y: E2) -> Expression
+    pub fn selection<BE, E1, E2>(&mut self, c: BE, x: E1, y: E2) -> Expression
         where BE: Borrow<BooleanExpression>, E1: Borrow<Expression>, E2: Borrow<Expression> {
-        let not_c = self.not(c.borrow());
-        self.product(c.borrow().expression(), x) + self.product(not_c.expression(), y)
+        let c = c.borrow();
+        let x = x.borrow();
+        let y = y.borrow();
+        y + self.product(c.expression(), x - y)
     }
 
     /// Assert that x * y = z;

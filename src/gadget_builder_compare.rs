@@ -140,9 +140,9 @@ impl GadgetBuilder {
         // this check for non-strict comparisons though, since for strict comparisons, the
         // comparison operation applied to the selected chunks will enforce that they differ.
         if !strict {
-            let nonzero = self._if(diff_exists,
-                                   &diff_chunk,
-                                   // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
+            let nonzero = self.selection(diff_exists,
+                                         &diff_chunk,
+                                         // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
                                    Expression::from(42));
             self.assert_nonzero(nonzero);
         }
