@@ -1,4 +1,4 @@
-# Rusty Gadgets
+# R1CS
 
 This is a rust library for building R1CS gadgets, which are useful in SNARKs and other argument systems.
 
