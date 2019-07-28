@@ -12,6 +12,8 @@ use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
+    // TODO: Add a require_canonical option. If it's enabled, we would assert that the weighted sum
+    // does not overflow, i.e. that it is less than the field size.
     pub fn split<E: Borrow<Expression>>(&mut self, x: E, bits: usize) -> BinaryExpression {
         let binary_wire = self.binary_wire(bits);
 
@@ -38,9 +40,6 @@ impl GadgetBuilder {
         }
         let weighted_sum = Expression::new(bit_weights);
         self.assert_equal(x, weighted_sum);
-
-        // TODO: Needs a comparison to verify that no overflow occurred, i.e., that the sum is less
-        // than the prime field size.
 
         binary_wire.into()
     }
