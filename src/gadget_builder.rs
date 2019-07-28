@@ -175,10 +175,10 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::expression::{Expression, BooleanExpression};
+    use crate::expression::{BooleanExpression, Expression};
+    use crate::field_element::FieldElement;
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::{assert_eq_false, assert_eq_true};
-    use crate::field_element::FieldElement;
 
     #[test]
     fn assert_binary_0_1() {
