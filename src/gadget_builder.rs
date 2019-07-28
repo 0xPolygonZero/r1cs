@@ -175,9 +175,10 @@ impl GadgetBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::expression::Expression;
+    use crate::expression::{Expression, BooleanExpression};
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::{assert_eq_false, assert_eq_true};
+    use crate::field_element::FieldElement;
 
     #[test]
     fn assert_binary_0_1() {
@@ -205,6 +206,27 @@ mod tests {
         // With x = 2, the constraint should NOT be satisfied.
         let mut values2 = values!(x => 2.into());
         assert!(!gadget.execute(&mut values2));
+    }
+
+    #[test]
+    fn selection() {
+        let mut builder = GadgetBuilder::new();
+        let (c, x, y) = (builder.boolean_wire(), builder.wire(), builder.wire());
+        let selection = builder.selection(
+            BooleanExpression::from(c), Expression::from(x), Expression::from(y));
+        let gadget = builder.build();
+
+        let values_3_5 = values!(x => 3.into(), y => 5.into());
+
+        let mut values_0_3_5 = values_3_5.clone();
+        values_0_3_5.set_boolean(c, false);
+        assert!(gadget.execute(&mut values_0_3_5));
+        assert_eq!(FieldElement::from(5), selection.evaluate(&values_0_3_5));
+
+        let mut values_1_3_5 = values_3_5.clone();
+        values_1_3_5.set_boolean(c, true);
+        assert!(gadget.execute(&mut values_1_3_5));
+        assert_eq!(FieldElement::from(3), selection.evaluate(&values_1_3_5));
     }
 
     #[test]

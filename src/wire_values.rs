@@ -8,6 +8,7 @@ use crate::expression::BooleanExpression;
 use crate::field_element::FieldElement;
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WireValues {
     values: HashMap<Wire, FieldElement>,
 }
