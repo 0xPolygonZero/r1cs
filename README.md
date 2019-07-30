@@ -85,8 +85,8 @@ fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
         x.dependencies(),
         move |values: &mut WireValues| {
             let x_value = x.evaluate(values);
-            let inverse_value = x_value.multiplicative_inverse();
-            values.set(x_inv, inverse_value);
+            let x_inv_value = x_value.multiplicative_inverse();
+            values.set(x_inv, x_inv_value);
         },
     );
 
