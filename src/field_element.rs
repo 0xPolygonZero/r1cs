@@ -125,7 +125,7 @@ impl FromStr for FieldElement {
     type Err = ParseBigIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BigUint::from_str(s).map(|n| FieldElement::from(n))
+        BigUint::from_str(s).map(FieldElement::from)
     }
 }
 
@@ -330,6 +330,7 @@ impl Div<FieldElement> for &FieldElement {
 impl Div<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: &FieldElement) -> FieldElement {
         self * rhs.multiplicative_inverse()
     }

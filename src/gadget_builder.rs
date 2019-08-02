@@ -15,6 +15,8 @@ pub struct GadgetBuilder {
 }
 
 /// A utility for building `Gadget`s. See the readme for examples.
+// Default for a builder seems weird.
+#[allow(clippy::new_without_default)]
 impl GadgetBuilder {
     pub fn new() -> Self {
         GadgetBuilder {

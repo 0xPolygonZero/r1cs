@@ -57,7 +57,7 @@ impl Expression {
     /// Return Some(c) if this is a constant c, otherwise None.
     pub fn as_constant(&self) -> Option<FieldElement> {
         if self.num_terms() == 1 {
-            self.coefficients.get(&Wire::ONE).map(|c| c.clone())
+            self.coefficients.get(&Wire::ONE).cloned()
         } else {
             None
         }
@@ -65,9 +65,7 @@ impl Expression {
 
     /// Return a vector of all wires that this expression depends on.
     pub fn dependencies(&self) -> Vec<Wire> {
-        self.coefficients.keys()
-            .map(|w| *w)
-            .collect()
+        self.coefficients.keys().copied().collect()
     }
 
     pub fn evaluate(&self, wire_values: &WireValues) -> FieldElement {
@@ -157,7 +155,7 @@ impl Add<&Expression> for &Expression {
     fn add(self, rhs: &Expression) -> Expression {
         let mut merged_coefficients = self.coefficients.clone();
         for (wire, coefficient) in rhs.coefficients.clone() {
-            *merged_coefficients.entry(wire).or_insert(FieldElement::zero()) += coefficient
+            *merged_coefficients.entry(wire).or_insert_with(FieldElement::zero) += coefficient
         }
         Expression::new(merged_coefficients)
     }
@@ -249,7 +247,7 @@ impl Mul<&FieldElement> for &Expression {
     fn mul(self, rhs: &FieldElement) -> Expression {
         Expression::new(
             self.coefficients.iter()
-                .map(|(k, v)| (k.clone(), v * rhs))
+                .map(|(k, v)| (*k, v * rhs))
                 .collect())
     }
 }
@@ -268,7 +266,7 @@ impl Mul<u128> for &Expression {
     fn mul(self, rhs: u128) -> Expression {
         Expression::new(
             self.coefficients.iter()
-                .map(|(k, v)| (k.clone(), v * rhs))
+                .map(|(k, v)| (*k, v * rhs))
                 .collect())
     }
 }
@@ -373,6 +371,7 @@ pub struct BinaryExpression {
     pub bits: Vec<BooleanExpression>,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl BinaryExpression {
     /// The number of bits.
     pub fn len(&self) -> usize {
@@ -442,7 +441,7 @@ impl From<&BinaryWire> for BinaryExpression {
     fn from(wire: &BinaryWire) -> Self {
         BinaryExpression {
             bits: wire.bits.iter()
-                .map(|bool_wire| BooleanExpression::from(bool_wire))
+                .map(BooleanExpression::from)
                 .collect()
         }
     }

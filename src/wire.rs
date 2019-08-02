@@ -59,7 +59,7 @@ impl BooleanWire {
     }
 
     pub fn wire(&self) -> Wire {
-        self.wire.clone()
+        self.wire
     }
 }
 
@@ -70,6 +70,7 @@ pub struct BinaryWire {
     pub bits: Vec<BooleanWire>,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl BinaryWire {
     /// The number of bits.
     pub fn len(&self) -> usize {

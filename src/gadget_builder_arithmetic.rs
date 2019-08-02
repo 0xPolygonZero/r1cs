@@ -28,7 +28,6 @@ impl GadgetBuilder {
         {
             let x = x.clone();
             let y = y.clone();
-            let product = product.clone();
             self.generator(
                 [x.dependencies(), y.dependencies()].concat(),
                 move |values: &mut WireValues| {
