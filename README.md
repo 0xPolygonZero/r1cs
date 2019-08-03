@@ -1,4 +1,4 @@
-# R1CS
+# R1CS ![Crates.io](https://img.shields.io/crates/v/r1cs)
 
 This is a rust library for building R1CS gadgets, which are useful in SNARKs and other argument systems.
 
