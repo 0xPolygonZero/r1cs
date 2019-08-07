@@ -17,6 +17,10 @@ impl Gadget {
     pub fn execute(&self, wire_values: &mut WireValues) -> bool {
         let mut pending_generators: Vec<&WitnessGenerator> = self.witness_generators.iter().collect();
 
+        // TODO: This repeatedly enumerates all generators, whether or not any of their dependencies
+        // have been generated. A better approach would be to create a map from wires to generators
+        // which depend on those wires. Then when a wire is assigned a value, we could efficiently
+        // check for generators which are now ready to run, and place them in a queue.
         loop {
             let mut made_progress = false;
             pending_generators.retain(|generator| {
