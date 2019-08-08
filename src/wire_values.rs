@@ -56,6 +56,10 @@ impl WireValues {
         self.values.contains_key(wire)
     }
 
+    pub fn contains_boolean(&self, wire: &BooleanWire) -> bool {
+        self.contains(&wire.wire)
+    }
+
     pub fn contains_all<'a>(&self, wires: &mut impl Iterator<Item=&'a Wire>) -> bool {
         wires.all(|wire| self.contains(wire))
     }

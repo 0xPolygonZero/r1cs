@@ -60,3 +60,5 @@ impl GadgetBuilder {
         sum.truncated(sum.len() - 1)
     }
 }
+
+// TODO tests

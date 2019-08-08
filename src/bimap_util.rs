@@ -11,7 +11,6 @@ use std::hash::Hash;
 /// arbitrary one of them will be returned.
 pub fn bimap_from_lists<T: Eq + Hash>(a: Vec<T>, b: Vec<T>) -> BiMap<usize, usize> {
     assert_eq!(a.len(), b.len(), "Vectors differ in length");
-    let n = a.len();
 
     let mut b_values_to_indices = HashMap::new();
     for (i, value) in enumerate(b) {

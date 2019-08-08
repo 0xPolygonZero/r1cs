@@ -38,6 +38,8 @@ impl Gadget {
             }
         }
 
+        assert_eq!(pending_generators.len(), 0, "Some generators never received inputs");
+
         self.constraints.iter().all(|constraint| constraint.evaluate(wire_values))
     }
 }
