@@ -79,29 +79,26 @@ impl GadgetBuilder {
         self.assert_product(x, m_exp, &y_exp);
         self.assert_product(Expression::one() - &y_exp, x, Expression::zero());
 
-        {
-            let x = x.clone();
-            let y = y.clone();
-            self.generator(
-                x.dependencies(),
-                move |values: &mut WireValues| {
-                    let x_value = x.evaluate(values);
-                    let y_value = if x_value.is_nonzero() {
-                        FieldElement::one()
-                    } else {
-                        FieldElement::zero()
-                    };
-                    let m_value: FieldElement = if x_value.is_nonzero() {
-                        &y_value / x_value
-                    } else {
-                        // The value of m doesn't matter if x = 0.
-                        42.into()
-                    };
-                    values.set(m, m_value);
-                    values.set(y, y_value);
-                },
-            );
-        }
+        let x = x.clone();
+        self.generator(
+            x.dependencies(),
+            move |values: &mut WireValues| {
+                let x_value = x.evaluate(values);
+                let y_value = if x_value.is_nonzero() {
+                    FieldElement::one()
+                } else {
+                    FieldElement::zero()
+                };
+                let m_value: FieldElement = if x_value.is_nonzero() {
+                    &y_value / x_value
+                } else {
+                    // The value of m doesn't matter if x = 0.
+                    42.into()
+                };
+                values.set(m, m_value);
+                values.set(y, y_value);
+            },
+        );
 
         // y can only be 0 or 1 based on the constraints above.
         BooleanExpression::new_unsafe(y_exp)
