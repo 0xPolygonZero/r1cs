@@ -7,7 +7,7 @@ An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode th
 A *gadget* for some R1CS instance takes a set of inputs, which are a subset of the witness vector. If the given inputs are valid, it extends the input set into a complete witness vector which satisfies the R1CS instance.
 
 
-## Types
+## Basic building blocks
 
 A `Wire` represents an element of the witness vector. An `Expression` is a linear combination of wires.
 
