@@ -65,6 +65,13 @@ fn maj(builder: &mut GadgetBuilder,
 This library also supports bitwise operations, such as `bitwise_and`, and binary arithmetic operations, such as `binary_sum`.
 
 
+## Permutation networks
+
+To verify that two lists are permutations of one another, you can use `assert_permutation`. This is implemented using AS-Waksman permutation networks, which permute `n` items using roughly `n log_2(n) - n` switches. `assert_permutation` uses two constraints per switch: one "is boolean" check and one constraint for routing.
+
+Permutation networks make it easy to implement sorting gadgets, which we provide in the form of `sort_ascending` and `sort_descending`.
+
+
 ## Non-determinism
 
 Suppose we wish to compute the multiplicative inverse of a field element `x`. While this is possible to do in a deterministic arithmetic circuit, it is prohibitively expensive. What we can do instead is have the user compute `x_inv = 1 / x`, provide the result as a witness element, and add a constraint in the R1CS instance to verify that `x * x_inv = 1`.
