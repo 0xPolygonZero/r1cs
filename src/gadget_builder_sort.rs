@@ -11,15 +11,14 @@ use crate::wire_values::WireValues;
 impl GadgetBuilder {
     /// Sorts field elements in ascending order.
     pub fn sort_ascending(&mut self, inputs: &[Expression]) -> Vec<Expression> {
-        let input_vec: Vec<Expression> = inputs.into_iter().map(|e| e.clone()).collect();
-        let n = input_vec.len();
+        let n = inputs.len();
 
         let output_wires: Vec<Wire> = self.wires(n);
         let outputs: Vec<Expression> = output_wires.iter().map(Expression::from).collect();
 
         // First we assert that the input and output lists are permutations of one another, i.e.,
         // that they contain the same values.
-        self.assert_permutation(&input_vec, &outputs);
+        self.assert_permutation(inputs, &outputs);
 
         // Then, we assert the order of each adjacent pair of output values.
         for i in 0..(n - 1) {
@@ -28,12 +27,13 @@ impl GadgetBuilder {
             self.assert_le(a, b);
         }
 
+        let inputs = inputs.to_vec();
         self.generator(
-            input_vec.iter().flat_map(Expression::dependencies).collect(),
+            inputs.iter().flat_map(Expression::dependencies).collect(),
             move |values: &mut WireValues| {
                 // Evaluate all the inputs, sort that list of field elements, and output that.
                 let mut items: Vec<FieldElement> =
-                    input_vec.iter().map(|e| e.evaluate(values)).collect();
+                    inputs.iter().map(|e| e.evaluate(values)).collect();
                 items.sort();
                 for (i, item) in enumerate(items) {
                     values.set(output_wires[i], item);
