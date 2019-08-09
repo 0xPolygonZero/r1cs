@@ -24,7 +24,7 @@ impl Gadget {
         loop {
             let mut made_progress = false;
             pending_generators.retain(|generator| {
-                if wire_values.contains_all(&mut generator.inputs()) {
+                if wire_values.contains_all(generator.inputs()) {
                     generator.generate(wire_values);
                     made_progress = true;
                     false

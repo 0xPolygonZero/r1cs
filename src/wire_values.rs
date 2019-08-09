@@ -20,9 +20,10 @@ impl WireValues {
         WireValues { values }
     }
 
-    pub fn get(&self, wire: &Wire) -> FieldElement {
-        assert!(self.values.contains_key(wire), "No value for {}", wire);
-        self.values[wire].clone()
+    // TODO: Return reference?
+    pub fn get(&self, wire: Wire) -> FieldElement {
+        assert!(self.values.contains_key(&wire), "No value for {}", wire);
+        self.values[&wire].clone()
     }
 
     pub fn get_boolean(&self, wire: BooleanWire) -> bool {
@@ -52,16 +53,16 @@ impl WireValues {
         }
     }
 
-    pub fn contains(&self, wire: &Wire) -> bool {
-        self.values.contains_key(wire)
+    pub fn contains(&self, wire: Wire) -> bool {
+        self.values.contains_key(&wire)
     }
 
-    pub fn contains_boolean(&self, wire: &BooleanWire) -> bool {
-        self.contains(&wire.wire)
+    pub fn contains_boolean(&self, wire: BooleanWire) -> bool {
+        self.contains(wire.wire)
     }
 
-    pub fn contains_all<'a>(&self, wires: &mut impl Iterator<Item=&'a Wire>) -> bool {
-        wires.all(|wire| self.contains(wire))
+    pub fn contains_all(&self, wires: &[Wire]) -> bool {
+        wires.iter().all(|&wire| self.contains(wire))
     }
 }
 

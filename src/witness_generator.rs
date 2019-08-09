@@ -15,8 +15,8 @@ impl WitnessGenerator {
         }
     }
 
-    pub fn inputs(&self) -> impl Iterator<Item = &Wire> {
-        self.inputs.iter()
+    pub fn inputs(&self) -> &[Wire] {
+        &self.inputs
     }
 
     pub fn generate(&self, values: &mut WireValues) {

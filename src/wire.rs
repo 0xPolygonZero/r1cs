@@ -58,7 +58,7 @@ impl BooleanWire {
         BooleanWire { wire }
     }
 
-    pub fn wire(&self) -> Wire {
+    pub fn wire(self) -> Wire {
         self.wire
     }
 }

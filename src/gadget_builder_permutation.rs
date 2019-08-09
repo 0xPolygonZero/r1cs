@@ -162,7 +162,7 @@ fn route(a_values: Vec<FieldElement>, b_values: Vec<FieldElement>,
             return;
         }
 
-        if values.contains_boolean(&switches[other_side][other_switch_i]) {
+        if values.contains_boolean(switches[other_side][other_switch_i]) {
             // The other switch has already been routed.
             return;
         }
@@ -223,7 +223,7 @@ fn route(a_values: Vec<FieldElement>, b_values: Vec<FieldElement>,
             } else {
                 // We can route any switch next. Continue our scan for pending switches.
                 while scan_index[side] < switches[side].len()
-                    && values.contains_boolean(&switches[side][scan_index[side]]) {
+                    && values.contains_boolean(switches[side][scan_index[side]]) {
                     scan_index[side] += 1;
                 }
                 if scan_index[side] < switches[side].len() {
