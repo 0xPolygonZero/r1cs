@@ -1,11 +1,14 @@
 //! This module extends GadgetBuilder with a method for splitting a field element into bits.
 
-use crate::gadget_builder::GadgetBuilder;
-use crate::wire_values::WireValues;
-use crate::expression::Expression;
-use crate::wire::Wire;
-use crate::field_element::FieldElement;
+use std::cmp::Ordering;
+
 use itertools::enumerate;
+
+use crate::expression::Expression;
+use crate::field_element::FieldElement;
+use crate::gadget_builder::GadgetBuilder;
+use crate::wire::Wire;
+use crate::wire_values::WireValues;
 
 impl GadgetBuilder {
     /// Sorts field elements in ascending order.
@@ -34,7 +37,6 @@ impl GadgetBuilder {
                 let mut items: Vec<FieldElement> =
                     input_vec.iter().map(|e| e.evaluate(values)).collect();
                 items.sort();
-
                 for (i, item) in enumerate(items) {
                     values.set(output_wires[i], item);
                 }
@@ -42,16 +44,23 @@ impl GadgetBuilder {
 
         outputs
     }
+
+    /// Sorts field elements in descending order.
+    pub fn sort_descending(&mut self, inputs: &[Expression]) -> Vec<Expression> {
+        let mut items = self.sort_ascending(inputs);
+        items.reverse();
+        items
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::gadget_builder::GadgetBuilder;
     use crate::field_element::FieldElement;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
-    fn sort_4() {
+    fn sort_4_ascending() {
         let mut builder = GadgetBuilder::new();
         let (a, b, c, d) = (builder.wire(), builder.wire(), builder.wire(), builder.wire());
         let outputs = builder.sort_ascending(&vec![
@@ -64,5 +73,21 @@ mod tests {
         assert_eq!(FieldElement::from(1), outputs[1].evaluate(&values));
         assert_eq!(FieldElement::from(4), outputs[2].evaluate(&values));
         assert_eq!(FieldElement::from(7), outputs[3].evaluate(&values));
+    }
+
+    #[test]
+    fn sort_4_descending() {
+        let mut builder = GadgetBuilder::new();
+        let (a, b, c, d) = (builder.wire(), builder.wire(), builder.wire(), builder.wire());
+        let outputs = builder.sort_descending(&vec![
+            Expression::from(a), Expression::from(b), Expression::from(c), Expression::from(d)]);
+        let gadget = builder.build();
+
+        let mut values = values!(a => 4.into(), b => 7.into(), c => 0.into(), d => 1.into());
+        assert!(gadget.execute(&mut values));
+        assert_eq!(FieldElement::from(7), outputs[0].evaluate(&values));
+        assert_eq!(FieldElement::from(4), outputs[1].evaluate(&values));
+        assert_eq!(FieldElement::from(1), outputs[2].evaluate(&values));
+        assert_eq!(FieldElement::from(0), outputs[3].evaluate(&values));
     }
 }
