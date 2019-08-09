@@ -18,6 +18,7 @@ pub struct FieldElement {
 
 impl FieldElement {
     /// The prime field size.
+    // TODO: Make this configurable in GadgetBuilder.
     pub fn size() -> BigUint {
         BigUint::from_str(
             "21888242871839275222246405745257275088548364400416034343698204186575808495617").unwrap()
