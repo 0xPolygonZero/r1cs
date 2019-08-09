@@ -1,12 +1,13 @@
 //! This module extends GadgetBuilder with a method for verifying permutations.
 
+use std::collections::HashMap;
+
 use crate::bimap_util::bimap_from_lists;
 use crate::expression::{BooleanExpression, Expression};
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire::{BooleanWire, Wire};
 use crate::wire_values::WireValues;
-use std::collections::HashMap;
 
 impl GadgetBuilder {
     /// Assert that two lists of expressions evaluate to permutations of one another.
@@ -237,8 +238,8 @@ fn route(a_values: Vec<FieldElement>, b_values: Vec<FieldElement>,
 
 #[cfg(test)]
 mod tests {
-    use crate::gadget_builder::GadgetBuilder;
     use crate::expression::Expression;
+    use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
 
     #[test]

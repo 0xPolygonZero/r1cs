@@ -1,8 +1,8 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 
 use bimap::BiMap;
 use itertools::enumerate;
-use std::hash::Hash;
 
 /// Given two lists which are permutations of one another, creates a BiMap which maps an index in
 /// one list to an index in the other list with the same associated value.
