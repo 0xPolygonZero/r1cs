@@ -20,10 +20,9 @@ impl WireValues {
         WireValues { values }
     }
 
-    // TODO: Return reference?
-    pub fn get(&self, wire: Wire) -> FieldElement {
+    pub fn get(&self, wire: Wire) -> &FieldElement {
         assert!(self.values.contains_key(&wire), "No value for {}", wire);
-        self.values[&wire].clone()
+        &self.values[&wire]
     }
 
     pub fn get_boolean(&self, wire: BooleanWire) -> bool {
