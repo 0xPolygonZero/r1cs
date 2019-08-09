@@ -352,6 +352,18 @@ impl Shl<usize> for &FieldElement {
     }
 }
 
+impl fmt::Display for FieldElement {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        // As a UX optimization, display "-1" for the largest field element.
+        let s = if self.is_one() {
+            "-1".to_string()
+        } else {
+            self.value.to_string()
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::iter;
@@ -424,16 +436,11 @@ mod tests {
         assert_eq!(false, x.bit(5));
         assert_eq!(false, x.bit(6));
     }
-}
 
-impl fmt::Display for FieldElement {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // As a UX optimization, display "-1" for the largest field element.
-        let s = if self.is_one() {
-            "-1".to_string()
-        } else {
-            self.value.to_string()
-        };
-        write!(f, "{}", s)
+    #[test]
+    fn order() {
+        for i in 0..50 {
+            assert!(FieldElement::from(i) < FieldElement::from(i + 1));
+        }
     }
 }
