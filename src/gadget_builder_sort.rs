@@ -1,7 +1,5 @@
 //! This module extends GadgetBuilder with a method for splitting a field element into bits.
 
-use std::cmp::Ordering;
-
 use itertools::enumerate;
 
 use crate::expression::Expression;

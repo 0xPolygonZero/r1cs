@@ -160,15 +160,15 @@ mod tests {
         let gadget = builder.build();
 
         let mut values_1_1 = values!(x => 1.into(), y => 1.into());
-        gadget.execute(&mut values_1_1);
+        assert!(gadget.execute(&mut values_1_1));
         assert_eq_true(&divides, &values_1_1);
 
         let mut values_3_6 = values!(x => 3.into(), y => 6.into());
-        gadget.execute(&mut values_3_6);
+        assert!(gadget.execute(&mut values_3_6));
         assert_eq_true(&divides, &values_3_6);
 
         let mut values_3_7 = values!(x => 3.into(), y => 7.into());
-        gadget.execute(&mut values_3_7);
+        assert!(gadget.execute(&mut values_3_7));
         assert_eq_false(&divides, &values_3_7);
     }
 }

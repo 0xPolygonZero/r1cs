@@ -101,7 +101,7 @@ mod tests {
 
         // ~00010011 = 11101100.
         let mut values = binary_unsigned_values!(x => BigUint::from(0b00010011u32));
-        gadget.execute(&mut values);
+        assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(0b11101100u32), not_x.evaluate(&values));
     }
 
@@ -117,28 +117,28 @@ mod tests {
         let mut values_0_0 = binary_unsigned_values!(
             &x => BigUint::from(0u32),
             &y => BigUint::from(0u32));
-        gadget.execute(&mut values_0_0);
+        assert!(gadget.execute(&mut values_0_0));
         assert_eq!(BigUint::from(0u32), x_and_y.evaluate(&values_0_0));
 
         // 255 & 0 = 0.
         let mut values_255_0 = binary_unsigned_values!(
             &x => BigUint::from(0b11111111u32),
             &y => BigUint::from(0u32));
-        gadget.execute(&mut values_255_0);
+        assert!(gadget.execute(&mut values_255_0));
         assert_eq!(BigUint::from(0u32), x_and_y.evaluate(&values_255_0));
 
         // 255 & 255 = 255.
         let mut values_255_255 = binary_unsigned_values!(
             &x => BigUint::from(0b11111111u32),
             &y => BigUint::from(0b11111111u32));
-        gadget.execute(&mut values_255_255);
+        assert!(gadget.execute(&mut values_255_255));
         assert_eq!(BigUint::from(0b11111111u32), x_and_y.evaluate(&values_255_255));
 
         // 11111100 & 00111111 = 00111100.
         let mut values_11111100_00111111 = binary_unsigned_values!(
             &x => BigUint::from(0b11111100u32),
             &y => BigUint::from(0b00111111u32));
-        gadget.execute(&mut values_11111100_00111111);
+        assert!(gadget.execute(&mut values_11111100_00111111));
         assert_eq!(BigUint::from(0b00111100u32), x_and_y.evaluate(&values_11111100_00111111));
     }
 
@@ -151,12 +151,12 @@ mod tests {
 
         // 00000000 >> 3 = 00000000.
         let mut values_zero = binary_unsigned_values!(&x => BigUint::from(0u32));
-        gadget.execute(&mut values_zero);
+        assert!(gadget.execute(&mut values_zero));
         assert_eq!(BigUint::from(0u32), x_rot.evaluate(&values_zero));
 
         // 00010011 >> 3 = 01100010.
         let mut values_nonzero = binary_unsigned_values!(x => BigUint::from(0b00010011u32));
-        gadget.execute(&mut values_nonzero);
+        assert!(gadget.execute(&mut values_nonzero));
         assert_eq!(BigUint::from(0b01100010u32), x_rot.evaluate(&values_nonzero));
     }
 
@@ -169,7 +169,7 @@ mod tests {
 
         // 00010011 >> 19 = 00010011 >> 3 = 01100010.
         let mut values = binary_unsigned_values!(x => BigUint::from(0b00010011u32));
-        gadget.execute(&mut values);
+        assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(0b01100010u32), x_rot.evaluate(&values));
     }
 }
