@@ -79,13 +79,9 @@ impl GadgetBuilder {
         // first pair of chunks to differ. Credit to Ahmed Kosba who described this technique.
         let chunk_bits = GadgetBuilder::cmp_chunk_bits(operand_bits);
         let x_chunks: Vec<Expression> = x_bits.chunks(chunk_bits)
-            .into_iter()
-            .map(|c| c.join())
-            .collect();
+            .iter().map(BinaryExpression::join).collect();
         let y_chunks: Vec<Expression> = y_bits.chunks(chunk_bits)
-            .into_iter()
-            .map(|c| c.join())
-            .collect();
+            .iter().map(BinaryExpression::join).collect();
         let chunks = x_chunks.len();
 
         // Create a mask bit for each chunk index. masks[i] must equal 1 iff i is the first index
