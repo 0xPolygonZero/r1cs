@@ -38,6 +38,34 @@ impl GadgetBuilder {
         self.assert_true(ge);
     }
 
+    /// Assert that x < y.
+    pub fn assert_lt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let lt = self.lt_binary(x, y);
+        self.assert_true(lt);
+    }
+
+    /// Assert that x <= y.
+    pub fn assert_le_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let le = self.le_binary(x, y);
+        self.assert_true(le);
+    }
+
+    /// Assert that x > y.
+    pub fn assert_gt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let gt = self.gt_binary(x, y);
+        self.assert_true(gt);
+    }
+
+    /// Assert that x >= y.
+    pub fn assert_ge_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        let ge = self.ge_binary(x, y);
+        self.assert_true(ge);
+    }
+
     /// x < y
     pub fn lt<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
         where E1: Borrow<Expression>, E2: Borrow<Expression> {
@@ -62,15 +90,39 @@ impl GadgetBuilder {
         self.cmp(x, y, false, false)
     }
 
+    /// x < y
+    pub fn lt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        self.cmp_binary(x.borrow(), y.borrow(), true, true)
+    }
+
+    /// x <= y
+    pub fn le_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        self.cmp_binary(x.borrow(), y.borrow(), true, false)
+    }
+
+    /// x > y
+    pub fn gt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        self.cmp_binary(x.borrow(), y.borrow(), false, true)
+    }
+
+    /// x >= y
+    pub fn ge_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression
+        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+        self.cmp_binary(x.borrow(), y.borrow(), false, false)
+    }
+
     fn cmp<E1, E2>(&mut self, x: E1, y: E2, less: bool, strict: bool) -> BooleanExpression
         where E1: Borrow<Expression>, E2: Borrow<Expression> {
         let bits = FieldElement::max_bits();
         let x_bits = self.split(x, bits);
         let y_bits = self.split(y, bits);
-        self.cmp_binary(x_bits, y_bits, less, strict)
+        self.cmp_binary(&x_bits, &y_bits, less, strict)
     }
 
-    fn cmp_binary(&mut self, x_bits: BinaryExpression, y_bits: BinaryExpression,
+    fn cmp_binary(&mut self, x_bits: &BinaryExpression, y_bits: &BinaryExpression,
                   less: bool, strict: bool) -> BooleanExpression {
         assert_eq!(x_bits.len(), y_bits.len());
         let operand_bits = x_bits.len();
