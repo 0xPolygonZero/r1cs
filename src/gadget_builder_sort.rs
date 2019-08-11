@@ -2,7 +2,7 @@
 
 use itertools::enumerate;
 
-use crate::expression::Expression;
+use crate::expression::{Expression, BinaryExpression};
 use crate::field_element::FieldElement;
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire::Wire;
@@ -20,13 +20,16 @@ impl GadgetBuilder {
         // that they contain the same values.
         self.assert_permutation(inputs, &outputs);
 
-        // Then, we assert the order of each adjacent pair of output values.
-        // TODO: This is wasteful because each intermediate output is split twice.
-        // Better to split them all at once and then call a (to be added) binary comparison method.
+        // Then, we assert the order of each adjacent pair of output values. Note that assert_le
+        // would internally split each input into its binary form. To avoid splitting intermediate
+        // items twice, we will explicitly split here, and call assert_le_binary instead.
+        let outputs_binary: Vec<BinaryExpression> = outputs.iter()
+            .map(|e| self.split(e, FieldElement::max_bits()))
+            .collect();
         for i in 0..(n - 1) {
-            let a = &outputs[i];
-            let b = &outputs[i + 1];
-            self.assert_le(a, b);
+            let a = &outputs_binary[i];
+            let b = &outputs_binary[i + 1];
+            self.assert_le_binary(a, b);
         }
 
         let inputs = inputs.to_vec();
