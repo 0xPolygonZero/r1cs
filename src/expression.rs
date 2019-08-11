@@ -28,8 +28,7 @@ impl Expression {
     }
 
     /// The sum of zero or more wires, each with an implied coefficient of 1.
-    pub fn sum<'a, T>(wires: T) -> Self
-        where T: IntoIterator<Item=&'a Wire> {
+    pub fn sum(wires: &[Wire]) -> Self {
         Expression {
             coefficients: wires.into_iter()
                 .map(|&v| (v, FieldElement::one()))
