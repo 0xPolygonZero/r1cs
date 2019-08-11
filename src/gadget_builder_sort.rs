@@ -21,6 +21,8 @@ impl GadgetBuilder {
         self.assert_permutation(inputs, &outputs);
 
         // Then, we assert the order of each adjacent pair of output values.
+        // TODO: This is wasteful because each intermediate output is split twice.
+        // Better to split them all at once and then call a (to be added) binary comparison method.
         for i in 0..(n - 1) {
             let a = &outputs[i];
             let b = &outputs[i + 1];
