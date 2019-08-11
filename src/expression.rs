@@ -30,7 +30,7 @@ impl Expression {
     /// The sum of zero or more wires, each with an implied coefficient of 1.
     pub fn sum(wires: &[Wire]) -> Self {
         Expression {
-            coefficients: wires.into_iter()
+            coefficients: wires.iter()
                 .map(|&v| (v, FieldElement::one()))
                 .collect()
         }
