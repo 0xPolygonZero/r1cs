@@ -2,22 +2,22 @@ use core::borrow::Borrow;
 
 use crate::constraint::Constraint;
 use crate::expression::{BooleanExpression, Expression};
-use crate::field_element::FieldElement;
+use crate::field::{Element, Field};
 use crate::gadget::Gadget;
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
 
-pub struct GadgetBuilder {
+pub struct GadgetBuilder<F: Field> {
     next_wire_index: u32,
-    constraints: Vec<Constraint>,
-    witness_generators: Vec<WitnessGenerator>,
+    constraints: Vec<Constraint<F>>,
+    witness_generators: Vec<WitnessGenerator<F>>,
 }
 
 /// A utility for building `Gadget`s. See the readme for examples.
 // Default for a builder seems weird.
 #[allow(clippy::new_without_default)]
-impl GadgetBuilder {
+impl<F: Field> GadgetBuilder<F> {
     pub fn new() -> Self {
         GadgetBuilder {
             next_wire_index: 1,
@@ -53,24 +53,24 @@ impl GadgetBuilder {
 
     /// Add a generator function for setting certain wire values.
     pub fn generator<T>(&mut self, dependencies: Vec<Wire>, generate: T)
-        where T: Fn(&mut WireValues) + 'static {
+        where T: Fn(&mut WireValues<F>) + 'static {
         self.witness_generators.push(WitnessGenerator::new(dependencies, generate));
     }
 
     /// x == y
-    pub fn equal<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression
-        where E1: Borrow<Expression>, E2: Borrow<Expression> {
+    pub fn equal<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
+        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
         self.zero(x.borrow() - y.borrow())
     }
 
     /// x == 0
-    pub fn zero<E: Borrow<Expression>>(&mut self, x: E) -> BooleanExpression {
+    pub fn zero<E: Borrow<Expression<F>>>(&mut self, x: E) -> BooleanExpression<F> {
         let nonzero = self.nonzero(x);
         self.not(nonzero)
     }
 
     /// x != 0
-    pub fn nonzero<E: Borrow<Expression>>(&mut self, x: E) -> BooleanExpression {
+    pub fn nonzero<E: Borrow<Expression<F>>>(&mut self, x: E) -> BooleanExpression<F> {
         let x = x.borrow();
 
         // See the Pinocchio paper for an explanation.
@@ -82,18 +82,18 @@ impl GadgetBuilder {
         let x = x.clone();
         self.generator(
             x.dependencies(),
-            move |values: &mut WireValues| {
+            move |values: &mut WireValues<F>| {
                 let x_value = x.evaluate(values);
                 let y_value = if x_value.is_nonzero() {
-                    FieldElement::one()
+                    Element::one()
                 } else {
-                    FieldElement::zero()
+                    Element::zero()
                 };
-                let m_value: FieldElement = if x_value.is_nonzero() {
+                let m_value: Element<F> = if x_value.is_nonzero() {
                     &y_value / x_value
                 } else {
                     // The value of m doesn't matter if x = 0.
-                    42.into()
+                    Element::from(42u8)
                 };
                 values.set(m, m_value);
                 values.set(y, y_value);
@@ -105,8 +105,8 @@ impl GadgetBuilder {
     }
 
     /// if c { x } else { y }. Assumes c is binary.
-    pub fn selection<BE, E1, E2>(&mut self, c: BE, x: E1, y: E2) -> Expression
-        where BE: Borrow<BooleanExpression>, E1: Borrow<Expression>, E2: Borrow<Expression> {
+    pub fn selection<BE, E1, E2>(&mut self, c: BE, x: E1, y: E2) -> Expression<F>
+        where BE: Borrow<BooleanExpression<F>>, E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
         let c = c.borrow();
         let x = x.borrow();
         let y = y.borrow();
@@ -115,7 +115,7 @@ impl GadgetBuilder {
 
     /// Assert that x * y = z;
     pub fn assert_product<E1, E2, E3>(&mut self, x: E1, y: E2, z: E3)
-        where E1: Borrow<Expression>, E2: Borrow<Expression>, E3: Borrow<Expression> {
+        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>, E3: Borrow<Expression<F>> {
         self.constraints.push(Constraint {
             a: x.borrow().clone(),
             b: y.borrow().clone(),
@@ -124,47 +124,47 @@ impl GadgetBuilder {
     }
 
     /// Assert that the given quantity is in [0, 1].
-    pub fn assert_boolean<E: Borrow<Expression>>(&mut self, x: E) -> BooleanExpression {
+    pub fn assert_boolean<E: Borrow<Expression<F>>>(&mut self, x: E) -> BooleanExpression<F> {
         self.assert_product(x.borrow(), x.borrow() - Expression::one(), Expression::zero());
         BooleanExpression::new_unsafe(x.borrow().clone())
     }
 
     /// Assert that x == y.
     pub fn assert_equal<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression>, E2: Borrow<Expression> {
+        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
         self.assert_product(x, Expression::one(), y);
     }
 
     /// Assert that x != y.
     pub fn assert_nonequal<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression>, E2: Borrow<Expression> {
+        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
         let difference = x.borrow() - y.borrow();
         self.assert_nonzero(difference);
     }
 
     /// Assert that x == 0.
-    pub fn assert_zero<E: Borrow<Expression>>(&mut self, x: E) {
+    pub fn assert_zero<E: Borrow<Expression<F>>>(&mut self, x: E) {
         self.assert_equal(x, Expression::zero());
     }
 
     /// Assert that x != 0.
-    pub fn assert_nonzero<E: Borrow<Expression>>(&mut self, x: E) {
+    pub fn assert_nonzero<E: Borrow<Expression<F>>>(&mut self, x: E) {
         // A field element is non-zero iff it has a multiplicative inverse.
         // We don't care what the inverse is, but calling inverse(x) will require that it exists.
         self.inverse(x);
     }
 
     /// Assert that x == 1.
-    pub fn assert_true<BE: Borrow<BooleanExpression>>(&mut self, x: BE) {
+    pub fn assert_true<BE: Borrow<BooleanExpression<F>>>(&mut self, x: BE) {
         self.assert_equal(x.borrow().expression(), Expression::one());
     }
 
     /// Assert that x == 0.
-    pub fn assert_false<BE: Borrow<BooleanExpression>>(&mut self, x: BE) {
+    pub fn assert_false<BE: Borrow<BooleanExpression<F>>>(&mut self, x: BE) {
         self.assert_equal(x.borrow().expression(), Expression::zero());
     }
 
-    pub fn build(self) -> Gadget {
+    pub fn build(self) -> Gadget<F> {
         Gadget {
             constraints: self.constraints,
             witness_generators: self.witness_generators,
@@ -175,75 +175,75 @@ impl GadgetBuilder {
 #[cfg(test)]
 mod tests {
     use crate::expression::{BooleanExpression, Expression};
-    use crate::field_element::FieldElement;
+    use crate::field::{Bn128, Element};
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::{assert_eq_false, assert_eq_true};
 
     #[test]
     fn assert_binary_0_1() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
         builder.assert_boolean(Expression::from(x));
         let gadget = builder.build();
 
         // With x = 0, the constraint should be satisfied.
-        let mut values0 = values!(x => 0.into());
+        let mut values0 = values!(x => 0u8.into());
         assert!(gadget.execute(&mut values0));
 
         // With x = 1, the constraint should be satisfied.
-        let mut values1 = values!(x => 1.into());
+        let mut values1 = values!(x => 1u8.into());
         assert!(gadget.execute(&mut values1));
     }
 
     #[test]
     fn assert_binary_2() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
         builder.assert_boolean(Expression::from(x));
         let gadget = builder.build();
 
         // With x = 2, the constraint should NOT be satisfied.
-        let mut values2 = values!(x => 2.into());
+        let mut values2 = values!(x => 2u8.into());
         assert!(!gadget.execute(&mut values2));
     }
 
     #[test]
     fn selection() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let (c, x, y) = (builder.boolean_wire(), builder.wire(), builder.wire());
         let selection = builder.selection(
             BooleanExpression::from(c), Expression::from(x), Expression::from(y));
         let gadget = builder.build();
 
-        let values_3_5 = values!(x => 3.into(), y => 5.into());
+        let values_3_5 = values!(x => 3u8.into(), y => 5u8.into());
 
         let mut values_0_3_5 = values_3_5.clone();
         values_0_3_5.set_boolean(c, false);
         assert!(gadget.execute(&mut values_0_3_5));
-        assert_eq!(FieldElement::from(5), selection.evaluate(&values_0_3_5));
+        assert_eq!(Element::from(5u8), selection.evaluate(&values_0_3_5));
 
         let mut values_1_3_5 = values_3_5.clone();
         values_1_3_5.set_boolean(c, true);
         assert!(gadget.execute(&mut values_1_3_5));
-        assert_eq!(FieldElement::from(3), selection.evaluate(&values_1_3_5));
+        assert_eq!(Element::from(3u8), selection.evaluate(&values_1_3_5));
     }
 
     #[test]
     fn equal() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let (x, y) = (builder.wire(), builder.wire());
         let equal = builder.equal(Expression::from(x), Expression::from(y));
         let gadget = builder.build();
 
-        let mut values_7_7 = values!(x => 7.into(), y => 7.into());
+        let mut values_7_7 = values!(x => 7u8.into(), y => 7u8.into());
         assert!(gadget.execute(&mut values_7_7));
         assert_eq_true(&equal, &values_7_7);
 
-        let mut values_6_7 = values!(x => 6.into(), y => 7.into());
+        let mut values_6_7 = values!(x => 6u8.into(), y => 7u8.into());
         assert!(gadget.execute(&mut values_6_7));
         assert_eq_false(&equal, &values_6_7);
 
-        let mut values_7_13 = values!(x => 7.into(), y => 13.into());
+        let mut values_7_13 = values!(x => 7u8.into(), y => 13u8.into());
         assert!(gadget.execute(&mut values_7_13));
         assert_eq_false(&equal, &values_7_13);
     }

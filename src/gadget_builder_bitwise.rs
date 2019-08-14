@@ -5,10 +5,12 @@ use core::borrow::Borrow;
 
 use crate::expression::BinaryExpression;
 use crate::gadget_builder::GadgetBuilder;
+use crate::field::Field;
 
-impl GadgetBuilder {
+impl<F: Field> GadgetBuilder<F> {
     /// ~x
-    pub fn bitwise_not<BE: Borrow<BinaryExpression>>(&mut self, x: BE) -> BinaryExpression {
+    pub fn bitwise_not<BE>(&mut self, x: BE) -> BinaryExpression<F>
+        where BE: Borrow<BinaryExpression<F>> {
         let bits = x.borrow().bits.iter()
             .map(|w| self.not(w))
             .collect();
@@ -16,51 +18,51 @@ impl GadgetBuilder {
     }
 
     /// x & y
-    pub fn bitwise_and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
-        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+    pub fn bitwise_and<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
+        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
         let x = x.borrow();
         let y = y.borrow();
 
         assert_eq!(x.len(), y.len());
         let l = x.len();
-        let bits = (0..l).map(|i| {
-            self.and(x.bits[i].clone(), y.bits[i].clone())
-        }).collect();
+        let bits = (0..l).map(|i|
+            self.and(&x.bits[i], &y.bits[i])
+        ).collect();
         BinaryExpression { bits }
     }
 
     /// x | y
-    pub fn bitwise_or<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
-        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+    pub fn bitwise_or<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
+        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
         let x = x.borrow();
         let y = y.borrow();
 
         assert_eq!(x.len(), y.len());
         let l = x.len();
-        let bits = (0..l).map(|i| {
-            self.or(x.bits[i].clone(), y.bits[i].clone())
-        }).collect();
+        let bits = (0..l).map(|i|
+            self.or(&x.bits[i], &y.bits[i])
+        ).collect();
         BinaryExpression { bits }
     }
 
     /// x | y
-    pub fn bitwise_xor<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression
-        where BE1: Borrow<BinaryExpression>, BE2: Borrow<BinaryExpression> {
+    pub fn bitwise_xor<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
+        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
         let x = x.borrow();
         let y = y.borrow();
 
         assert_eq!(x.len(), y.len());
         let l = x.len();
-        let bits = (0..l).map(|i| {
-            self.xor(x.bits[i].clone(), y.bits[i].clone())
-        }).collect();
+        let bits = (0..l).map(|i|
+            self.xor(&x.bits[i], &y.bits[i])
+        ).collect();
         BinaryExpression { bits }
     }
 
     /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
     /// in most programming languages.
-    pub fn bitwise_rotate_dec_significance<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
-                                                                         -> BinaryExpression {
+    pub fn bitwise_rotate_dec_significance<BE>(&mut self, x: BE, n: usize) -> BinaryExpression<F>
+        where BE: Borrow<BinaryExpression<F>> {
         let x = x.borrow();
         let l = x.len();
         let bits = (0..l).map(|i| {
@@ -72,8 +74,8 @@ impl GadgetBuilder {
 
     /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
     /// in most programming languages.
-    pub fn bitwise_rotate_inc_significance<BE: Borrow<BinaryExpression>>(&mut self, x: BE, n: usize)
-                                                                         -> BinaryExpression {
+    pub fn bitwise_rotate_inc_significance<BE>(&mut self, x: BE, n: usize) -> BinaryExpression<F>
+        where BE: Borrow<BinaryExpression<F>> {
         let x = x.borrow();
         let l = x.len();
         let bits = (0..l).map(|i| {
@@ -91,10 +93,11 @@ mod tests {
 
     use crate::expression::BinaryExpression;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::field::Bn128;
 
     #[test]
     fn bitwise_not() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.binary_wire(8);
         let not_x = builder.bitwise_not(BinaryExpression::from(&x));
         let gadget = builder.build();
@@ -107,7 +110,7 @@ mod tests {
 
     #[test]
     fn bitwise_and() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.binary_wire(8);
         let y = builder.binary_wire(8);
         let x_and_y = builder.bitwise_and(BinaryExpression::from(&x), BinaryExpression::from(&y));
@@ -144,7 +147,7 @@ mod tests {
 
     #[test]
     fn bitwise_rotate_dec_significance() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.binary_wire(8);
         let x_rot = builder.bitwise_rotate_dec_significance(BinaryExpression::from(&x), 3);
         let gadget = builder.build();
@@ -162,7 +165,7 @@ mod tests {
 
     #[test]
     fn bitwise_rotate_dec_significance_multiple_wraps() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.binary_wire(8);
         let x_rot = builder.bitwise_rotate_dec_significance(BinaryExpression::from(&x), 19);
         let gadget = builder.build();

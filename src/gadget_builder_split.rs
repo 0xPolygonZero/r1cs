@@ -9,12 +9,13 @@ use num_traits::One;
 use crate::expression::{BinaryExpression, Expression};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
+use crate::field::Field;
 
-impl GadgetBuilder {
+impl<F: Field> GadgetBuilder<F> {
     /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
     // TODO: Add a require_canonical option. If it's enabled, we would assert that the weighted sum
     // does not overflow, i.e. that it is less than the field size.
-    pub fn split<E: Borrow<Expression>>(&mut self, x: E, bits: usize) -> BinaryExpression {
+    pub fn split<E: Borrow<Expression<F>>>(&mut self, x: E, bits: usize) -> BinaryExpression<F> {
         let binary_wire = self.binary_wire(bits);
 
         {
@@ -23,7 +24,7 @@ impl GadgetBuilder {
 
             self.generator(
                 x.dependencies(),
-                move |values: &mut WireValues| {
+                move |values: &mut WireValues<F>| {
                     let value = x.evaluate(values);
                     assert!(value.bits() <= bits);
                     for i in 0..bits {
@@ -49,15 +50,16 @@ impl GadgetBuilder {
 mod tests {
     use crate::expression::Expression;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::field::Bn128;
 
     #[test]
     fn split_19_32() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let wire = builder.wire();
         let bit_wires = builder.split(Expression::from(wire), 32);
         let gadget = builder.build();
 
-        let mut wire_values = values!(wire.clone() => 19.into());
+        let mut wire_values = values!(wire.clone() => 19u8.into());
         assert!(gadget.execute(&mut wire_values));
 
         assert_eq!(true, bit_wires.bits[0].evaluate(&wire_values));

@@ -1,14 +1,15 @@
 use crate::wire::Wire;
 use crate::wire_values::WireValues;
+use crate::field::Field;
 
-pub struct WitnessGenerator {
+pub struct WitnessGenerator<F: Field> {
     inputs: Vec<Wire>,
-    generator: Box<Fn(&mut WireValues)>,
+    generator: Box<Fn(&mut WireValues<F>)>,
 }
 
-impl WitnessGenerator {
+impl<F: Field> WitnessGenerator<F> {
     pub fn new<T>(inputs: Vec<Wire>, generate: T) -> Self
-        where T: Fn(&mut WireValues) + 'static {
+        where T: Fn(&mut WireValues<F>) + 'static {
         WitnessGenerator {
             inputs,
             generator: Box::new(generate),
@@ -19,7 +20,7 @@ impl WitnessGenerator {
         &self.inputs
     }
 
-    pub fn generate(&self, values: &mut WireValues) {
+    pub fn generate(&self, values: &mut WireValues<F>) {
         (*self.generator)(values)
     }
 }

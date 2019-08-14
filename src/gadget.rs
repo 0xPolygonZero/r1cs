@@ -1,21 +1,22 @@
 use crate::constraint::Constraint;
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
+use crate::field::Field;
 
-pub struct Gadget {
-    pub constraints: Vec<Constraint>,
-    pub witness_generators: Vec<WitnessGenerator>,
+pub struct Gadget<F: Field> {
+    pub constraints: Vec<Constraint<F>>,
+    pub witness_generators: Vec<WitnessGenerator<F>>,
 }
 
-impl Gadget {
+impl<F: Field> Gadget<F> {
     /// The number of constraints in this gadget.
     pub fn size(&self) -> usize {
         self.constraints.len()
     }
 
     /// Execute the gadget, and return whether all constraints were satisfied.
-    pub fn execute(&self, wire_values: &mut WireValues) -> bool {
-        let mut pending_generators: Vec<&WitnessGenerator> = self.witness_generators.iter().collect();
+    pub fn execute(&self, wire_values: &mut WireValues<F>) -> bool {
+        let mut pending_generators: Vec<&WitnessGenerator<F>> = self.witness_generators.iter().collect();
 
         // TODO: This repeatedly enumerates all generators, whether or not any of their dependencies
         // have been generated. A better approach would be to create a map from wires to generators
@@ -49,15 +50,16 @@ mod tests {
     use crate::expression::Expression;
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
+    use crate::field::Bn128;
 
     #[test]
     fn constraint_not_satisfied() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let (x, y) = (builder.wire(), builder.wire());
         builder.assert_equal(Expression::from(x), Expression::from(y));
         let gadget = builder.build();
 
-        let mut values = values!(x => 42.into(), y => 43.into());
+        let mut values = values!(x => 42u8.into(), y => 43u8.into());
         let constraints_satisfied = gadget.execute(&mut values);
         assert!(!constraints_satisfied);
     }
@@ -65,19 +67,19 @@ mod tests {
     #[test]
     #[should_panic]
     fn missing_generator() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let (x, y, z) = (builder.wire(), builder.wire(), builder.wire());
         builder.assert_product(Expression::from(x), Expression::from(y), Expression::from(z));
         let gadget = builder.build();
 
-        let mut values = values!(x => 2.into(), y => 3.into());
+        let mut values = values!(x => 2u8.into(), y => 3u8.into());
         gadget.execute(&mut values);
     }
 
     #[test]
     #[should_panic]
     fn missing_input() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
         builder.inverse(Expression::from(x));
         let gadget = builder.build();

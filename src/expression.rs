@@ -8,21 +8,21 @@ use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
 
-use crate::field_element::FieldElement;
+use crate::field::{Field, Element};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
 
 /// A linear combination of wires.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Expression {
+#[derive(Debug, Eq, PartialEq)]
+pub struct Expression<F: Field> {
     /// The coefficient of each wire. Wires with a coefficient of zero are omitted.
-    coefficients: HashMap<Wire, FieldElement>,
+    coefficients: HashMap<Wire, Element<F>>,
 }
 
-impl Expression {
-    pub fn new(coefficients: HashMap<Wire, FieldElement>) -> Self {
+impl<F: Field> Expression<F> {
+    pub fn new(coefficients: HashMap<Wire, Element<F>>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
-            .filter(|(_k, v)| *v != FieldElement::zero())
+            .filter(|(_k, v)| *v != Element::zero())
             .collect();
         Expression { coefficients: nonzero_coefficients }
     }
@@ -31,7 +31,7 @@ impl Expression {
     pub fn sum(wires: &[Wire]) -> Self {
         Expression {
             coefficients: wires.iter()
-                .map(|&v| (v, FieldElement::one()))
+                .map(|&v| (v, Element::one()))
                 .collect()
         }
     }
@@ -54,7 +54,7 @@ impl Expression {
     }
 
     /// Return Some(c) if this is a constant c, otherwise None.
-    pub fn as_constant(&self) -> Option<FieldElement> {
+    pub fn as_constant(&self) -> Option<Element<F>> {
         if self.num_terms() == 1 {
             self.coefficients.get(&Wire::ONE).cloned()
         } else {
@@ -67,8 +67,8 @@ impl Expression {
         self.coefficients.keys().copied().collect()
     }
 
-    pub fn evaluate(&self, wire_values: &WireValues) -> FieldElement {
-        let mut sum = FieldElement::zero();
+    pub fn evaluate(&self, wire_values: &WireValues<F>) -> Element<F> {
+        let mut sum = Element::zero();
         for (&wire, coefficient) in &self.coefficients {
             sum += wire_values.get(wire) * coefficient;
         }
@@ -76,174 +76,210 @@ impl Expression {
     }
 }
 
-impl From<Wire> for Expression {
-    fn from(wire: Wire) -> Self {
-        Expression::new(
-            [(wire, FieldElement::one())].iter().cloned().collect())
+impl<F: Field> Clone for Expression<F> {
+    fn clone(&self) -> Self {
+        Expression { coefficients: self.coefficients.clone() }
     }
 }
 
-impl From<&Wire> for Expression {
+impl<F: Field> From<Wire> for Expression<F> {
+    fn from(wire: Wire) -> Self {
+        Expression::new(
+            [(wire, Element::one())].iter().cloned().collect())
+    }
+}
+
+impl<F: Field> From<&Wire> for Expression<F> {
     fn from(wire: &Wire) -> Self {
         Expression::from(*wire)
     }
 }
 
-impl From<FieldElement> for Expression {
-    fn from(value: FieldElement) -> Self {
+impl<F: Field> From<Element<F>> for Expression<F> {
+    fn from(value: Element<F>) -> Self {
         Expression::new(
             [(Wire::ONE, value)].iter().cloned().collect())
     }
 }
 
-impl From<&FieldElement> for Expression {
-    fn from(value: &FieldElement) -> Self {
+impl<F: Field> From<&Element<F>> for Expression<F> {
+    fn from(value: &Element<F>) -> Self {
         Expression::from(value.clone())
     }
 }
 
-impl From<u128> for Expression {
+impl<F: Field> From<usize> for Expression<F> {
+    fn from(value: usize) -> Self {
+        Expression::from(Element::from(value))
+    }
+}
+
+impl<F: Field> From<u128> for Expression<F> {
     fn from(value: u128) -> Self {
-        Expression::from(FieldElement::from(value))
+        Expression::from(Element::from(value))
     }
 }
 
-impl Neg for &Expression {
-    type Output = Expression;
-
-    fn neg(self) -> Expression {
-        self * -FieldElement::one()
+impl<F: Field> From<u64> for Expression<F> {
+    fn from(value: u64) -> Self {
+        Expression::from(Element::from(value))
     }
 }
 
-impl Neg for Expression {
-    type Output = Expression;
+impl<F: Field> From<u32> for Expression<F> {
+    fn from(value: u32) -> Self {
+        Expression::from(Element::from(value))
+    }
+}
 
-    fn neg(self) -> Expression {
+impl<F: Field> From<u16> for Expression<F> {
+    fn from(value: u16) -> Self {
+        Expression::from(Element::from(value))
+    }
+}
+
+impl<F: Field> From<u8> for Expression<F> {
+    fn from(value: u8) -> Self {
+        Expression::from(Element::from(value))
+    }
+}
+
+impl<F: Field> Neg for &Expression<F> {
+    type Output = Expression<F>;
+
+    fn neg(self) -> Expression<F> {
+        self * -Element::one()
+    }
+}
+
+impl<F: Field> Neg for Expression<F> {
+    type Output = Expression<F>;
+
+    fn neg(self) -> Expression<F> {
         -&self
     }
 }
 
-impl Add<Expression> for Expression {
-    type Output = Expression;
+impl<F: Field> Add<Expression<F>> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn add(self, rhs: Expression) -> Expression {
+    fn add(self, rhs: Expression<F>) -> Expression<F> {
         &self + &rhs
     }
 }
 
-impl Add<&Expression> for Expression {
-    type Output = Expression;
+impl<F: Field> Add<&Expression<F>> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn add(self, rhs: &Expression) -> Expression {
+    fn add(self, rhs: &Expression<F>) -> Expression<F> {
         &self + rhs
     }
 }
 
-impl Add<Expression> for &Expression {
-    type Output = Expression;
+impl<F: Field> Add<Expression<F>> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn add(self, rhs: Expression) -> Expression {
+    fn add(self, rhs: Expression<F>) -> Expression<F> {
         self + &rhs
     }
 }
 
-impl Add<&Expression> for &Expression {
-    type Output = Expression;
+impl<F: Field> Add<&Expression<F>> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn add(self, rhs: &Expression) -> Expression {
+    fn add(self, rhs: &Expression<F>) -> Expression<F> {
         let mut merged_coefficients = self.coefficients.clone();
         for (wire, coefficient) in rhs.coefficients.clone() {
-            *merged_coefficients.entry(wire).or_insert_with(FieldElement::zero) += coefficient
+            *merged_coefficients.entry(wire).or_insert_with(Element::zero) += coefficient
         }
         Expression::new(merged_coefficients)
     }
 }
 
-impl AddAssign for Expression {
-    fn add_assign(&mut self, rhs: Expression) {
+impl<F: Field> AddAssign for Expression<F> {
+    fn add_assign(&mut self, rhs: Expression<F>) {
         *self += &rhs;
     }
 }
 
-impl AddAssign<&Expression> for Expression {
-    fn add_assign(&mut self, rhs: &Expression) {
+impl<F: Field> AddAssign<&Expression<F>> for Expression<F> {
+    fn add_assign(&mut self, rhs: &Expression<F>) {
         *self = self.clone() + rhs;
     }
 }
 
-impl Sub<Expression> for Expression {
-    type Output = Expression;
+impl<F: Field> Sub<Expression<F>> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn sub(self, rhs: Expression) -> Self::Output {
+    fn sub(self, rhs: Expression<F>) -> Self::Output {
         &self - &rhs
     }
 }
 
-impl Sub<&Expression> for Expression {
-    type Output = Expression;
+impl<F: Field> Sub<&Expression<F>> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn sub(self, rhs: &Expression) -> Self::Output {
+    fn sub(self, rhs: &Expression<F>) -> Self::Output {
         &self - rhs
     }
 }
 
-impl Sub<Expression> for &Expression {
-    type Output = Expression;
+impl<F: Field> Sub<Expression<F>> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn sub(self, rhs: Expression) -> Self::Output {
+    fn sub(self, rhs: Expression<F>) -> Self::Output {
         self - &rhs
     }
 }
 
-impl Sub<&Expression> for &Expression {
-    type Output = Expression;
+impl<F: Field> Sub<&Expression<F>> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn sub(self, rhs: &Expression) -> Self::Output {
+    fn sub(self, rhs: &Expression<F>) -> Self::Output {
         self + -rhs
     }
 }
 
-impl SubAssign for Expression {
-    fn sub_assign(&mut self, rhs: Expression) {
+impl<F: Field> SubAssign for Expression<F> {
+    fn sub_assign(&mut self, rhs: Expression<F>) {
         *self -= &rhs;
     }
 }
 
-impl SubAssign<&Expression> for Expression {
-    fn sub_assign(&mut self, rhs: &Expression) {
+impl<F: Field> SubAssign<&Expression<F>> for Expression<F> {
+    fn sub_assign(&mut self, rhs: &Expression<F>) {
         *self = &*self - rhs;
     }
 }
 
-impl Mul<FieldElement> for Expression {
-    type Output = Expression;
+impl<F: Field> Mul<Element<F>> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn mul(self, rhs: FieldElement) -> Expression {
+    fn mul(self, rhs: Element<F>) -> Expression<F> {
         &self * &rhs
     }
 }
 
-impl Mul<&FieldElement> for Expression {
-    type Output = Expression;
+impl<F: Field> Mul<&Element<F>> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn mul(self, rhs: &FieldElement) -> Expression {
+    fn mul(self, rhs: &Element<F>) -> Expression<F> {
         &self * rhs
     }
 }
 
-impl Mul<FieldElement> for &Expression {
-    type Output = Expression;
+impl<F: Field> Mul<Element<F>> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn mul(self, rhs: FieldElement) -> Expression {
+    fn mul(self, rhs: Element<F>) -> Expression<F> {
         self * &rhs
     }
 }
 
-impl Mul<&FieldElement> for &Expression {
-    type Output = Expression;
+impl<F: Field> Mul<&Element<F>> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn mul(self, rhs: &FieldElement) -> Expression {
+    fn mul(self, rhs: &Element<F>) -> Expression<F> {
         Expression::new(
             self.coefficients.iter()
                 .map(|(k, v)| (*k, v * rhs))
@@ -251,18 +287,18 @@ impl Mul<&FieldElement> for &Expression {
     }
 }
 
-impl Mul<u128> for Expression {
-    type Output = Expression;
+impl<F: Field> Mul<u128> for Expression<F> {
+    type Output = Expression<F>;
 
-    fn mul(self, rhs: u128) -> Expression {
+    fn mul(self, rhs: u128) -> Expression<F> {
         &self * rhs
     }
 }
 
-impl Mul<u128> for &Expression {
-    type Output = Expression;
+impl<F: Field> Mul<u128> for &Expression<F> {
+    type Output = Expression<F>;
 
-    fn mul(self, rhs: u128) -> Expression {
+    fn mul(self, rhs: u128) -> Expression<F> {
         Expression::new(
             self.coefficients.iter()
                 .map(|(k, v)| (*k, v * rhs))
@@ -270,25 +306,25 @@ impl Mul<u128> for &Expression {
     }
 }
 
-impl MulAssign<FieldElement> for Expression {
-    fn mul_assign(&mut self, rhs: FieldElement) {
+impl<F: Field> MulAssign<Element<F>> for Expression<F> {
+    fn mul_assign(&mut self, rhs: Element<F>) {
         *self *= &rhs;
     }
 }
 
-impl MulAssign<&FieldElement> for Expression {
-    fn mul_assign(&mut self, rhs: &FieldElement) {
+impl<F: Field> MulAssign<&Element<F>> for Expression<F> {
+    fn mul_assign(&mut self, rhs: &Element<F>) {
         *self = self.clone() * rhs;
     }
 }
 
-impl MulAssign<u128> for Expression {
+impl<F: Field> MulAssign<u128> for Expression<F> {
     fn mul_assign(&mut self, rhs: u128) {
         *self = self.clone() * rhs;
     }
 }
 
-impl fmt::Display for Expression {
+impl<F: Field> fmt::Display for Expression<F> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let term_strings: Vec<String> = self.coefficients.iter()
             .sorted_by(|(k1, _v1), (k2, _v2)| k1.cmp(k2))
@@ -313,28 +349,28 @@ impl fmt::Display for Expression {
 
 
 /// An `Expression` whose value is known to be binary.
-#[derive(Clone, Debug)]
-pub struct BooleanExpression {
-    expression: Expression,
+#[derive(Debug)]
+pub struct BooleanExpression<F: Field> {
+    expression: Expression<F>,
 }
 
-impl BooleanExpression {
+impl<F: Field> BooleanExpression<F> {
     /// Create a new bit. This is unsafe in the sense that a "equals 0 or 1" assertion will not be
     /// added automatically. You can use this method if you already know that a quantity will equal
     /// 0 or 1, for example if you computed 1 - b where b is a Bit.
-    pub fn new_unsafe(expression: Expression) -> Self {
+    pub fn new_unsafe(expression: Expression<F>) -> Self {
         BooleanExpression { expression }
     }
 
     pub fn _false() -> Self {
-        BooleanExpression::new_unsafe(Expression::zero())
+        Self::new_unsafe(Expression::zero())
     }
 
     pub fn _true() -> Self {
-        BooleanExpression::new_unsafe(Expression::one())
+        Self::new_unsafe(Expression::one())
     }
 
-    pub fn expression(&self) -> &Expression {
+    pub fn expression(&self) -> &Expression<F> {
         &self.expression
     }
 
@@ -342,7 +378,7 @@ impl BooleanExpression {
         self.expression.dependencies()
     }
 
-    pub fn evaluate(&self, values: &WireValues) -> bool {
+    pub fn evaluate(&self, values: &WireValues<F>) -> bool {
         match self.expression.evaluate(values) {
             ref x if x.is_zero() => false,
             ref x if x.is_one() => true,
@@ -351,27 +387,33 @@ impl BooleanExpression {
     }
 }
 
-impl From<&BooleanWire> for BooleanExpression {
+impl<F: Field> Clone for BooleanExpression<F> {
+    fn clone(&self) -> Self {
+        BooleanExpression { expression: self.expression.clone() }
+    }
+}
+
+impl<F: Field> From<&BooleanWire> for BooleanExpression<F> {
     fn from(wire: &BooleanWire) -> Self {
         BooleanExpression::new_unsafe(wire.wire.into())
     }
 }
 
-impl From<BooleanWire> for BooleanExpression {
+impl<F: Field> From<BooleanWire> for BooleanExpression<F> {
     fn from(wire: BooleanWire) -> Self {
         BooleanExpression::from(&wire)
     }
 }
 
 /// A "binary expression" which is comprised of several bits, each one being a boolean expression.
-#[derive(Clone, Debug)]
-pub struct BinaryExpression {
+#[derive(Debug)]
+pub struct BinaryExpression<F: Field> {
     /// The list of bits, ordered from least significant to most significant.
-    pub bits: Vec<BooleanExpression>,
+    pub bits: Vec<BooleanExpression<F>>,
 }
 
 #[allow(clippy::len_without_is_empty)]
-impl BinaryExpression {
+impl<F: Field> BinaryExpression<F> {
     /// The number of bits.
     pub fn len(&self) -> usize {
         self.bits.len()
@@ -398,20 +440,20 @@ impl BinaryExpression {
         BinaryExpression { bits: padded_bits }
     }
 
-    pub fn add_most_significant(&mut self, bit: BooleanExpression) {
+    pub fn add_most_significant(&mut self, bit: BooleanExpression<F>) {
         self.bits.push(bit);
     }
 
-    pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression> {
+    pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression<F>> {
         self.bits.chunks(chunk_bits).map(|chunk| BinaryExpression { bits: chunk.to_vec() }).collect()
     }
 
     /// Join these bits into the field element they encode.
-    pub fn join(&self) -> Expression {
-        assert!(self.len() < FieldElement::max_bits(), "Cannot fit in a single field element");
+    pub fn join(&self) -> Expression<F> {
+        assert!(self.len() < Element::<F>::max_bits(), "Cannot fit in a single field element");
         let mut sum = Expression::zero();
         for (i, bit) in self.bits.iter().enumerate() {
-            let weight = FieldElement::one() << i;
+            let weight = Element::one() << i;
             sum += &bit.expression * weight;
         }
         sum
@@ -425,7 +467,7 @@ impl BinaryExpression {
         all.into_iter().collect()
     }
 
-    pub fn evaluate(&self, values: &WireValues) -> BigUint {
+    pub fn evaluate(&self, values: &WireValues<F>) -> BigUint {
         let mut sum = BigUint::zero();
         for (i, bit) in self.bits.iter().enumerate() {
             if bit.evaluate(values) {
@@ -436,7 +478,13 @@ impl BinaryExpression {
     }
 }
 
-impl From<&BinaryWire> for BinaryExpression {
+impl<F: Field> Clone for BinaryExpression<F> {
+    fn clone(&self) -> Self {
+        BinaryExpression { bits: self.bits.clone() }
+    }
+}
+
+impl<F: Field> From<&BinaryWire> for BinaryExpression<F> {
     fn from(wire: &BinaryWire) -> Self {
         BinaryExpression {
             bits: wire.bits.iter()
@@ -446,7 +494,7 @@ impl From<&BinaryWire> for BinaryExpression {
     }
 }
 
-impl From<BinaryWire> for BinaryExpression {
+impl<F: Field> From<BinaryWire> for BinaryExpression<F> {
     fn from(wire: BinaryWire) -> Self {
         BinaryExpression::from(&wire)
     }

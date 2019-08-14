@@ -18,11 +18,11 @@ A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression` is
 
 ## Basic example
 
-Here's a simple gadget which computes the cube of a field element:
+Here's a simple gadget which computes the cube of a BN128 field element:
 
 ```rust
 // Create a gadget which takes a single input, x, and computes x*x*x.
-let mut builder = GadgetBuilder::new();
+let mut builder = GadgetBuilder::<Bn128>::new();
 let x = builder.wire();
 let x_exp = Expression::from(x);
 let x_squared = builder.product(&x_exp, &x_exp);
@@ -32,14 +32,14 @@ let gadget = builder.build();
 // This structure maps wires to their (field element) values. Since
 // x is our input, we will assign it a value before executing the
 // gadget. Other wires will be computed by the gadget.
-let mut values = values!(x => 5.into());
+let mut values = values!(x => 5u8.into());
 
 // Execute the gadget and assert that all constraints were satisfied.
 let constraints_satisfied = gadget.execute(&mut values);
 assert!(constraints_satisfied);
 
 // Check the result.
-assert_eq!(FieldElement::from(125), x_cubed.evaluate(&values));
+assert_eq!(Element::from(125u8), x_cubed.evaluate(&values));
 ```
 
 
@@ -48,10 +48,10 @@ assert_eq!(FieldElement::from(125), x_cubed.evaluate(&values));
 The example above involved native field arithmetic, but this library also supports boolean algebra. For example, here is a function which implements the boolean function `Maj`, as defined in the SHA-256 specification:
 
 ```rust
-fn maj(builder: &mut GadgetBuilder,
-       x: BooleanExpression,
-       y: BooleanExpression,
-       z: BooleanExpression) -> BooleanExpression {
+fn maj<F: Field>(builder: &mut GadgetBuilder<F>,
+                 x: BooleanExpression<F>,
+                 y: BooleanExpression<F>,
+                 z: BooleanExpression<F>) -> BooleanExpression<F> {
     let x_y = builder.and(&x, &y);
     let x_z = builder.and(&x, &z);
     let y_z = builder.and(&y, &z);
@@ -79,7 +79,7 @@ Suppose we wish to compute the multiplicative inverse of a field element `x`. Wh
 `GadgetBuilder` supports such non-deterministic computations via its `generator` method, which can be used like so:
 
 ```rust
-fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
+fn inverse<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expression<F> {
     // Create a new witness element for x_inv.
     let x_inv = builder.wire();
 
@@ -90,7 +90,7 @@ fn inverse(builder: &mut GadgetBuilder, x: Expression) -> Expression {
     // Non-deterministically generate x_inv = 1 / x.
     builder.generator(
         x.dependencies(),
-        move |values: &mut WireValues| {
+        move |values: &mut WireValues<F>| {
             let x_value = x.evaluate(values);
             let x_inv_value = x_value.multiplicative_inverse();
             values.set(x_inv, x_inv_value);

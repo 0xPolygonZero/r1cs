@@ -4,17 +4,17 @@ use std::collections::HashMap;
 
 use crate::bimap_util::bimap_from_lists;
 use crate::expression::{BooleanExpression, Expression};
-use crate::field_element::FieldElement;
+use crate::field::{Field, Element};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire::{BooleanWire, Wire};
 use crate::wire_values::WireValues;
 
-impl GadgetBuilder {
+impl<F: Field> GadgetBuilder<F> {
     /// Assert that two lists of expressions evaluate to permutations of one another.
     ///
     /// This is currently implemented using an AS-Waksman permutation network, although that could
     /// change in the future. See "On Arbitrary Waksman Networks and their Vulnerability".
-    pub fn assert_permutation(&mut self, a: &[Expression], b: &[Expression]) {
+    pub fn assert_permutation(&mut self, a: &[Expression<F>], b: &[Expression<F>]) {
         assert_eq!(a.len(), b.len(), "Permutation must have same number of inputs and outputs");
         let n = a.len();
 
@@ -33,8 +33,8 @@ impl GadgetBuilder {
 
     /// Assert that [a, b] is a permutation of [c, d].
     fn assert_permutation_2x2(&mut self,
-                              a: &Expression, b: &Expression,
-                              c: &Expression, d: &Expression) {
+                              a: &Expression<F>, b: &Expression<F>,
+                              c: &Expression<F>, d: &Expression<F>) {
         let (switch, c_target, d_target) = self.create_switch(a, b);
         self.assert_equal(c, c_target);
         self.assert_equal(d, d_target);
@@ -44,7 +44,7 @@ impl GadgetBuilder {
         let d = d.clone();
         self.generator(
             [a.dependencies(), b.dependencies(), c.dependencies(), d.dependencies()].concat(),
-            move |values: &mut WireValues| {
+            move |values: &mut WireValues<F>| {
                 let a_value = a.evaluate(values);
                 let b_value = b.evaluate(values);
                 let c_value = c.evaluate(values);
@@ -63,15 +63,15 @@ impl GadgetBuilder {
     /// Creates a 2x2 switch given the two input expressions. Returns three things: the (boolean)
     /// switch wire and the two output expressions. The order of the outputs will match that of the
     /// inputs if the switch wire is set to false, otherwise the order will be swapped.
-    fn create_switch(&mut self, a: &Expression, b: &Expression)
-        -> (BooleanWire, Expression, Expression) {
+    fn create_switch(&mut self, a: &Expression<F>, b: &Expression<F>)
+                     -> (BooleanWire, Expression<F>, Expression<F>) {
         let switch = self.boolean_wire();
         let c = self.selection(BooleanExpression::from(switch), b, a);
         let d = a + b - &c;
         (switch, c, d)
     }
 
-    fn assert_permutation_recursive(&mut self, a: &[Expression], b: &[Expression]) {
+    fn assert_permutation_recursive(&mut self, a: &[Expression<F>], b: &[Expression<F>]) {
         let n = a.len();
         let even = n % 2 == 0;
 
@@ -118,18 +118,18 @@ impl GadgetBuilder {
         let b = b.to_vec();
         self.generator(
             [a_deps, b_deps].concat(),
-            move |values: &mut WireValues| {
-                let a_values: Vec<FieldElement> = a.iter().map(|e| e.evaluate(values)).collect();
-                let b_values: Vec<FieldElement> = b.iter().map(|e| e.evaluate(values)).collect();
+            move |values: &mut WireValues<F>| {
+                let a_values: Vec<Element<F>> = a.iter().map(|e| e.evaluate(values)).collect();
+                let b_values: Vec<Element<F>> = b.iter().map(|e| e.evaluate(values)).collect();
                 route(a_values, b_values, &a_switches, &b_switches, values);
             });
     }
 }
 
 /// Generates switch settings for a single layer of the recursive network.
-fn route(a_values: Vec<FieldElement>, b_values: Vec<FieldElement>,
-         a_switches: &[BooleanWire], b_switches: &[BooleanWire],
-         values: &mut WireValues) {
+fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
+                   a_switches: &[BooleanWire], b_switches: &[BooleanWire],
+                   values: &mut WireValues<F>) {
     assert_eq!(a_values.len(), b_values.len());
     let n = a_values.len();
     let even = n % 2 == 0;
@@ -151,7 +151,8 @@ fn route(a_values: Vec<FieldElement>, b_values: Vec<FieldElement>,
 
     // After we route a wire on one side, we find the corresponding wire on the other side and check
     // if it still needs to be routed. If so, we add it to partial_routes.
-    let enqueue_other_side = |partial_routes: &mut [HashMap<usize, bool>], values: &mut WireValues,
+    let enqueue_other_side = |partial_routes: &mut [HashMap<usize, bool>],
+                              values: &mut WireValues<F>,
                               side: usize, this_i: usize, subnet: bool| {
         let other_side = 1 - side;
         let other_i = ab_map_by_side(side, this_i);
@@ -189,8 +190,8 @@ fn route(a_values: Vec<FieldElement>, b_values: Vec<FieldElement>,
         enqueue_other_side(&mut partial_routes, values, 1, n - 1, true);
     }
 
-    let route_switch = |partial_routes: &mut [HashMap<usize, bool>], values: &mut WireValues,
-                            side: usize, switch_index: usize, swap: bool| {
+    let route_switch = |partial_routes: &mut [HashMap<usize, bool>], values: &mut WireValues<F>,
+                        side: usize, switch_index: usize, swap: bool| {
         // First, we actually set the switch configuration.
         values.set_boolean(switches[side][switch_index], swap);
 
@@ -241,55 +242,57 @@ mod tests {
     use crate::expression::Expression;
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
+    use crate::field::Bn128;
 
     #[test]
     fn route_2x2() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         builder.assert_permutation(
-            &[1.into(), 2.into()],
-            &[2.into(), 1.into()]);
+            &[1u8.into(), 2u8.into()],
+            &[2u8.into(), 1u8.into()]);
         let gadget = builder.build();
         assert!(gadget.execute(&mut WireValues::new()));
     }
 
     #[test]
     fn route_3x3() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         builder.assert_permutation(
-            &[1.into(), 2.into(), 3.into()],
-            &[2.into(), 1.into(), 3.into()]);
+            &[1u8.into(), 2u8.into(), 3u8.into()],
+            &[2u8.into(), 1u8.into(), 3u8.into()]);
         let gadget = builder.build();
         assert!(gadget.execute(&mut WireValues::new()));
     }
 
     #[test]
     fn route_5x5() {
-        let mut builder = GadgetBuilder::new();
+        type F = Bn128;
+        let mut builder = GadgetBuilder::<F>::new();
         let a = builder.wires(5);
         let b = builder.wires(5);
-        let a_exp: Vec<Expression> = a.iter().map(Expression::from).collect();
-        let b_exp: Vec<Expression> = b.iter().map(Expression::from).collect();
+        let a_exp: Vec<Expression<F>> = a.iter().map(Expression::from).collect();
+        let b_exp: Vec<Expression<F>> = b.iter().map(Expression::from).collect();
         builder.assert_permutation(&a_exp, &b_exp);
         let gadget = builder.build();
 
         let mut values_normal = values!(
-            a[0] => 0.into(), a[1] => 1.into(), a[2] => 2.into(), a[3] => 3.into(), a[4] => 4.into(),
-            b[0] => 1.into(), b[1] => 4.into(), b[2] => 0.into(), b[3] => 3.into(), b[4] => 2.into());
+            a[0] => 0u8.into(), a[1] => 1u8.into(), a[2] => 2u8.into(), a[3] => 3u8.into(), a[4] => 4u8.into(),
+            b[0] => 1u8.into(), b[1] => 4u8.into(), b[2] => 0u8.into(), b[3] => 3u8.into(), b[4] => 2u8.into());
         assert!(gadget.execute(&mut values_normal));
 
         let mut values_with_duplicates = values!(
-            a[0] => 0.into(), a[1] => 1.into(), a[2] => 2.into(), a[3] => 0.into(), a[4] => 1.into(),
-            b[0] => 1.into(), b[1] => 1.into(), b[2] => 0.into(), b[3] => 0.into(), b[4] => 2.into());
+            a[0] => 0u8.into(), a[1] => 1u8.into(), a[2] => 2u8.into(), a[3] => 0u8.into(), a[4] => 1u8.into(),
+            b[0] => 1u8.into(), b[1] => 1u8.into(), b[2] => 0u8.into(), b[3] => 0u8.into(), b[4] => 2u8.into());
         assert!(gadget.execute(&mut values_with_duplicates));
     }
 
     #[test]
     #[should_panic]
     fn not_a_permutation() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         builder.assert_permutation(
-            &[1.into(), 2.into(), 2.into()],
-            &[1.into(), 2.into(), 1.into()]);
+            &[1u8.into(), 2u8.into(), 2u8.into()],
+            &[1u8.into(), 2u8.into(), 1u8.into()]);
         let gadget = builder.build();
         // The generator should fail, since there's no possible routing.
         gadget.execute(&mut WireValues::new());
@@ -298,9 +301,9 @@ mod tests {
     #[test]
     #[should_panic]
     fn lengths_differ() {
-        let mut builder = GadgetBuilder::new();
+        let mut builder = GadgetBuilder::<Bn128>::new();
         builder.assert_permutation(
-            &[1.into(), 2.into(), 3.into()],
-            &[1.into(), 2.into()]);
+            &[1u8.into(), 2u8.into(), 3u8.into()],
+            &[1u8.into(), 2u8.into()]);
     }
 }

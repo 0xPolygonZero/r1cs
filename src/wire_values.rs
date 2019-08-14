@@ -5,22 +5,22 @@ use num::BigUint;
 use num_traits::One;
 
 use crate::expression::BooleanExpression;
-use crate::field_element::FieldElement;
 use crate::wire::{BinaryWire, BooleanWire, Wire};
+use crate::field::{Field, Element};
 
-#[derive(Clone, Default, Debug, Eq, PartialEq)]
-pub struct WireValues {
-    values: HashMap<Wire, FieldElement>,
+#[derive(Default, Debug)]
+pub struct WireValues<F: Field> {
+    values: HashMap<Wire, Element<F>>,
 }
 
-impl WireValues {
+impl<F: Field> WireValues<F> {
     pub fn new() -> Self {
         let mut values = HashMap::new();
-        values.insert(Wire::ONE, FieldElement::one());
+        values.insert(Wire::ONE, Element::one());
         WireValues { values }
     }
 
-    pub fn get(&self, wire: Wire) -> &FieldElement {
+    pub fn get(&self, wire: Wire) -> &Element<F> {
         assert!(self.values.contains_key(&wire), "No value for {}", wire);
         &self.values[&wire]
     }
@@ -29,13 +29,13 @@ impl WireValues {
         BooleanExpression::from(wire).evaluate(self)
     }
 
-    pub fn set(&mut self, wire: Wire, value: FieldElement) {
+    pub fn set(&mut self, wire: Wire, value: Element<F>) {
         let old_value = self.values.insert(wire, value);
         assert!(old_value.is_none());
     }
 
     pub fn set_boolean(&mut self, wire: BooleanWire, value: bool) {
-        self.set(wire.wire(), value.into());
+        self.set(wire.wire(), Element::from(value));
     }
 
     pub fn set_binary_unsigned<BW, BU>(&mut self, wire: BW, value: BU)
@@ -62,6 +62,12 @@ impl WireValues {
 
     pub fn contains_all(&self, wires: &[Wire]) -> bool {
         wires.iter().all(|&wire| self.contains(wire))
+    }
+}
+
+impl<F: Field> Clone for WireValues<F> {
+    fn clone(&self) -> Self {
+        WireValues { values: self.values.clone() }
     }
 }
 

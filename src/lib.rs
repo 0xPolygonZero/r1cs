@@ -2,7 +2,7 @@
 pub mod wire_values;
 
 pub mod constraint;
-pub mod field_element;
+pub mod field;
 pub mod gadget;
 pub mod gadget_builder;
 pub mod gadget_builder_arithmetic;
