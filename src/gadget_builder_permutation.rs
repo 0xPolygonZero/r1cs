@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::bimap_util::bimap_from_lists;
 use crate::expression::{BooleanExpression, Expression};
-use crate::field::{Field, Element};
+use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire::{BooleanWire, Wire};
 use crate::wire_values::WireValues;
@@ -240,9 +240,9 @@ fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
+    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
-    use crate::field::Bn128;
 
     #[test]
     fn route_2x2() {

@@ -5,8 +5,8 @@ use num::BigUint;
 use num_traits::One;
 
 use crate::expression::BooleanExpression;
+use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
-use crate::field::{Field, Element};
 
 #[derive(Default, Debug)]
 pub struct WireValues<F: Field> {

@@ -8,7 +8,7 @@ use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
 
-use crate::field::{Field, Element};
+use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
 

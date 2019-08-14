@@ -1,7 +1,7 @@
 use crate::constraint::Constraint;
+use crate::field::Field;
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
-use crate::field::Field;
 
 pub struct Gadget<F: Field> {
     pub constraints: Vec<Constraint<F>>,
@@ -48,9 +48,9 @@ impl<F: Field> Gadget<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
+    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
-    use crate::field::Bn128;
 
     #[test]
     fn constraint_not_satisfied() {

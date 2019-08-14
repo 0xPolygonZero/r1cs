@@ -5,7 +5,7 @@ use core::borrow::Borrow;
 use itertools::enumerate;
 
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};
-use crate::field::{Field, Element};
+use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
@@ -236,10 +236,10 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
+    use crate::field::{Bn128, Element};
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::assert_eq_false;
     use crate::test_util::assert_eq_true;
-    use crate::field::{Bn128, Element};
 
     #[test]
     fn comparisons() {

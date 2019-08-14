@@ -5,9 +5,9 @@ use core::borrow::Borrow;
 use itertools::enumerate;
 
 use crate::expression::{BooleanExpression, Expression};
+use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
-use crate::field::Field;
 
 impl<F: Field> GadgetBuilder<F> {
     /// x * y
@@ -137,9 +137,9 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
+    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::{assert_eq_false, assert_eq_true};
-    use crate::field::Bn128;
 
     #[test]
     #[should_panic]

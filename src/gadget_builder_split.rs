@@ -7,9 +7,9 @@ use num::BigUint;
 use num_traits::One;
 
 use crate::expression::{BinaryExpression, Expression};
+use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
-use crate::field::Field;
 
 impl<F: Field> GadgetBuilder<F> {
     /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
@@ -49,8 +49,8 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::gadget_builder::GadgetBuilder;
     use crate::field::Bn128;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn split_19_32() {

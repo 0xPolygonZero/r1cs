@@ -4,8 +4,8 @@
 use core::borrow::Borrow;
 
 use crate::expression::BinaryExpression;
-use crate::gadget_builder::GadgetBuilder;
 use crate::field::Field;
+use crate::gadget_builder::GadgetBuilder;
 
 impl<F: Field> GadgetBuilder<F> {
     /// ~x
@@ -92,8 +92,8 @@ mod tests {
     use num::BigUint;
 
     use crate::expression::BinaryExpression;
-    use crate::gadget_builder::GadgetBuilder;
     use crate::field::Bn128;
+    use crate::gadget_builder::GadgetBuilder;
 
     #[test]
     fn bitwise_not() {

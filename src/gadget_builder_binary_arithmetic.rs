@@ -1,7 +1,7 @@
 use core::borrow::Borrow;
 
 use crate::expression::BinaryExpression;
-use crate::field::{Field, Element};
+use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 

@@ -3,8 +3,8 @@
 use std::borrow::Borrow;
 
 use crate::expression::BooleanExpression;
-use crate::wire_values::WireValues;
 use crate::field::Field;
+use crate::wire_values::WireValues;
 
 pub fn assert_eq_true<F, T>(x: T, values: &WireValues<F>)
     where F: Field, T: Borrow<BooleanExpression<F>> {
