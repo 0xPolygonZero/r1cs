@@ -18,7 +18,7 @@ A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression` is
 
 ## Basic example
 
-Here's a simple gadget which computes the cube of a BN128 field element:
+Here's a simple gadget which computes the cube of a BN128 element:
 
 ```rust
 // Create a gadget which takes a single input, x, and computes x*x*x.
@@ -40,6 +40,23 @@ assert!(constraints_satisfied);
 
 // Check the result.
 assert_eq!(Element::from(125u8), x_cubed.evaluate(&values));
+```
+
+
+## Custom fields
+
+You can define a custom field by implementing the `field::Field` trait. As an example, here's the definition of `Bn128` which was referenced above:
+
+```rust
+pub struct Bn128 {}
+
+impl Field for Bn128 {
+    fn order() -> BigUint {
+        BigUint::from_str(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+        ).unwrap()
+    }
+}
 ```
 
 
