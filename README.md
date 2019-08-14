@@ -1,6 +1,6 @@
 # r1cs [![Crates.io](https://img.shields.io/crates/v/r1cs)](https://crates.io/crates/r1cs)
 
-This is a rust library for building R1CS gadgets, which are useful in SNARKs and other argument systems.
+This is a rust library for building R1CS gadgets over prime fields, which are useful in SNARKs and other argument systems.
 
 An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode the following NP-complete decision problem: does there exist a witness vector `w` such that `Aw ∘ Bw = Cw`?
 
@@ -9,11 +9,13 @@ A *gadget* for some R1CS instance takes a set of inputs, which are a subset of t
 
 ## Core types
 
-A `Wire` represents an element of the witness vector. An `Expression` is a linear combination of wires.
+A `Field` represents a prime field, and `Element<F>` represents an element of the field `F`.
 
-A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, a `BooleanExpression` is an `Expression` which has been so constrained.
+A `Wire` represents an element of the witness vector. An `Expression<F>` is a linear combination of wires.
 
-A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression` is a vector of `BooleanExpression`s.
+A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, a `BooleanExpression<F>` is an `Expression<F>` which has been so constrained.
+
+A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression<F>` is a vector of `BooleanExpression<F>`s.
 
 
 ## Basic example
