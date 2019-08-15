@@ -144,6 +144,12 @@ impl<F: Field> From<u8> for Expression<F> {
     }
 }
 
+impl<F: Field> From<bool> for Expression<F> {
+    fn from(value: bool) -> Self {
+        Expression::from(Element::from(value))
+    }
+}
+
 impl<F: Field> Neg for &Expression<F> {
     type Output = Expression<F>;
 
@@ -405,6 +411,12 @@ impl<F: Field> From<BooleanWire> for BooleanExpression<F> {
     }
 }
 
+impl<F: Field> From<bool> for BooleanExpression<F> {
+    fn from(b: bool) -> Self {
+        BooleanExpression::new_unsafe(b.into())
+    }
+}
+
 /// A "binary expression" which is comprised of several bits, each one being a boolean expression.
 #[derive(Debug)]
 pub struct BinaryExpression<F: Field> {
@@ -497,5 +509,16 @@ impl<F: Field> From<&BinaryWire> for BinaryExpression<F> {
 impl<F: Field> From<BinaryWire> for BinaryExpression<F> {
     fn from(wire: BinaryWire) -> Self {
         BinaryExpression::from(&wire)
+    }
+}
+
+impl<F: Field> From<BigUint> for BinaryExpression<F> {
+    fn from(value: BigUint) -> Self {
+        let n = value.bits();
+        let bits = (0..n).map(|i| {
+            let b = ((&value >> i) & BigUint::one()).is_one();
+            BooleanExpression::from(b)
+        }).collect();
+        BinaryExpression { bits }
     }
 }
