@@ -9,9 +9,9 @@ A *gadget* for some R1CS instance takes a set of inputs, which are a subset of t
 
 ## Core types
 
-A `Field` represents a prime field, and `Element<F>` represents an element of the field `F`.
+`Field` is a trait representing prime fields. An `Element<F>` is an element of the prime field `F`.
 
-A `Wire` represents an element of the witness vector. An `Expression<F>` is a linear combination of wires.
+A `Wire` is an element of the witness vector. An `Expression<F>` is a linear combination of wires.
 
 A `BooleanWire` is a `Wire` which has been constrained in such a way that it can only equal 0 or 1. Similarly, a `BooleanExpression<F>` is an `Expression<F>` which has been so constrained.
 
