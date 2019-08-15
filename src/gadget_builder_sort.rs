@@ -23,8 +23,9 @@ impl<F: Field> GadgetBuilder<F> {
         // Then, we assert the order of each adjacent pair of output values. Note that assert_le
         // would internally split each input into its binary form. To avoid splitting intermediate
         // items twice, we will explicitly split here, and call assert_le_binary instead.
+        // TODO: If we're clever, we can use split_allow_ambiguity for half of the outputs.
         let outputs_binary: Vec<BinaryExpression<F>> = outputs.iter()
-            .map(|e| self.split(e, Element::<F>::max_bits()))
+            .map(|e| self.split(e))
             .collect();
         for i in 0..(n - 1) {
             let a = &outputs_binary[i];

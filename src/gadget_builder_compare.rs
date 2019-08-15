@@ -116,10 +116,16 @@ impl<F: Field> GadgetBuilder<F> {
 
     fn cmp<E1, E2>(&mut self, x: E1, y: E2, less: bool, strict: bool) -> BooleanExpression<F>
         where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        let bits = Element::<F>::max_bits();
-        let x_bits = self.split(x, bits);
-        let y_bits = self.split(y, bits);
-        self.cmp_binary(&x_bits, &y_bits, less, strict)
+        let (x_bin, y_bin) = if less {
+            // We're asserting x <[=] y. We don't need x's canonical encoding, because the
+            // non-canonical encoding would give x_bin > |F| and thus x_bin > y_bin, rendering the
+            // instance unsatisfiable.
+            (self.split_allowing_ambiguity(x), self.split(y))
+        } else {
+            // Similarly, here we're asserting y <[=] x, so we don't need y's canonical encoding.
+            (self.split(x), self.split_allowing_ambiguity(y))
+        };
+        self.cmp_binary(&x_bin, &y_bin, less, strict)
     }
 
     fn cmp_binary(&mut self, x_bits: &BinaryExpression<F>, y_bits: &BinaryExpression<F>,
@@ -209,7 +215,7 @@ impl<F: Field> GadgetBuilder<F> {
         let base = Expression::from(
             (Element::one() << bits) - Element::from(strict));
         let z = base + if less { -diff } else { diff };
-        self.split(z, bits + 1).bits[bits].clone()
+        self.split_bounded(z, bits + 1).bits[bits].clone()
     }
 
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.

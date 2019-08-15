@@ -1,4 +1,4 @@
-//! This module extends GadgetBuilder with a method for splitting a field element into bits.
+//! This module extends GadgetBuilder with methods for splitting field elements into bits.
 
 use core::borrow::Borrow;
 use std::collections::HashMap;
@@ -7,19 +7,52 @@ use num::BigUint;
 use num_traits::One;
 
 use crate::expression::{BinaryExpression, Expression};
-use crate::field::Field;
+use crate::field::{Field, Element};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// Split `x` into `bits` bit wires. Assumes `x < 2^bits`.
-    // TODO: Add a require_canonical option. If it's enabled, we would assert that the weighted sum
-    // does not overflow, i.e. that it is less than the field size.
-    pub fn split<E: Borrow<Expression<F>>>(&mut self, x: E, bits: usize) -> BinaryExpression<F> {
+    /// Split an arbitrary field element `x` into its canonical binary representation.
+    pub fn split<E: Borrow<Expression<F>>>(&mut self, x: E) -> BinaryExpression<F> {
+        let result = self.split_without_range_check(x, Element::<F>::max_bits());
+        self.assert_lt_binary(&result, BinaryExpression::from(F::order()));
+        result
+    }
+
+    /// Split an arbitrary field element `x` into a binary representation. Unlike `split`, this
+    /// method permits two distinct binary decompositions: the canonical one, and another
+    /// representation where the weighted sum of bits overflows the field size. This minimizes
+    /// constraints, but the ambiguity can be a security problem depending on the context. If in
+    /// doubt, use `split` instead.
+    pub fn split_allowing_ambiguity<E>(&mut self, x: E) -> BinaryExpression<F>
+        where E: Borrow<Expression<F>> {
+        self.split_without_range_check(x, Element::<F>::max_bits())
+    }
+
+    /// Split `x` into `bits` bit wires. This method assumes `x < 2^bits < |F|`. Note that only one
+    /// binary representation is possible here, since `bits` bits is not enough to overflow the
+    /// field size.
+    pub fn split_bounded<E>(&mut self, x: E, bits: usize) -> BinaryExpression<F>
+        where E: Borrow<Expression<F>> {
+        assert!(bits < Element::<F>::max_bits());
+        self.split_without_range_check(x, bits)
+    }
+
+    fn split_without_range_check<E: Borrow<Expression<F>>>(&mut self, x: E, bits: usize)
+                                                           -> BinaryExpression<F> {
+        let x = x.borrow();
         let binary_wire = self.binary_wire(bits);
 
+        // TODO: Use BinaryExpression.join? A bit redundant as is.
+        let mut bit_weights = HashMap::new();
+        for (i, &wire) in binary_wire.bits.iter().enumerate() {
+            bit_weights.insert(wire.wire(), (BigUint::one() << i).into());
+        }
+        let weighted_sum = Expression::new(bit_weights);
+        self.assert_equal(x, weighted_sum);
+
         {
-            let x = x.borrow().clone();
+            let x = x.clone();
             let binary_wire = binary_wire.clone();
 
             self.generator(
@@ -33,14 +66,6 @@ impl<F: Field> GadgetBuilder<F> {
                 },
             );
         }
-
-        // TODO: Use BinaryExpression.join? A bit redundant as is.
-        let mut bit_weights = HashMap::new();
-        for (i, &wire) in binary_wire.bits.iter().enumerate() {
-            bit_weights.insert(wire.wire(), (BigUint::one() << i).into());
-        }
-        let weighted_sum = Expression::new(bit_weights);
-        self.assert_equal(x, weighted_sum);
 
         binary_wire.into()
     }
@@ -56,7 +81,7 @@ mod tests {
     fn split_19_32() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let wire = builder.wire();
-        let bit_wires = builder.split(Expression::from(wire), 32);
+        let bit_wires = builder.split_bounded(Expression::from(wire), 32);
         let gadget = builder.build();
 
         let mut wire_values = values!(wire.clone() => 19u8.into());
