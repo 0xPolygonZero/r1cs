@@ -1,13 +1,9 @@
 //! This module extends GadgetBuilder with methods for splitting field elements into bits.
 
 use core::borrow::Borrow;
-use std::collections::HashMap;
-
-use num::BigUint;
-use num_traits::One;
 
 use crate::expression::{BinaryExpression, Expression};
-use crate::field::{Field, Element};
+use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
@@ -42,32 +38,23 @@ impl<F: Field> GadgetBuilder<F> {
                                                            -> BinaryExpression<F> {
         let x = x.borrow();
         let binary_wire = self.binary_wire(bits);
-
-        // TODO: Use BinaryExpression.join? A bit redundant as is.
-        let mut bit_weights = HashMap::new();
-        for (i, &wire) in binary_wire.bits.iter().enumerate() {
-            bit_weights.insert(wire.wire(), (BigUint::one() << i).into());
-        }
-        let weighted_sum = Expression::new(bit_weights);
+        let binary_exp = BinaryExpression::from(&binary_wire);
+        let weighted_sum = binary_exp.join();
         self.assert_equal(x, weighted_sum);
 
-        {
-            let x = x.clone();
-            let binary_wire = binary_wire.clone();
+        let x = x.clone();
+        self.generator(
+            x.dependencies(),
+            move |values: &mut WireValues<F>| {
+                let value = x.evaluate(values);
+                assert!(value.bits() <= bits);
+                for i in 0..bits {
+                    values.set_boolean(binary_wire.bits[i], value.bit(i));
+                }
+            },
+        );
 
-            self.generator(
-                x.dependencies(),
-                move |values: &mut WireValues<F>| {
-                    let value = x.evaluate(values);
-                    assert!(value.bits() <= bits);
-                    for i in 0..bits {
-                        values.set_boolean(binary_wire.bits[i], value.bit(i));
-                    }
-                },
-            );
-        }
-
-        binary_wire.into()
+        binary_exp
     }
 }
 
