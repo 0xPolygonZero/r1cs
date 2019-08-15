@@ -20,7 +20,7 @@ A `BinaryWire` is a vector of `BooleanWire`s. Similarly, a `BinaryExpression<F>`
 
 ## Basic example
 
-Here's a simple gadget which computes the cube of a BN128 element:
+Here's a simple gadget which computes the cube of a BN128 field element:
 
 ```rust
 // Create a gadget which takes a single input, x, and computes x*x*x.
