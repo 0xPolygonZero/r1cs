@@ -38,7 +38,7 @@ impl<F: Field> GadgetBuilder<F> {
             move |values: &mut WireValues<F>| {
                 let sum_element = (&x_joined + &y_joined).evaluate(values);
                 let sum_biguint = sum_element.to_biguint();
-                values.set_binary_unsigned(sum_wire.clone(), sum_biguint);
+                values.set_binary_unsigned(&sum_wire, sum_biguint);
             },
         );
 

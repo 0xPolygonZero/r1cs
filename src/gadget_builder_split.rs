@@ -71,7 +71,7 @@ mod tests {
         let bit_wires = builder.split_bounded(Expression::from(wire), 32);
         let gadget = builder.build();
 
-        let mut wire_values = values!(wire.clone() => 19u8.into());
+        let mut wire_values = values!(wire => 19u8.into());
         assert!(gadget.execute(&mut wire_values));
 
         assert_eq!(true, bit_wires.bits[0].evaluate(&wire_values));
