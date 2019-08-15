@@ -369,11 +369,11 @@ impl<F: Field> BooleanExpression<F> {
     }
 
     pub fn _false() -> Self {
-        Self::new_unsafe(Expression::zero())
+        Self::from(false)
     }
 
     pub fn _true() -> Self {
-        Self::new_unsafe(Expression::one())
+        Self::from(true)
     }
 
     pub fn expression(&self) -> &Expression<F> {
@@ -431,25 +431,34 @@ impl<F: Field> BinaryExpression<F> {
         self.bits.len()
     }
 
-    /// Truncate this bit vector, discarding the more significant bits while keeping the less
-    /// significant bits.
-    // TODO: Convert to mutable.
-    pub fn truncated(&self, l: usize) -> Self {
+    /// Truncate the bits in this expression, discarding the more significant bits while keeping the
+    /// less significant bits.
+    pub fn truncate(&mut self, l: usize) {
         assert!(l <= self.len());
-        let mut truncated_bits = self.bits.clone();
-        truncated_bits.truncate(l);
-        BinaryExpression { bits: truncated_bits }
+        self.bits.truncate(l);
+    }
+
+    /// Return a copy of this expression truncated to `l` bits, discarding the more significant bits
+    /// while keeping the less significant bits.
+    pub fn truncated(&self, l: usize) -> Self {
+        let mut result = self.clone();
+        result.truncate(l);
+        result
     }
 
     /// Pad this bit vector, adding 0 bits on the more significant side.
-    // TODO: Convert to mutable.
-    pub fn padded(&self, l: usize) -> Self {
+    pub fn pad(&mut self, l: usize) {
         assert!(l >= self.len());
-        let mut padded_bits = self.bits.clone();
-        while padded_bits.len() < l {
-            padded_bits.push(BooleanExpression::_false());
+        while self.bits.len() < l {
+            self.bits.push(BooleanExpression::_false());
         }
-        BinaryExpression { bits: padded_bits }
+    }
+
+    /// Return a copy this bit vector, with 0 bits added on the more significant side.
+    pub fn padded(&self, l: usize) -> Self {
+        let mut result = self.clone();
+        result.pad(l);
+        result
     }
 
     pub fn add_most_significant(&mut self, bit: BooleanExpression<F>) {
