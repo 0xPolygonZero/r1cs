@@ -121,7 +121,7 @@ fn inverse<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expres
 }
 ```
 
-Note that this is roughly equivalent to `GadgetBuilder`'s built-in `inverse` method, with slight modifications for readability.
+This is roughly equivalent to `GadgetBuilder`'s built-in `inverse` method, with slight modifications for readability.
 
 
 ## Disclaimer
