@@ -48,18 +48,92 @@ impl<F: Field> GadgetBuilder<F> {
     /// Add two binary values, ignoring any overflow.
     pub fn binary_sum_ignoring_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
         where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        let sum = self.binary_sum(x, y);
-        sum.truncated(sum.len() - 1)
+        let mut sum = self.binary_sum(x, y);
+        sum.truncate(sum.len() - 1);
+        sum
     }
 
     /// Add two binary values while asserting that overflow does not occur.
-    pub fn binary_sum_asserting_no_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
+    pub fn binary_sum_asserting_no_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2)
+                                                      -> BinaryExpression<F>
         where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        let sum = self.binary_sum(x, y);
+        let mut sum = self.binary_sum(x, y);
         let overflow_bit = &sum.bits[sum.len() - 1];
         self.assert_false(overflow_bit);
-        sum.truncated(sum.len() - 1)
+        sum.truncate(sum.len() - 1);
+        sum
     }
 }
 
-// TODO tests
+#[cfg(test)]
+mod tests {
+    use num::BigUint;
+
+    use crate::expression::BinaryExpression;
+    use crate::field::Bn128;
+    use crate::gadget_builder::GadgetBuilder;
+
+    #[test]
+    fn binary_sum() {
+        let mut builder = GadgetBuilder::<Bn128>::new();
+        let x = builder.binary_wire(4);
+        let y = builder.binary_wire(4);
+        let sum = builder.binary_sum(BinaryExpression::from(&x), BinaryExpression::from(&y));
+        let gadget = builder.build();
+
+        // 10 + 3 = 13.
+        let mut values = binary_unsigned_values!(
+            &x => BigUint::from(10u8), &y => BigUint::from(3u8));
+        assert!(gadget.execute(&mut values));
+        assert_eq!(BigUint::from(13u8), sum.evaluate(&values));
+
+        // 10 + 11 = 21.
+        let mut values = binary_unsigned_values!(
+            &x => BigUint::from(10u8), &y => BigUint::from(11u8));
+        assert!(gadget.execute(&mut values));
+        assert_eq!(BigUint::from(21u8), sum.evaluate(&values));
+    }
+
+    #[test]
+    fn binary_sum_ignoring_overflow() {
+        let mut builder = GadgetBuilder::<Bn128>::new();
+        let x = builder.binary_wire(4);
+        let y = builder.binary_wire(4);
+        let sum = builder.binary_sum_ignoring_overflow(
+            BinaryExpression::from(&x), BinaryExpression::from(&y));
+        let gadget = builder.build();
+
+        // 10 + 3 = 13.
+        let mut values = binary_unsigned_values!(
+            &x => BigUint::from(10u8), &y => BigUint::from(3u8));
+        assert!(gadget.execute(&mut values));
+        assert_eq!(BigUint::from(13u8), sum.evaluate(&values));
+
+        // 10 + 11 = 21 % 16 = 5.
+        let mut values = binary_unsigned_values!(
+            &x => BigUint::from(10u8), &y => BigUint::from(11u8));
+        assert!(gadget.execute(&mut values));
+        assert_eq!(BigUint::from(5u8), sum.evaluate(&values));
+    }
+
+    #[test]
+    fn binary_sum_asserting_no_overflow() {
+        let mut builder = GadgetBuilder::<Bn128>::new();
+        let x = builder.binary_wire(4);
+        let y = builder.binary_wire(4);
+        let sum = builder.binary_sum_asserting_no_overflow(
+            BinaryExpression::from(&x), BinaryExpression::from(&y));
+        let gadget = builder.build();
+
+        // 10 + 3 = 13.
+        let mut values = binary_unsigned_values!(
+            &x => BigUint::from(10u8), &y => BigUint::from(3u8));
+        assert!(gadget.execute(&mut values));
+        assert_eq!(BigUint::from(13u8), sum.evaluate(&values));
+
+        // 10 + 11 = [error].
+        let mut values = binary_unsigned_values!(
+            &x => BigUint::from(10u8), &y => BigUint::from(11u8));
+        assert!(!gadget.execute(&mut values));
+    }
+}
