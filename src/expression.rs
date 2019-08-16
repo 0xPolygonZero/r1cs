@@ -20,9 +20,10 @@ pub struct Expression<F: Field> {
 }
 
 impl<F: Field> Expression<F> {
+    /// Creates a new expression with the given wire coefficients.
     pub fn new(coefficients: HashMap<Wire, Element<F>>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
-            .filter(|(_k, v)| *v != Element::zero())
+            .filter(|(_k, v)| v.is_nonzero())
             .collect();
         Expression { coefficients: nonzero_coefficients }
     }
@@ -469,9 +470,18 @@ impl<F: Field> BinaryExpression<F> {
         self.bits.chunks(chunk_bits).map(|chunk| BinaryExpression { bits: chunk.to_vec() }).collect()
     }
 
-    /// Join these bits into the field element they encode.
+    /// Join these bits into the field element they encode. This method requires that
+    /// `2^self.len() < |F|`, otherwise the result might not fit in a single field element.
     pub fn join(&self) -> Expression<F> {
-        assert!(self.len() < Element::<F>::max_bits(), "Cannot fit in a single field element");
+        assert!(self.len() < Element::<F>::max_bits(),
+                "Cannot fit {}-bit binary expression in a single {}-bit field element",
+                self.len(), Element::<F>::max_bits());
+        self.join_allowing_overflow()
+    }
+
+    /// Join these bits into the field element they encode. This method allows binary expressions of
+    /// any size, so overflow is possible.
+    pub fn join_allowing_overflow(&self) -> Expression<F> {
         let mut sum = Expression::zero();
         for (i, bit) in self.bits.iter().enumerate() {
             let weight = Element::one() << i;

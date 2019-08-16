@@ -8,6 +8,7 @@ use crate::expression::BooleanExpression;
 use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 
+/// An assignment of wire values, where each value is an element of the field `F`.
 #[derive(Default, Debug)]
 pub struct WireValues<F: Field> {
     values: HashMap<Wire, Element<F>>,

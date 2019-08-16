@@ -2,18 +2,21 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
 
+/// A wire represents a witness element.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Wire {
     pub index: u32,
 }
 
 impl Wire {
+    /// A special wire whose value is always set to 1. This is used to create `Expression`s with
+    /// constant terms.
     pub const ONE: Wire = Wire { index: 0 };
 }
 
 impl Ord for Wire {
     fn cmp(&self, other: &Self) -> Ordering {
-        // We want the 1 wire to be last. Otherwise use ascending index order.
+        // For presentation, we want the 1 wire to be last. Otherwise use ascending index order.
         if *self == Wire::ONE && *other == Wire::ONE {
             Ordering::Equal
         } else if *self == Wire::ONE {
@@ -48,6 +51,7 @@ pub struct BooleanWire {
     pub wire: Wire,
 }
 
+/// A `Wire` which has been constrained in such a way that it can only take on a value of 0 or 1.
 impl BooleanWire {
     /// Construct a BooleanWire from an arbitrary wire. This is only safe if you separately
     /// constrain the wire to equal 0 or 1.

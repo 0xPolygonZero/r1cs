@@ -1,4 +1,4 @@
-//! This module extends GadgetBuilder with a method for splitting a field element into bits.
+//! This module extends GadgetBuilder with a method for sorting lists of field elements.
 
 use itertools::enumerate;
 

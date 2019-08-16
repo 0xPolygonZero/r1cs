@@ -39,7 +39,7 @@ impl<F: Field> GadgetBuilder<F> {
         let x = x.borrow();
         let binary_wire = self.binary_wire(bits);
         let binary_exp = BinaryExpression::from(&binary_wire);
-        let weighted_sum = binary_exp.join();
+        let weighted_sum = binary_exp.join_allowing_overflow();
         self.assert_equal(x, weighted_sum);
 
         let x = x.clone();
