@@ -14,7 +14,7 @@ use num_traits::One;
 use num_traits::Zero;
 use rand::Rng;
 
-/// A prime field.
+/// A prime order field.
 pub trait Field: 'static {
     /// The (prime) order of this field.
     fn order() -> BigUint;

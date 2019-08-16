@@ -2,7 +2,7 @@
 
 use itertools::enumerate;
 
-use crate::expression::{BinaryExpression, Expression};
+use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire::Wire;
@@ -23,9 +23,16 @@ impl<F: Field> GadgetBuilder<F> {
         // Then, we assert the order of each adjacent pair of output values. Note that assert_le
         // would internally split each input into its binary form. To avoid splitting intermediate
         // items twice, we will explicitly split here, and call assert_le_binary instead.
-        let outputs_binary: Vec<BinaryExpression<F>> = outputs.iter()
-            .map(|e| self.split(e))
-            .collect();
+        // Also note that only the purportedly largest item (i.e. the last one) needs to be split
+        // canonically. If one of the other elements were to be split into their non-canonical
+        // binary encoding, that binary expression would be greater than the last element, rendering
+        // the instance unsatisfiable.
+        let mut outputs_binary = Vec::new();
+        for i in 0..n-1 {
+            outputs_binary.push(self.split_allowing_ambiguity(&outputs[i]));
+        }
+        outputs_binary.push(self.split(&outputs[n - 1]));
+
         for i in 0..(n - 1) {
             let a = &outputs_binary[i];
             let b = &outputs_binary[i + 1];
