@@ -28,8 +28,8 @@ impl<F: Field> GadgetBuilder<F> {
         // binary encoding, that binary expression would be greater than the last element, rendering
         // the instance unsatisfiable.
         let mut outputs_binary = Vec::new();
-        for i in 0..n-1 {
-            outputs_binary.push(self.split_allowing_ambiguity(&outputs[i]));
+        for out in outputs.iter().take(n-1) {
+            outputs_binary.push(self.split_allowing_ambiguity(out));
         }
         outputs_binary.push(self.split(&outputs[n - 1]));
 
