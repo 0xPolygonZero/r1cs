@@ -16,11 +16,10 @@ impl<F: Field> GadgetBuilder<F> {
     /// change in the future. See "On Arbitrary Waksman Networks and their Vulnerability".
     pub fn assert_permutation(&mut self, a: &[Expression<F>], b: &[Expression<F>]) {
         assert_eq!(a.len(), b.len(), "Permutation must have same number of inputs and outputs");
-        let n = a.len();
 
-        match n {
+        match a.len() {
             // Two empty lists are permutations of one another, trivially.
-            0 => return,
+            0 => (),
             // Two singleton lists are permutations of one another as long as their items are equal.
             1 => self.assert_equal(&a[0], &b[0]),
             // For the 2x2 case, we're implementing a switch gadget. The switch will be controlled
