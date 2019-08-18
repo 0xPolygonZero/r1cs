@@ -29,12 +29,23 @@ impl<F: Field> Expression<F> {
     }
 
     /// The sum of zero or more wires, each with an implied coefficient of 1.
-    pub fn sum(wires: &[Wire]) -> Self {
+    pub fn sum_of_wires(wires: &[Wire]) -> Self {
         Expression {
             coefficients: wires.iter()
                 .map(|&v| (v, Element::one()))
                 .collect()
         }
+    }
+
+    /// The sum of zero or more wires, each with an implied coefficient of 1.
+    pub fn sum_of_expressions(expressions: &[Expression<F>]) -> Self {
+        let mut merged_coefficients = HashMap::new();
+        for exp in expressions {
+            for (wire, coefficient) in exp.coefficients.clone() {
+                *merged_coefficients.entry(wire).or_insert_with(Element::zero) += coefficient
+            }
+        }
+        Expression::new(merged_coefficients)
     }
 
     pub fn zero() -> Self {
@@ -195,6 +206,7 @@ impl<F: Field> Add<&Expression<F>> for &Expression<F> {
     type Output = Expression<F>;
 
     fn add(self, rhs: &Expression<F>) -> Expression<F> {
+        // TODO: Use Expression::sum_of_expressions
         let mut merged_coefficients = self.coefficients.clone();
         for (wire, coefficient) in rhs.coefficients.clone() {
             *merged_coefficients.entry(wire).or_insert_with(Element::zero) += coefficient
@@ -432,6 +444,10 @@ impl<F: Field> BinaryExpression<F> {
         self.bits.len()
     }
 
+    pub fn zero() -> Self {
+        BinaryExpression { bits: Vec::new() }
+    }
+
     /// Truncate the bits in this expression, discarding the more significant bits while keeping the
     /// less significant bits.
     pub fn truncate(&mut self, l: usize) {
@@ -462,12 +478,12 @@ impl<F: Field> BinaryExpression<F> {
         result
     }
 
-    pub fn add_most_significant(&mut self, bit: BooleanExpression<F>) {
-        self.bits.push(bit);
-    }
-
     pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression<F>> {
         self.bits.chunks(chunk_bits).map(|chunk| BinaryExpression { bits: chunk.to_vec() }).collect()
+    }
+
+    pub fn add_most_significant(&mut self, bit: BooleanExpression<F>) {
+        self.bits.push(bit);
     }
 
     /// Join these bits into the field element they encode. This method requires that
@@ -507,6 +523,11 @@ impl<F: Field> BinaryExpression<F> {
         }
         sum
     }
+
+    pub fn concat(expressions: &[BinaryExpression<F>]) -> Self {
+        let bits = expressions.iter().map(|e| e.bits.clone()).concat();
+        BinaryExpression { bits }
+    }
 }
 
 impl<F: Field> Clone for BinaryExpression<F> {
@@ -539,5 +560,41 @@ impl<F: Field> From<BigUint> for BinaryExpression<F> {
             BooleanExpression::from(b)
         }).collect();
         BinaryExpression { bits }
+    }
+}
+
+impl<F: Field> From<usize> for BinaryExpression<F> {
+    fn from(value: usize) -> Self {
+        Self::from(BigUint::from(value))
+    }
+}
+
+impl<F: Field> From<u128> for BinaryExpression<F> {
+    fn from(value: u128) -> Self {
+        Self::from(BigUint::from(value))
+    }
+}
+
+impl<F: Field> From<u64> for BinaryExpression<F> {
+    fn from(value: u64) -> Self {
+        Self::from(BigUint::from(value))
+    }
+}
+
+impl<F: Field> From<u32> for BinaryExpression<F> {
+    fn from(value: u32) -> Self {
+        Self::from(BigUint::from(value))
+    }
+}
+
+impl<F: Field> From<u16> for BinaryExpression<F> {
+    fn from(value: u16) -> Self {
+        Self::from(BigUint::from(value))
+    }
+}
+
+impl<F: Field> From<u8> for BinaryExpression<F> {
+    fn from(value: u8) -> Self {
+        Self::from(BigUint::from(value))
     }
 }

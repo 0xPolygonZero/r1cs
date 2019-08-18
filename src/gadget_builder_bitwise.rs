@@ -3,7 +3,7 @@
 
 use core::borrow::Borrow;
 
-use crate::expression::BinaryExpression;
+use crate::expression::{BinaryExpression, BooleanExpression};
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 
@@ -82,6 +82,35 @@ impl<F: Field> GadgetBuilder<F> {
             // This is equivalent to (i - n) mod l.
             let from_idx = (l + i - n % l) % l;
             x.bits[from_idx].clone()
+        }).collect();
+        BinaryExpression { bits }
+    }
+
+    pub fn bitwise_shift_inc_significance<BE>(&mut self, x: BE, n: usize) -> BinaryExpression<F>
+        where BE: Borrow<BinaryExpression<F>> {
+        let x = x.borrow();
+        let bits = (0..x.len()).map(|i| {
+            if i < n {
+                BooleanExpression::_false()
+            } else {
+                let from_idx = i - n;
+                x.bits[from_idx].clone()
+            }
+        }).collect();
+        BinaryExpression { bits }
+    }
+
+    pub fn bitwise_shift_dec_significance<BE>(&mut self, x: BE, n: usize) -> BinaryExpression<F>
+        where BE: Borrow<BinaryExpression<F>> {
+        let x = x.borrow();
+        let l = x.len();
+        let bits = (0..l).map(|i| {
+            if i < l - n {
+                let from_idx = i + n;
+                x.bits[from_idx].clone()
+            } else {
+                BooleanExpression::_false()
+            }
         }).collect();
         BinaryExpression { bits }
     }
@@ -175,4 +204,6 @@ mod tests {
         assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(0b01100010u32), x_rot.evaluate(&values));
     }
+
+    // TODO: Tests for shift methods
 }

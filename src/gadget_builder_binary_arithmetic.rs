@@ -1,23 +1,47 @@
 use core::borrow::Borrow;
 
-use crate::expression::BinaryExpression;
+use itertools::Itertools;
+use num::BigUint;
+use num_traits::{One, Zero};
+
+use crate::expression::{BinaryExpression, Expression};
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// Add two binary values in a widening manner. The result will be one bit longer than the
+    /// Add two binary expressions in a widening manner. The result will be one bit longer than the
     /// longer of the two inputs.
     pub fn binary_sum<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
         where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        // We will non-deterministically generate the sum bits, join the three binary expressions,
-        // and verify the summation on those field elements.
+        self.binary_summation(&[x.borrow().clone(), y.borrow().clone()])
+    }
 
-        let x = x.borrow();
-        let y = y.borrow();
+    /// Add two binary expressions, ignoring any overflow.
+    pub fn binary_sum_ignoring_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
+        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
+        self.binary_summation_ignoring_overflow(&[x.borrow().clone(), y.borrow().clone()])
+    }
 
-        let in_bits = x.len().max(y.len());
-        let sum_bits = in_bits + 1;
+    /// Add two binary expressions while asserting that overflow does not occur.
+    pub fn binary_sum_asserting_no_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2)
+                                                      -> BinaryExpression<F>
+        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
+        self.binary_summation_asserting_no_overflow(&[x.borrow().clone(), y.borrow().clone()])
+    }
+
+    /// Add an arbitrary number of binary expressions. The result will be one bit longer than the
+    /// longest input.
+    pub fn binary_summation(&mut self, terms: &[BinaryExpression<F>]) -> BinaryExpression<F> {
+        // We will non-deterministically generate the sum bits, join the binary expressions, and
+        // verify the summation on those field elements.
+
+        let mut max_sum = BigUint::zero();
+        for term in terms {
+            let max_term = (BigUint::one() << term.len()) - BigUint::one();
+            max_sum += max_term;
+        }
+        let sum_bits = max_sum.bits();
 
         // TODO: Generalize this addition function to support larger operands.
         // We can split the bits into chunks and perform grade school addition on joined chunks.
@@ -27,16 +51,14 @@ impl<F: Field> GadgetBuilder<F> {
         let sum_wire = self.binary_wire(sum_bits);
         let sum = BinaryExpression::from(&sum_wire);
 
-        let x_joined = x.join();
-        let y_joined = y.join();
-        let sum_joined = sum.join();
-
-        self.assert_equal(&x_joined + &y_joined, sum_joined);
+        let sum_of_terms = Expression::sum_of_expressions(
+            &terms.iter().map(BinaryExpression::join).collect_vec());
+        self.assert_equal(&sum_of_terms, sum.join());
 
         self.generator(
-            [x.dependencies(), y.dependencies()].concat(),
+            sum_of_terms.dependencies(),
             move |values: &mut WireValues<F>| {
-                let sum_element = (&x_joined + &y_joined).evaluate(values);
+                let sum_element = sum_of_terms.evaluate(values);
                 let sum_biguint = sum_element.to_biguint();
                 values.set_binary_unsigned(&sum_wire, sum_biguint);
             },
@@ -45,23 +67,30 @@ impl<F: Field> GadgetBuilder<F> {
         sum
     }
 
-    /// Add two binary values, ignoring any overflow.
-    pub fn binary_sum_ignoring_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        let mut sum = self.binary_sum(x, y);
-        sum.truncate(sum.len() - 1);
+    /// Add an arbitrary number of binary expressions, ignoring any overflow.
+    pub fn binary_summation_ignoring_overflow(&mut self, terms: &[BinaryExpression<F>])
+                                              -> BinaryExpression<F> {
+        let input_bits = terms.iter().fold(0, |x, y| x.max(y.len()));
+        let mut sum = self.binary_summation(terms);
+        sum.truncate(input_bits);
         sum
     }
 
-    /// Add two binary values while asserting that overflow does not occur.
-    pub fn binary_sum_asserting_no_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2)
-                                                      -> BinaryExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        let mut sum = self.binary_sum(x, y);
-        let overflow_bit = &sum.bits[sum.len() - 1];
-        self.assert_false(overflow_bit);
-        sum.truncate(sum.len() - 1);
+    /// Add an arbitrary number of binary expressions, asserting that overflow does not occur.
+    pub fn binary_summation_asserting_no_overflow(&mut self, terms: &[BinaryExpression<F>])
+                                                  -> BinaryExpression<F> {
+        let input_bits = terms.iter().fold(0, |x, y| x.max(y.len()));
+        let mut sum = self.binary_summation(terms);
+        let carry = BinaryExpression { bits: sum.bits[input_bits..].to_vec() };
+        self.binary_assert_zero(carry);
+        sum.truncate(input_bits);
         sum
+    }
+
+    /// Assert that a binary expression is zero.
+    pub fn binary_assert_zero<BE: Borrow<BinaryExpression<F>>>(&mut self, x: BE) {
+        // TODO: Generalize to work with binary expressions larger than |F|.
+        self.assert_zero(x.borrow().join())
     }
 }
 
@@ -136,4 +165,7 @@ mod tests {
             &x => BigUint::from(10u8), &y => BigUint::from(11u8));
         assert!(!gadget.execute(&mut values));
     }
+
+    // TODO: Test inputs with differing lengths.
+    // TODO: Test summations with more than two terms.
 }

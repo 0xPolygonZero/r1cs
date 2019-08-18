@@ -150,7 +150,7 @@ impl<F: Field> GadgetBuilder<F> {
             self.assert_boolean(Expression::from(m));
         }
         // The sum of all masks must equal 0 or 1, so that at most one mask can equal 1.
-        let diff_exists = self.assert_boolean(Expression::sum(&mask));
+        let diff_exists = self.assert_boolean(Expression::sum_of_wires(&mask));
 
         {
             let x_chunks = x_chunks.clone();
