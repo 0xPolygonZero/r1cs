@@ -4,7 +4,7 @@ use crate::wire_values::WireValues;
 
 pub struct WitnessGenerator<F: Field> {
     inputs: Vec<Wire>,
-    generator: Box<Fn(&mut WireValues<F>)>,
+    generator: Box<dyn Fn(&mut WireValues<F>)>,
 }
 
 impl<F: Field> WitnessGenerator<F> {
