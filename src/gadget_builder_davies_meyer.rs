@@ -24,7 +24,7 @@ mod tests {
     use num::BigUint;
 
     use crate::expression::Expression;
-    use crate::field::{Bn128, Element, Field};
+    use crate::field::{Element, Field};
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::F7;
 
