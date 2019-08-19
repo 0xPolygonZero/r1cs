@@ -3,7 +3,7 @@
 use core::borrow::Borrow;
 
 use crate::expression::Expression;
-use crate::field::{Element, Field};
+use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 
 type BlockCipher<F> = fn(builder: &mut GadgetBuilder<F>,

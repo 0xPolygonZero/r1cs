@@ -2,10 +2,9 @@
 
 use core::borrow::Borrow;
 
-use crate::expression::{BinaryExpression, Expression};
+use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
-use crate::wire_values::WireValues;
 
 type CompressionFunction<F> = fn(builder: &mut GadgetBuilder<F>,
                                  x: &Expression<F>,
