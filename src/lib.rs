@@ -10,6 +10,7 @@ pub mod gadget_builder_binary_arithmetic;
 pub mod gadget_builder_bitwise;
 pub mod gadget_builder_boolean;
 pub mod gadget_builder_compare;
+pub mod gadget_builder_mimc;
 pub mod gadget_builder_permutation;
 pub mod gadget_builder_random_access;
 pub mod gadget_builder_sort;
