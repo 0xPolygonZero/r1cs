@@ -137,9 +137,27 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::field::Bn128;
+    use crate::field::{Bn128, Element};
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::{assert_eq_false, assert_eq_true};
+
+    #[test]
+    fn exp() {
+        let mut builder = GadgetBuilder::<Bn128>::new();
+        let x = builder.wire();
+        let x_exp_0 = builder.exp(Expression::from(x), 0);
+        let x_exp_1 = builder.exp(Expression::from(x), 1);
+        let x_exp_2 = builder.exp(Expression::from(x), 2);
+        let x_exp_3 = builder.exp(Expression::from(x), 3);
+        let gadget = builder.build();
+
+        let mut values = values!(x => 3u8.into());
+        assert!(gadget.execute(&mut values));
+        assert_eq!(Element::from(1u8), x_exp_0.evaluate(&values));
+        assert_eq!(Element::from(3u8), x_exp_1.evaluate(&values));
+        assert_eq!(Element::from(9u8), x_exp_2.evaluate(&values));
+        assert_eq!(Element::from(27u8), x_exp_3.evaluate(&values));
+    }
 
     #[test]
     #[should_panic]
