@@ -44,6 +44,8 @@ assert!(constraints_satisfied);
 assert_eq!(Element::from(125u8), x_cubed.evaluate(&values));
 ```
 
+This can also be done more succinctly with `builder.exp(x_exp, 3)`, which performs exponentiation by squaring.
+
 
 ## Custom fields
 
