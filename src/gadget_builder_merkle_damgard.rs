@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn merkle_damgard() {
         // We will use a trivial compression function to keep the test simple.
-        fn test_compress<F: Field>(builder: &mut GadgetBuilder<F>,
+        fn test_compress<F: Field>(_builder: &mut GadgetBuilder<F>,
                                    x: &Expression<F>,
                                    y: &Expression<F>) -> Expression<F> {
             x * 2 + y * 3

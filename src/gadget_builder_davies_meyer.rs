@@ -21,8 +21,6 @@ impl<F: Field> GadgetBuilder<F> {
 
 #[cfg(test)]
 mod tests {
-    use num::BigUint;
-
     use crate::expression::Expression;
     use crate::field::{Element, Field};
     use crate::gadget_builder::GadgetBuilder;

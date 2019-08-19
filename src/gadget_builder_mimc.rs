@@ -85,10 +85,8 @@ impl<F: Field> GadgetBuilder<F> {
 
 #[cfg(test)]
 mod tests {
-    use num::BigUint;
-
     use crate::expression::Expression;
-    use crate::field::{Element, Field};
+    use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::{F11, F7};
 

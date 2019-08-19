@@ -430,10 +430,13 @@ impl<F: Field> From<bool> for BooleanExpression<F> {
     }
 }
 
-/// A "binary expression" which is comprised of several bits, each one being a boolean expression.
+/// A `BinaryExpression` is comprised of several bits, each one being a `BooleanExpression`. The
+/// sequence of bits is often interpreted as an unsigned integer for the purpose of binary
+/// arithmetic. When doing so, our convention is to treat the left-most bit as the least
+/// significant, and the right-most bit as the most significant.
 #[derive(Debug)]
 pub struct BinaryExpression<F: Field> {
-    /// The list of bits, ordered from least significant to most significant.
+    /// The sequence of bits, ordered from least significant to most significant.
     pub bits: Vec<BooleanExpression<F>>,
 }
 
