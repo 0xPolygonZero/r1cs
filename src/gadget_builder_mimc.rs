@@ -10,7 +10,9 @@ use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// The MiMC block cipher.
+    /// The MiMC block cipher in its more raw form. This method takes a list of round constants as
+    /// input. The number of rounds will be one greater than the length of that list (since the
+    /// first round has no random constant).
     pub fn mimc<E1, E2>(&mut self, key: E1, input: E2, round_constants: &[Element<F>])
                         -> Expression<F>
         where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
@@ -40,15 +42,38 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// The MiMC block cipher, using the recommended number of rounds, and using ChaCha20 (seeded
-    /// with 0) as the source of randomness.
-    pub fn mimc_chacha20(&mut self, key: Expression<F>, input: Expression<F>) -> Expression<F> {
-        // Our source of randomness for the round constants will be ChaCha20 with a seed of 0.
+    /// with 0) as the source of randomness for round constants.
+    pub fn mimc_chacha20<E1, E2>(&mut self, key: E1, input: E2) -> Expression<F>
+        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+        self.mimc_chacha20_refs(key.borrow(), input.borrow())
+    }
+
+    /// Like `mimc_chacha20`, but takes plain references instead of `Borrow`s.
+    fn mimc_chacha20_refs(&mut self, key: &Expression<F>, input: &Expression<F>) -> Expression<F> {
         let mut rng = ChaChaRng::seed_from_u64(0);
         let mut round_constants = Vec::new();
         for _r in 0..Self::mimc_recommended_rounds() {
             round_constants.push(Element::random(&mut rng));
         }
         self.mimc(key, input, &round_constants)
+    }
+
+    /// A compression function based on MiMC and the additive variant of Davies-Meyer. Uses ChaCha20
+    /// (seeded with 0) as the source of randomness for MiMC round constants.
+    pub fn mimc_compress<E1, E2>(&mut self, x: E1, y: E2) -> Expression<F>
+        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+        self.mimc_compress_refs(x.borrow(), y.borrow())
+    }
+
+    /// Like `mimc_compress`, but takes plain references instead of `Borrow`s.
+    pub fn mimc_compress_refs(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
+        self.davies_meyer(x, y, Self::mimc_chacha20_refs)
+    }
+
+    /// A hash function based on MiMC, the additive variant of Davies-Meyer, and Merkle-Damgard.
+    /// Uses ChaCha20 (seeded with 0) as the source of randomness for constants.
+    pub fn mimc_hash(&mut self, blocks: &[Expression<F>]) -> Expression<F> {
+        self.merkle_damgard_chacha20(blocks, Self::mimc_compress_refs)
     }
 
     /// The recommended number of rounds to use in MiMC, based on the paper.
@@ -65,18 +90,10 @@ mod tests {
     use crate::expression::Expression;
     use crate::field::{Element, Field};
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::{F11, F7};
 
     #[test]
     fn mimc_f11() {
-        #[derive(Debug)]
-        struct F11 {}
-
-        impl Field for F11 {
-            fn order() -> BigUint {
-                BigUint::from(11u8)
-            }
-        }
-
         let constants = &[Element::from(5u8), Element::from(7u8)];
 
         let mut builder = GadgetBuilder::<F11>::new();
@@ -96,14 +113,6 @@ mod tests {
     #[test]
     #[should_panic]
     fn mimc_f7_incompatible() {
-        struct F7 {}
-
-        impl Field for F7 {
-            fn order() -> BigUint {
-                BigUint::from(7u8)
-            }
-        }
-
         let mut builder = GadgetBuilder::<F7>::new();
         builder.mimc_chacha20(Expression::zero(), Expression::zero());
     }
