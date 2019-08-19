@@ -2,6 +2,7 @@
 pub mod wire_values;
 
 pub mod constraint;
+pub mod expression;
 pub mod field;
 pub mod gadget;
 pub mod gadget_builder;
@@ -17,7 +18,7 @@ pub mod gadget_builder_permutation;
 pub mod gadget_builder_random_access;
 pub mod gadget_builder_sort;
 pub mod gadget_builder_split;
-pub mod expression;
+pub mod merkle_trees;
 pub mod wire;
 pub mod witness_generator;
 
