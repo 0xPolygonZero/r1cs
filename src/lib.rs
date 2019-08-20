@@ -7,6 +7,7 @@ pub mod boolean_algebra;
 pub mod comparisons;
 pub mod constraint;
 pub mod davies_meyer;
+pub mod embedded_curve;
 pub mod expression;
 pub mod field;
 pub mod field_arithmetic;
