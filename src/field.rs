@@ -48,6 +48,9 @@ impl Field for Bls12_381 {
 #[derive(Debug)]
 pub struct Element<F: Field> {
     n: BigUint,
+    /// F needs to be present in a struct field, otherwise the compiler will complain that it is
+    /// unused. In reality it is used, but only at compile time. For example, some functions take an
+    /// `Element<F>` and call `F::order()`.
     phantom: PhantomData<F>,
 }
 
