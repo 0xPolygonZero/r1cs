@@ -6,84 +6,47 @@ use std::str::FromStr;
 use num::bigint::ParseBigIntError;
 use crate::field::{Element, Field};
 use crate::field::{Bn128, Bls12_381};
+use crate::curve::{EdwardsCurve, Curve, CurvePoint, EdwardsPoint};
 
-/// An embedded twisted edwards curve, defined over
+/// Families of "embedded" curves, defined over
 /// the same base field as the constraint system.
 pub trait EmbeddedCurve<F: Field> {
-    fn d() -> Element<F>;
-    fn cofactor() -> u16;
-    fn generator() -> CurvePoint<F>;
-    fn order() -> BigUint;
-
+    fn parameters() -> (Element<F>, Element<F>);
 }
 
 /// Specification of the babyjubjub curve from
 /// https://github.com/barryWhiteHat/baby_jubjub_ecc
-impl<F: Field> EmbeddedCurve<F> for Bn128 {
-    fn d() -> Element<F> {
-        let n = BigUint::from_str(
-            "0"
-        ).unwrap();
-        Element::from(n)
-    }
-    fn cofactor() -> u16 {
-        0
-    }
-    fn generator() -> CurvePoint<F> {
-        let x = BigUint::from_str(
-            "1"
-        ).unwrap();
-        let y = BigUint::from_str(
-            "1"
-        ).unwrap();
-        CurvePoint::from((Element::from(x), Element::from(y)))
-    }
-    fn order() -> BigUint {
-        BigUint::from_str(
-            "0"
-        ).unwrap()
+impl EmbeddedCurve<Bn128> for EdwardsCurve<Bn128> {
+    fn parameters() -> (Element<Bn128>, Element<Bn128>) {
+        let a = Element::from(BigUint::from_str("168700").unwrap());
+        let d = Element::from(BigUint::from_str("168696").unwrap());
+        (a, d)
     }
 }
 
 /// Specification of the jubjub curve from
 /// https://github.com/zkcrypto/jubjub
-impl<F: Field> EmbeddedCurve<F> for Bls12_381 {
-    fn d() -> Element<F> {
-        let n = BigUint::from_str(
-            "0"
-        ).unwrap();
-        Element::from(n)
-    }
-    fn cofactor() -> u16 {
-        0
-    }
-    fn generator() -> CurvePoint<F> {
-        let x = BigUint::from_str(
-            "1"
-        ).unwrap();
-        let y = BigUint::from_str(
-            "1"
-        ).unwrap();
-        CurvePoint::from((Element::from(x), Element::from(y)))
-    }
-    fn order() -> BigUint {
-        BigUint::from_str(
-            "0"
-        ).unwrap()
+impl EmbeddedCurve<Bls12_381> for EdwardsCurve<Bls12_381> {
+    fn parameters() -> (Element<Bls12_381>, Element<Bls12_381>) {
+        let a = -Element::<Bls12_381>::one();
+        let d = Element::from(BigUint::from_str(
+            "19257038036680949359750312669786877991949435402254120286184196891950884077233"
+        ).unwrap());
+        (a, d)
     }
 }
 
-/// A point on an elliptic curve. Can be expressed as
-/// (u,v) in Edwards form, or (x,y) in birationally equivalent
-/// Montgomery form.
-#[derive(Debug)]
-pub struct CurvePoint<F: Field> {
-    x: Element<F>,
-    y: Element<F>,
-}
+#[cfg(test)]
+mod tests {
+    use std::iter;
+    use std::str::FromStr;
 
-impl<F: Field> From<(Element<F>, Element<F>)> for CurvePoint<F> {
-    fn from(point: (Element<F>, Element<F>)) -> CurvePoint<F> {
-        CurvePoint { x: point.0, y: point.1 }
+    use itertools::assert_equal;
+
+    use crate::field::{Bn128, Bls12_381, Element};
+
+    #[test]
+    fn addition() {
+        type F = Bls12_381;
     }
 }

@@ -6,6 +6,7 @@ pub mod bitwise_operations;
 pub mod boolean_algebra;
 pub mod comparisons;
 pub mod constraint;
+pub mod curve;
 pub mod davies_meyer;
 pub mod embedded_curve;
 pub mod expression;

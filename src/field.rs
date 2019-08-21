@@ -51,6 +51,12 @@ pub struct Element<F: Field> {
     phantom: PhantomData<F>,
 }
 
+impl<F: Field> num_traits::identities::One for Element<F> {
+    fn one() -> Self {
+        Self::from(BigUint::one())
+    }
+}
+
 impl<F: Field> Element<F> {
     pub fn zero() -> Self {
         Self::from(BigUint::zero())
