@@ -1,12 +1,10 @@
 //! This module extends GadgetBuilder with an implementation of MiMC.
 
-use rand::SeedableRng;
-use rand_chacha::ChaChaRng;
-
 use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, Permutation};
+use crate::lcg::LCG;
 use crate::MonomialPermutation;
 
 /// The MiMC block cipher.
@@ -29,13 +27,13 @@ impl<F: Field> MiMCBlockCipher<F> {
 }
 
 impl<F: Field> Default for MiMCBlockCipher<F> {
-    /// Configures MiMC with the number of rounds recommended in the paper. Uses ChaCha20 (seeded
-    /// with 0) as the source of randomness for these constants.
+    /// Configures MiMC with the number of rounds recommended in the paper. Uses a simple LCG
+    /// (seeded with 0) as the source of randomness for these constants.
     fn default() -> Self {
-        let mut rng = ChaChaRng::seed_from_u64(0);
         let mut round_constants = Vec::new();
+        let mut lcg = LCG::new();
         for _r in 0..mimc_recommended_rounds::<F>() {
-            round_constants.push(Element::random(&mut rng));
+            round_constants.push(lcg.next_element());
         }
         MiMCBlockCipher::new(&round_constants)
     }
