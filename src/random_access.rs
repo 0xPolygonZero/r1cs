@@ -11,7 +11,10 @@ use crate::gadget_builder::GadgetBuilder;
 impl<F: Field> GadgetBuilder<F> {
     /// Access the `i`th element of `items`, where `i` may be a dynamic expression. Assumes
     /// `i < items.len()`.
-    // TODO: This only supports scans for now; should support Merkle proofs for large lists.
+    ///
+    /// Note that this gadget returns 0 if the index is out of range. If you want to prohibit
+    /// out-of-range indices, you can do so with a separate call to `assert_lt`.
+    // TODO: We can do this more efficiently with a binary MUX structure.
     pub fn random_access<E>(&mut self, items: Vec<Expression<F>>, index: E) -> Expression<F>
         where E: Borrow<Expression<F>> {
         let mut result = Expression::zero();
