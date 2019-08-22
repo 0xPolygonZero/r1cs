@@ -1,24 +1,24 @@
 #[macro_use]
 pub mod wire_values;
 
-pub mod binary_arithmetic;
-pub mod bitwise_operations;
-pub mod boolean_algebra;
-pub mod comparisons;
+mod binary_arithmetic;
+mod bitwise_operations;
+mod boolean_algebra;
+mod comparisons;
 pub mod constraint;
-pub mod davies_meyer;
+mod davies_meyer;
 pub mod expression;
 pub mod field;
-pub mod field_arithmetic;
+mod field_arithmetic;
 pub mod gadget;
 pub mod gadget_builder;
-pub mod merkle_damgard;
+mod merkle_damgard;
 pub mod merkle_trees;
-pub mod mimc;
-pub mod permutations;
-pub mod random_access;
-pub mod sorting;
-pub mod splitting;
+mod mimc;
+mod permutations;
+mod random_access;
+mod sorting;
+mod splitting;
 pub mod wire;
 pub mod witness_generator;
 
