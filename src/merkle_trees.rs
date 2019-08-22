@@ -8,7 +8,7 @@ type CompressionFunction<F> = fn(&mut GadgetBuilder<F>, Expression<F>, Expressio
                                  -> Expression<F>;
 
 /// The path from a leaf to the root of a binary Merkle tree.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MerklePath<F: Field> {
     /// The sequence of "turns" when traversing up the tree. The value of each bit indicates the
     /// index of the target node relative to its parent. For example, a zero bit indicates that the
@@ -22,6 +22,15 @@ impl<F: Field> MerklePath<F> {
     pub fn new(prefix: BinaryExpression<F>, siblings: Vec<Expression<F>>) -> Self {
         assert_eq!(prefix.len(), siblings.len());
         MerklePath { prefix, siblings }
+    }
+}
+
+impl<F: Field> Clone for MerklePath<F> {
+    fn clone(&self) -> Self {
+        MerklePath {
+            prefix: self.prefix.clone(),
+            siblings: self.siblings.clone()
+        }
     }
 }
 
