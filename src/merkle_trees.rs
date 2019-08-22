@@ -1,7 +1,8 @@
-use crate::expression::{BinaryExpression, Expression, BooleanExpression};
+use std::borrow::Borrow;
+
+use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
-use std::borrow::Borrow;
 
 type CompressionFunction<F> = fn(&mut GadgetBuilder<F>, Expression<F>, Expression<F>)
                                  -> Expression<F>;
@@ -66,5 +67,65 @@ impl<F: Field> GadgetBuilder<F> {
     ) where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>, MP: Borrow<MerklePath<F>> {
         let computed_root = self.merkle_tree_root(leaf, path, compress);
         self.assert_equal(purported_root, computed_root)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use num::BigUint;
+
+    use crate::expression::{BinaryExpression, BooleanExpression, Expression};
+    use crate::field::{Bn128, Element, Field};
+    use crate::gadget_builder::GadgetBuilder;
+    use crate::merkle_trees::MerklePath;
+
+    #[test]
+    fn mimc_merkle_step() {
+        let mut builder = GadgetBuilder::<Bn128>::new();
+        let node = builder.wire();
+        let sibling = builder.wire();
+        let is_right = builder.boolean_wire();
+        let parent_hash = builder.merkle_tree_step(
+            Expression::from(node), Expression::from(sibling),
+            BooleanExpression::from(is_right), test_compress);
+        let gadget = builder.build();
+
+        let mut values_3_4 = values!(node => 3u8.into(), sibling => 4u8.into());
+        values_3_4.set_boolean(is_right, false);
+        assert!(gadget.execute(&mut values_3_4));
+        assert_eq!(Element::from(10u8), parent_hash.evaluate(&values_3_4));
+
+        let mut values_4_3 = values!(node => 3u8.into(), sibling => 4u8.into());
+        values_4_3.set_boolean(is_right, true);
+        assert!(gadget.execute(&mut values_4_3));
+        assert_eq!(Element::from(11u8), parent_hash.evaluate(&values_4_3));
+    }
+
+    #[test]
+    fn mimc_merkle_root() {
+        let mut builder = GadgetBuilder::<Bn128>::new();
+        let prefix_wire = builder.binary_wire(3);
+        let (sibling_1, sibling_2, sibling_3) = (builder.wire(), builder.wire(), builder.wire());
+        let path = MerklePath::new(
+            BinaryExpression::from(&prefix_wire),
+            vec![sibling_1.into(), sibling_2.into(), sibling_3.into()]);
+        let root_hash = builder.merkle_tree_root(Expression::one(), path, test_compress);
+        let gadget = builder.build();
+
+        let mut values = values!(
+            sibling_1 => 3u8.into(),
+            sibling_2 => 3u8.into(),
+            sibling_3 => 9u8.into());
+        values.set_binary_unsigned(prefix_wire, BigUint::from(0b010u8));
+        assert!(gadget.execute(&mut values));
+        // The leaf is 1; the first parent hash is 2*1 + 3 = 5; the next parent hash is
+        // 2*3 + 5 = 11; the root is 2*11 + 9 = 31.
+        assert_eq!(Element::from(31u8), root_hash.evaluate(&values));
+    }
+
+    // A dummy compression function which returns 2x + y.
+    fn test_compress<F: Field>(_builder: &mut GadgetBuilder<F>, x: Expression<F>, y: Expression<F>)
+                     -> Expression<F> {
+        x * 2 + y
     }
 }
