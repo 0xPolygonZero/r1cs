@@ -66,7 +66,7 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// Like `mimc_compress`, but takes plain references instead of `Borrow`s.
-    pub fn mimc_compress_refs(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
+    fn mimc_compress_refs(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         self.davies_meyer(x, y, Self::mimc_chacha20_refs)
     }
 

@@ -44,7 +44,7 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// Compute a Merkle root given a leaf value and its Merkle path.
-    fn merkle_tree_root<E, MP>(
+    pub fn merkle_tree_root<E, MP>(
         &mut self,
         leaf: E,
         path: MP,
