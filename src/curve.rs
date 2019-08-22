@@ -20,9 +20,9 @@ pub struct EdwardsCurve<F: Field> {
 }
 
 impl<F: Field> EdwardsCurve<F> {
-    fn contains_point(self, p: EdwardsPoint<F>) -> bool {
-        let ref x_squared = pow(p.x, 2);
-        let ref y_squared = pow(p.y, 2);
+    fn contains_point(self, p: &EdwardsPoint<F>) -> bool {
+        let ref x_squared = pow(p.x.clone(), 2);
+        let ref y_squared = pow(p.y.clone(), 2);
         self.a * x_squared + y_squared == Element::<F>::one() + self.d * x_squared * y_squared
     }
 }
@@ -46,9 +46,12 @@ pub struct EdwardsPoint<F: Field> {
 impl<F: Field> CurvePoint<F> for EdwardsPoint<F> {
 }
 
-impl<F: Field> From<(Element<F>, Element<F>)> for EdwardsPoint<F> {
+impl<F> From<(Element<F>, Element<F>)> for EdwardsPoint<F> where F: Field, EdwardsCurve<F>: EmbeddedCurve<F> {
     fn from(coordinates: (Element<F>, Element<F>)) -> EdwardsPoint<F> {
-        EdwardsPoint { x: coordinates.0, y: coordinates.1 }
+        let c = EdwardsCurve::<F>::from(EdwardsCurve::<F>::parameters());
+        let p = EdwardsPoint { x: coordinates.0, y: coordinates.1 };
+        assert!(c.contains_point(&p));
+        p
     }
 }
 
@@ -76,6 +79,22 @@ mod tests {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap());
         let point = EdwardsPoint::from((x ,y));
-        assert!(curve.contains_point(point))
+        assert!(curve.contains_point(&point))
     }
+
+    fn check_point_not_on_curve() {
+        type F = Bls12_381;
+
+        let curve = EdwardsCurve{a: EdwardsCurve::<F>::parameters().0, d: EdwardsCurve::<F>::parameters().1};
+        let x = Element::from(BigUint::from_str(
+            "11076627216317271660298050606127911965867021807910416450833192264015104452985"
+        ).unwrap());
+        let y = Element::from(BigUint::from_str(
+            "44412834903739585386157632289020980010620626017712148233229312325549216099227"
+        ).unwrap());
+        let point = EdwardsPoint::from((x ,y));
+        assert!(!curve.contains_point(&point))
+    }
+
+
 }
