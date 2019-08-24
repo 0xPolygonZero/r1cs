@@ -3,9 +3,7 @@ use std::borrow::Borrow;
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
-
-type CompressionFunction<F> = fn(&mut GadgetBuilder<F>, Expression<F>, Expression<F>)
-                                 -> Expression<F>;
+use crate::gadget_traits::CompressionFunction;
 
 /// The path from a leaf to the root of a binary Merkle tree.
 #[derive(Debug)]
@@ -29,51 +27,54 @@ impl<F: Field> Clone for MerklePath<F> {
     fn clone(&self) -> Self {
         MerklePath {
             prefix: self.prefix.clone(),
-            siblings: self.siblings.clone()
+            siblings: self.siblings.clone(),
         }
     }
 }
 
 impl<F: Field> GadgetBuilder<F> {
     /// Update an intermediate hash value in a Merkle tree, given the sibling at the current layer.
-    fn merkle_tree_step<E1, E2, BE>(
+    fn merkle_tree_step<E1, E2, BE, CF>(
         &mut self,
         node: E1,
         sibling: E2,
         prefix_bit: BE,
-        compress: CompressionFunction<F>,
+        compress: &CF,
     ) -> Expression<F>
         where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>,
-              BE: Borrow<BooleanExpression<F>> {
+              BE: Borrow<BooleanExpression<F>>, CF: CompressionFunction<F> {
         let node = node.borrow();
         let sibling = sibling.borrow();
         let left = self.selection(prefix_bit, sibling, node);
         let right = sibling + node - &left;
-        compress(self, left, right)
+        compress.compress(self, &left, &right)
     }
 
     /// Compute a Merkle root given a leaf value and its Merkle path.
-    pub fn merkle_tree_root<E, MP>(
+    pub fn merkle_tree_root<E, MP, CF>(
         &mut self,
         leaf: E,
         path: MP,
-        compress: CompressionFunction<F>,
-    ) -> Expression<F> where E: Borrow<Expression<F>>, MP: Borrow<MerklePath<F>> {
+        compress: &CF,
+    ) -> Expression<F> where E: Borrow<Expression<F>>, MP: Borrow<MerklePath<F>>,
+                             CF: CompressionFunction<F> {
         let path = path.borrow();
         let mut current = leaf.borrow().clone();
         for (prefix_bit, sibling) in path.prefix.bits.iter().zip(path.siblings.iter()) {
-            current = self.merkle_tree_step(current, sibling.clone(), prefix_bit.clone(), compress);
+            current = self.merkle_tree_step(
+                current, sibling.clone(), prefix_bit.clone(), compress);
         }
         current
     }
 
-    pub fn assert_merkle_tree_membership<E1, E2, MP>(
+    pub fn assert_merkle_tree_membership<E1, E2, MP, CF>(
         &mut self,
         leaf: E1,
         purported_root: E2,
         path: MerklePath<F>,
-        compress: CompressionFunction<F>,
-    ) where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>, MP: Borrow<MerklePath<F>> {
+        compress: &CF,
+    ) where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>,
+            MP: Borrow<MerklePath<F>>, CF: CompressionFunction<F> {
         let computed_root = self.merkle_tree_root(leaf, path, compress);
         self.assert_equal(purported_root, computed_root)
     }
@@ -87,6 +88,7 @@ mod tests {
     use crate::field::{Bn128, Element, Field};
     use crate::gadget_builder::GadgetBuilder;
     use crate::merkle_trees::MerklePath;
+    use crate::gadget_traits::CompressionFunction;
 
     #[test]
     fn mimc_merkle_step() {
@@ -96,7 +98,7 @@ mod tests {
         let is_right = builder.boolean_wire();
         let parent_hash = builder.merkle_tree_step(
             Expression::from(node), Expression::from(sibling),
-            BooleanExpression::from(is_right), test_compress);
+            BooleanExpression::from(is_right), &TestCompress);
         let gadget = builder.build();
 
         let mut values_3_4 = values!(node => 3u8.into(), sibling => 4u8.into());
@@ -118,7 +120,7 @@ mod tests {
         let path = MerklePath::new(
             BinaryExpression::from(&prefix_wire),
             vec![sibling_1.into(), sibling_2.into(), sibling_3.into()]);
-        let root_hash = builder.merkle_tree_root(Expression::one(), path, test_compress);
+        let root_hash = builder.merkle_tree_root(Expression::one(), path, &TestCompress);
         let gadget = builder.build();
 
         let mut values = values!(
@@ -133,8 +135,12 @@ mod tests {
     }
 
     // A dummy compression function which returns 2x + y.
-    fn test_compress<F: Field>(_builder: &mut GadgetBuilder<F>, x: Expression<F>, y: Expression<F>)
-                     -> Expression<F> {
-        x * 2 + y
+    struct TestCompress;
+
+    impl<F: Field> CompressionFunction<F> for TestCompress {
+        fn compress(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>)
+                    -> Expression<F> {
+            x * 2 + y
+        }
     }
 }

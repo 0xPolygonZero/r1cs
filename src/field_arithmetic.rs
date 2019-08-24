@@ -5,9 +5,11 @@ use core::borrow::Borrow;
 use itertools::enumerate;
 
 use crate::expression::{BooleanExpression, Expression};
-use crate::field::Field;
+use crate::field::{Field, Element};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
+use num::BigUint;
+use num_traits::One;
 
 impl<F: Field> GadgetBuilder<F> {
     /// x * y
@@ -42,28 +44,24 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// x^p for a constant p.
-    pub fn exp<E: Borrow<Expression<F>>>(&mut self, x: E, p: usize) -> Expression<F> {
-        // This is exponentiation by squaring. Generate a list squares where squares[i] = x^(2^i).
-        let mut squares = vec![x.borrow().clone()];
-        let mut i = 1;
-        loop {
-            let q = 1 << i;
-            if q > p {
-                break;
-            }
-            let last = squares.last().unwrap();
-            let next = self.product(last, last);
-            squares.push(next);
-            i += 1;
-        }
-
-        // Now, for each 1 bit of p, multiply by the associated square power.
+    pub fn exp<E: Borrow<Expression<F>>>(&mut self, x: E, p: Element<F>) -> Expression<F> {
+        // This is exponentiation by squaring. For each 1 bit of p, multiply by the associated
+        // square power.
         let mut product = Expression::one();
-        for (i, square) in enumerate(squares) {
-            let b = (p >> i) & 1 != 0;
-            if b {
-                product = self.product(&product, square);
+        let mut last_square = Expression::zero();
+
+        for i in 0..p.bits() {
+            let square = if i == 0 {
+                x.borrow().clone()
+            } else {
+                self.product(&last_square, &last_square)
+            };
+
+            if p.bit(i) {
+                product = self.product(&product, &square);
             }
+
+            last_square = square;
         }
         product
     }
@@ -145,10 +143,10 @@ mod tests {
     fn exp() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
-        let x_exp_0 = builder.exp(Expression::from(x), 0);
-        let x_exp_1 = builder.exp(Expression::from(x), 1);
-        let x_exp_2 = builder.exp(Expression::from(x), 2);
-        let x_exp_3 = builder.exp(Expression::from(x), 3);
+        let x_exp_0 = builder.exp(Expression::from(x), Element::from(0u8));
+        let x_exp_1 = builder.exp(Expression::from(x), Element::from(1u8));
+        let x_exp_2 = builder.exp(Expression::from(x), Element::from(2u8));
+        let x_exp_3 = builder.exp(Expression::from(x), Element::from(3u8));
         let gadget = builder.build();
 
         let mut values = values!(x => 3u8.into());

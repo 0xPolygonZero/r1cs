@@ -85,12 +85,14 @@ impl<F: Field> Element<F> {
 
     pub fn multiplicative_inverse(&self) -> Self {
         assert!(!self.is_zero(), "Zero does not have a multiplicative inverse");
-        // From Euler's theorem.
+        // From Fermat's little theorem.
         // TODO: Use a faster method, like the one described in "Fast Modular Reciprocals".
         // Or just wait for https://github.com/rust-num/num-bigint/issues/60
-        Self::from(self.to_biguint().modpow(
-            &(F::order() - BigUint::from(2u128)),
-            &F::order()))
+        self.exp(-Self::from(2u8))
+    }
+
+    pub fn exp<R: Borrow<Self>>(&self, power: R) -> Self {
+        Self::from(self.to_biguint().modpow(power.borrow().to_biguint(), &F::order()))
     }
 
     pub fn integer_division<R: Borrow<Self>>(&self, rhs: R) -> Self {
