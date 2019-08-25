@@ -8,18 +8,18 @@ use std::marker::PhantomData;
 
 /// This is the additive variant of Davies-Meyer, which creates a one-way compression function from
 /// a block cipher.
-pub struct DaviesMeyer<F: Field, C: BlockCipher<F>> {
-    cipher: C,
-    phantom: PhantomData<F>,
+pub struct DaviesMeyer<F: Field, BC: BlockCipher<F>> {
+    cipher: BC,
+    phantom: PhantomData<F>
 }
 
-impl<F: Field, C: BlockCipher<F>> DaviesMeyer<F, C> {
-    pub fn new(cipher: C) -> Self {
+impl<F: Field, BC: BlockCipher<F>> DaviesMeyer<F, BC> {
+    pub fn new(cipher: BC) -> Self {
         DaviesMeyer { cipher, phantom: PhantomData }
     }
 }
 
-impl<F: Field, C: BlockCipher<F>> CompressionFunction<F> for DaviesMeyer<F, C> {
+impl<F: Field, BC: BlockCipher<F>> CompressionFunction<F> for DaviesMeyer<F, BC> {
     fn compress(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>)
                 -> Expression<F> {
         self.cipher.encrypt(builder, x, y) + y
