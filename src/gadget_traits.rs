@@ -28,6 +28,6 @@ pub trait MultiPermutation<F: Field> {
 }
 
 /// A function which hashes a sequence of field elements, outputting a single field element.
-pub trait Hash<F: Field> {
+pub trait HashFunction<F: Field> {
     fn hash(&self, builder: &mut GadgetBuilder<F>, blocks: &[Expression<F>]) -> Expression<F>;
 }
