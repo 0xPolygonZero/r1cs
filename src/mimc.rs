@@ -1,7 +1,7 @@
 //! This module extends GadgetBuilder with an implementation of MiMC.
 
-use std::borrow::Borrow;
-
+use num::BigUint;
+use num_traits::One;
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 
@@ -9,9 +9,7 @@ use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, Permutation};
-use num::BigUint;
 use crate::wire_values::WireValues;
-use num_traits::One;
 
 /// The MiMC block cipher. This will use a number of rounds equal to `round_constants.len() + 1`,
 /// since the first round has no random constant.
@@ -43,8 +41,6 @@ impl<F: Field> Default for MiMCBlockCipher<F> {
 impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
     fn encrypt(&self, builder: &mut GadgetBuilder<F>, key: &Expression<F>, input: &Expression<F>)
                -> Expression<F> {
-        let key = key.borrow();
-        let input = input.borrow();
         let mut current = input.clone();
 
         // In the first round, there is no round constant, so just add the key.
@@ -67,7 +63,22 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
 
     fn decrypt(&self, builder: &mut GadgetBuilder<F>, key: &Expression<F>, output: &Expression<F>)
                -> Expression<F> {
-        unimplemented!("TODO: Implement MiMC decryption")
+        let mut current = output.clone();
+
+        // Undo final key adddition.
+        current -= key;
+
+        for round_constant in self.round_constants.iter().rev() {
+            // Undo the cubing permutation.
+            current = cube_root(builder, current);
+
+            // Undo the key and random round constant additions.
+            current -= key + Expression::from(round_constant);
+        }
+
+        // Undo the first round cubing and key addition. (There is no constant in the first round.)
+        current = cube_root(builder, current);
+        current - key
     }
 }
 
@@ -117,9 +128,9 @@ mod tests {
     use crate::expression::Expression;
     use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::test_util::{F11, F7};
-    use crate::mimc::{MiMCBlockCipher, cube_root};
     use crate::gadget_traits::BlockCipher;
+    use crate::mimc::{cube_root, MiMCBlockCipher};
+    use crate::test_util::{F11, F7};
 
     #[test]
     fn cube_and_cube_root() {
@@ -131,10 +142,27 @@ mod tests {
         let gadget = builder.build();
 
         for i in 0u8..11 {
-            let mut values_i = values!(x_wire => i.into());
-            assert!(gadget.execute(&mut values_i));
-            assert_eq!(Element::from(i), cube_root.evaluate(&values_i));
+            let mut values = values!(x_wire => i.into());
+            assert!(gadget.execute(&mut values));
+            assert_eq!(Element::from(i), cube_root.evaluate(&values));
         }
+    }
+
+    #[test]
+    fn mimc_encrypt_and_decrypt() {
+        let mut builder = GadgetBuilder::<F11>::new();
+        let key_wire = builder.wire();
+        let input_wire = builder.wire();
+        let key = Expression::from(key_wire);
+        let input = Expression::from(input_wire);
+        let mimc = MiMCBlockCipher::default();
+        let encrypted = mimc.encrypt(&mut builder, &key, &input);
+        let decrypted = mimc.decrypt(&mut builder, &key, &encrypted);
+        let gadget = builder.build();
+
+        let mut values = values!(key_wire => 2u8.into(), input_wire => 3u8.into());
+        assert!(gadget.execute(&mut values));
+        assert_eq!(input.evaluate(&values), decrypted.evaluate(&values));
     }
 
     #[test]

@@ -91,7 +91,7 @@ mod tests {
     use crate::gadget_traits::CompressionFunction;
 
     #[test]
-    fn mimc_merkle_step() {
+    fn merkle_step() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let node = builder.wire();
         let sibling = builder.wire();
@@ -113,7 +113,7 @@ mod tests {
     }
 
     #[test]
-    fn mimc_merkle_root() {
+    fn merkle_root() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let prefix_wire = builder.binary_wire(3);
         let (sibling_1, sibling_2, sibling_3) = (builder.wire(), builder.wire(), builder.wire());
@@ -138,7 +138,7 @@ mod tests {
     struct TestCompress;
 
     impl<F: Field> CompressionFunction<F> for TestCompress {
-        fn compress(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>)
+        fn compress(&self, _builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>)
                     -> Expression<F> {
             x * 2 + y
         }
