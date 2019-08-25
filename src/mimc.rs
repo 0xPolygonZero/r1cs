@@ -11,13 +11,17 @@ use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, Permutation};
 use crate::wire_values::WireValues;
 
-/// The MiMC block cipher. This will use a number of rounds equal to `round_constants.len() + 1`,
-/// since the first round has no random constant.
+/// The MiMC block cipher.
 pub struct MiMCBlockCipher<F: Field> {
     round_constants: Vec<Element<F>>
 }
 
 impl<F: Field> MiMCBlockCipher<F> {
+    /// Creates an instance of the MiMC block cipher with the given round constants, which should be
+    /// generated randomly.
+    ///
+    /// The number of rounds will be `round_constants.len() + 1`, since the first round has no
+    /// random constant.
     fn new(round_constants: &[Element<F>]) -> Self {
         assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
                 "MiMC requires a field with gcd(3, p − 1) = 1");

@@ -12,9 +12,8 @@ pub struct GadgetBuilder<F: Field> {
     witness_generators: Vec<WitnessGenerator<F>>,
 }
 
-// Default for a builder seems weird.
-#[allow(clippy::new_without_default)]
 /// A utility for building `Gadget`s. See the readme for examples.
+#[allow(clippy::new_without_default)]
 impl<F: Field> GadgetBuilder<F> {
     /// Creates a new `GadgetBuilder`, starting with no constraints or generators.
     pub fn new() -> Self {
