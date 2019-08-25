@@ -1,7 +1,7 @@
 [package]
 name = "r1cs"
 description = "A library for building R1CS gadgets"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Daniel Lubarov <daniel@mirprotocol.org>", "Brendan Farmer <brendan@mirprotocol.org>"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
