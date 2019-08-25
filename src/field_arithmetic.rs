@@ -1,7 +1,5 @@
 //! This module extends GadgetBuilder with native field arithmetic methods.
 
-use core::borrow::Borrow;
-
 use crate::expression::{BooleanExpression, Expression};
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
@@ -9,10 +7,7 @@ use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
     /// x * y
-    pub fn product<E1, E2>(&mut self, x: E1, y: E2) -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        let x = x.borrow();
-        let y = y.borrow();
+    pub fn product(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         if let Some(c) = x.as_constant() {
             return y * c;
         }
@@ -40,7 +35,7 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// x^p for a constant p.
-    pub fn exp<E: Borrow<Expression<F>>>(&mut self, x: E, p: Element<F>) -> Expression<F> {
+    pub fn exp(&mut self, x: &Expression<F>, p: &Element<F>) -> Expression<F> {
         // This is exponentiation by squaring. For each 1 bit of p, multiply by the associated
         // square power.
         let mut product = Expression::one();
@@ -48,7 +43,7 @@ impl<F: Field> GadgetBuilder<F> {
 
         for i in 0..p.bits() {
             let square = if i == 0 {
-                x.borrow().clone()
+                x.clone()
             } else {
                 self.product(&last_square, &last_square)
             };
@@ -63,11 +58,12 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// 1 / x. Assumes x is non-zero. If x is zero, the resulting gadget will not be satisfiable.
-    pub fn inverse<E: Borrow<Expression<F>>>(&mut self, x: E) -> Expression<F> {
-        let x = x.borrow().clone();
+    pub fn inverse(&mut self, x: &Expression<F>) -> Expression<F> {
+        // TODO: Remove?
+        let x = x.clone();
 
         let x_inv = self.wire();
-        self.assert_product(&x, Expression::from(x_inv), Expression::one());
+        self.assert_product(&x, &Expression::from(x_inv), &Expression::one());
 
         self.generator(
             x.dependencies(),
@@ -82,26 +78,21 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// x / y. Assumes y is non-zero. If y is zero, the resulting gadget will not be satisfiable.
-    pub fn quotient<E1, E2>(&mut self, x: E1, y: E2) -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    pub fn quotient(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         let y_inv = self.inverse(y);
-        self.product(x, y_inv)
+        self.product(x, &y_inv)
     }
 
     /// x mod y.
-    pub fn modulus<E1, E2>(&mut self, x: E1, y: E2) -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    pub fn modulus(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         // We will non-deterministically compute a quotient q and remainder r such that:
         //     y * q = x - r
         //     r < y
 
-        let x = x.borrow();
-        let y = y.borrow();
-
         let q = self.wire();
         let r = self.wire();
-        self.assert_product(y, Expression::from(q), x - Expression::from(r));
-        self.assert_lt(Expression::from(r), y);
+        self.assert_product(y, &Expression::from(q), &(x - Expression::from(r)));
+        self.assert_lt(&Expression::from(r), y);
 
         {
             let x = x.clone();
@@ -112,7 +103,7 @@ impl<F: Field> GadgetBuilder<F> {
                     let x_value = x.evaluate(values);
                     let y_value = y.evaluate(values);
                     values.set(q, x_value.integer_division(&y_value));
-                    values.set(r, x_value.integer_modulus(y_value));
+                    values.set(r, x_value.integer_modulus(&y_value));
                 },
             );
         }
@@ -121,10 +112,9 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// if x | y { 1 } else { 0 }.
-    pub fn divides<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    pub fn divides(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         let m = self.modulus(y, x);
-        self.zero(m)
+        self.zero(&m)
     }
 }
 
@@ -139,10 +129,10 @@ mod tests {
     fn exp() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
-        let x_exp_0 = builder.exp(Expression::from(x), Element::from(0u8));
-        let x_exp_1 = builder.exp(Expression::from(x), Element::from(1u8));
-        let x_exp_2 = builder.exp(Expression::from(x), Element::from(2u8));
-        let x_exp_3 = builder.exp(Expression::from(x), Element::from(3u8));
+        let x_exp_0 = builder.exp(&Expression::from(x), &Element::from(0u8));
+        let x_exp_1 = builder.exp(&Expression::from(x), &Element::from(1u8));
+        let x_exp_2 = builder.exp(&Expression::from(x), &Element::from(2u8));
+        let x_exp_3 = builder.exp(&Expression::from(x), &Element::from(3u8));
         let gadget = builder.build();
 
         let mut values = values!(x => 3u8.into());
@@ -158,7 +148,7 @@ mod tests {
     fn invert_zero() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
-        builder.inverse(Expression::from(x));
+        builder.inverse(&Expression::from(x));
         let gadget = builder.build();
 
         let mut values = values!(x => 0u8.into());
@@ -170,7 +160,7 @@ mod tests {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
         let y = builder.wire();
-        let divides = builder.divides(Expression::from(x), Expression::from(y));
+        let divides = builder.divides(&Expression::from(x), &Expression::from(y));
         let gadget = builder.build();
 
         let mut values_1_1 = values!(x => 1u8.into(), y => 1u8.into());

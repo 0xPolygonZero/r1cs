@@ -1,5 +1,3 @@
-use core::borrow::Borrow;
-
 use itertools::Itertools;
 use num::BigUint;
 use num_traits::{One, Zero};
@@ -12,22 +10,24 @@ use crate::wire_values::WireValues;
 impl<F: Field> GadgetBuilder<F> {
     /// Add two binary expressions in a widening manner. The result will be one bit longer than the
     /// longer of the two inputs.
-    pub fn binary_sum<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.binary_summation(&[x.borrow().clone(), y.borrow().clone()])
+    pub fn binary_sum(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
+    ) -> BinaryExpression<F> {
+        self.binary_summation(&[x.clone(), y.clone()])
     }
 
     /// Add two binary expressions, ignoring any overflow.
-    pub fn binary_sum_ignoring_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BinaryExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.binary_summation_ignoring_overflow(&[x.borrow().clone(), y.borrow().clone()])
+    pub fn binary_sum_ignoring_overflow(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
+    ) -> BinaryExpression<F> {
+        self.binary_summation_ignoring_overflow(&[x.clone(), y.clone()])
     }
 
     /// Add two binary expressions while asserting that overflow does not occur.
-    pub fn binary_sum_asserting_no_overflow<BE1, BE2>(&mut self, x: BE1, y: BE2)
-                                                      -> BinaryExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.binary_summation_asserting_no_overflow(&[x.borrow().clone(), y.borrow().clone()])
+    pub fn binary_sum_asserting_no_overflow(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
+    ) -> BinaryExpression<F> {
+        self.binary_summation_asserting_no_overflow(&[x.clone(), y.clone()])
     }
 
     /// Add an arbitrary number of binary expressions. The result will be one bit longer than the
@@ -53,7 +53,7 @@ impl<F: Field> GadgetBuilder<F> {
 
         let sum_of_terms = Expression::sum_of_expressions(
             &terms.iter().map(BinaryExpression::join).collect_vec());
-        self.assert_equal(&sum_of_terms, sum.join());
+        self.assert_equal(&sum_of_terms, &sum.join());
 
         self.generator(
             sum_of_terms.dependencies(),
@@ -82,15 +82,15 @@ impl<F: Field> GadgetBuilder<F> {
         let input_bits = terms.iter().fold(0, |x, y| x.max(y.len()));
         let mut sum = self.binary_summation(terms);
         let carry = BinaryExpression { bits: sum.bits[input_bits..].to_vec() };
-        self.binary_assert_zero(carry);
+        self.binary_assert_zero(&carry);
         sum.truncate(input_bits);
         sum
     }
 
     /// Assert that a binary expression is zero.
-    pub fn binary_assert_zero<BE: Borrow<BinaryExpression<F>>>(&mut self, x: BE) {
+    pub fn binary_assert_zero(&mut self, x: &BinaryExpression<F>) {
         // TODO: Generalize to work with binary expressions larger than |F|.
-        self.assert_zero(x.borrow().join())
+        self.assert_zero(&x.join())
     }
 }
 
@@ -107,18 +107,18 @@ mod tests {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.binary_wire(4);
         let y = builder.binary_wire(4);
-        let sum = builder.binary_sum(BinaryExpression::from(&x), BinaryExpression::from(&y));
+        let sum = builder.binary_sum(&BinaryExpression::from(&x), &BinaryExpression::from(&y));
         let gadget = builder.build();
 
         // 10 + 3 = 13.
         let mut values = binary_unsigned_values!(
-            &x => BigUint::from(10u8), &y => BigUint::from(3u8));
+            &x => &BigUint::from(10u8), &y => &BigUint::from(3u8));
         assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(13u8), sum.evaluate(&values));
 
         // 10 + 11 = 21.
         let mut values = binary_unsigned_values!(
-            &x => BigUint::from(10u8), &y => BigUint::from(11u8));
+            &x => &BigUint::from(10u8), &y => &BigUint::from(11u8));
         assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(21u8), sum.evaluate(&values));
     }
@@ -129,18 +129,18 @@ mod tests {
         let x = builder.binary_wire(4);
         let y = builder.binary_wire(4);
         let sum = builder.binary_sum_ignoring_overflow(
-            BinaryExpression::from(&x), BinaryExpression::from(&y));
+            &BinaryExpression::from(&x), &BinaryExpression::from(&y));
         let gadget = builder.build();
 
         // 10 + 3 = 13.
         let mut values = binary_unsigned_values!(
-            &x => BigUint::from(10u8), &y => BigUint::from(3u8));
+            &x => &BigUint::from(10u8), &y => &BigUint::from(3u8));
         assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(13u8), sum.evaluate(&values));
 
         // 10 + 11 = 21 % 16 = 5.
         let mut values = binary_unsigned_values!(
-            &x => BigUint::from(10u8), &y => BigUint::from(11u8));
+            &x => &BigUint::from(10u8), &y => &BigUint::from(11u8));
         assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(5u8), sum.evaluate(&values));
     }
@@ -151,18 +151,18 @@ mod tests {
         let x = builder.binary_wire(4);
         let y = builder.binary_wire(4);
         let sum = builder.binary_sum_asserting_no_overflow(
-            BinaryExpression::from(&x), BinaryExpression::from(&y));
+            &BinaryExpression::from(&x), &BinaryExpression::from(&y));
         let gadget = builder.build();
 
         // 10 + 3 = 13.
         let mut values = binary_unsigned_values!(
-            &x => BigUint::from(10u8), &y => BigUint::from(3u8));
+            &x => &BigUint::from(10u8), &y => &BigUint::from(3u8));
         assert!(gadget.execute(&mut values));
         assert_eq!(BigUint::from(13u8), sum.evaluate(&values));
 
         // 10 + 11 = [error].
         let mut values = binary_unsigned_values!(
-            &x => BigUint::from(10u8), &y => BigUint::from(11u8));
+            &x => &BigUint::from(10u8), &y => &BigUint::from(11u8));
         assert!(!gadget.execute(&mut values));
     }
 

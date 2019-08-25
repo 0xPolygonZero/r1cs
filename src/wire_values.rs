@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 
 use num::BigUint;
@@ -39,11 +38,7 @@ impl<F: Field> WireValues<F> {
         self.set(wire.wire(), Element::from(value));
     }
 
-    pub fn set_binary_unsigned<BW, BU>(&mut self, wire: BW, value: BU)
-        where BW: Borrow<BinaryWire>, BU: Borrow<BigUint> {
-        let wire = wire.borrow();
-        let value = value.borrow();
-
+    pub fn set_binary_unsigned(&mut self, wire: &BinaryWire, value: &BigUint) {
         let l = wire.len();
         assert!(value.bits() <= l, "Value does not fit");
 

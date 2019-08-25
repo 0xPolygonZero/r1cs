@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
@@ -34,49 +32,42 @@ impl<F: Field> Clone for MerklePath<F> {
 
 impl<F: Field> GadgetBuilder<F> {
     /// Update an intermediate hash value in a Merkle tree, given the sibling at the current layer.
-    fn merkle_tree_step<E1, E2, BE, CF>(
+    fn merkle_tree_step<CF>(
         &mut self,
-        node: E1,
-        sibling: E2,
-        prefix_bit: BE,
+        node: &Expression<F>,
+        sibling: &Expression<F>,
+        prefix_bit: &BooleanExpression<F>,
         compress: &CF,
-    ) -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>,
-              BE: Borrow<BooleanExpression<F>>, CF: CompressionFunction<F> {
-        let node = node.borrow();
-        let sibling = sibling.borrow();
+    ) -> Expression<F> where CF: CompressionFunction<F> {
         let left = self.selection(prefix_bit, sibling, node);
         let right = sibling + node - &left;
         compress.compress(self, &left, &right)
     }
 
     /// Compute a Merkle root given a leaf value and its Merkle path.
-    pub fn merkle_tree_root<E, MP, CF>(
+    pub fn merkle_tree_root<CF>(
         &mut self,
-        leaf: E,
-        path: MP,
+        leaf: &Expression<F>,
+        path: &MerklePath<F>,
         compress: &CF,
-    ) -> Expression<F> where E: Borrow<Expression<F>>, MP: Borrow<MerklePath<F>>,
-                             CF: CompressionFunction<F> {
-        let path = path.borrow();
-        let mut current = leaf.borrow().clone();
+    ) -> Expression<F> where CF: CompressionFunction<F> {
+        let mut current = leaf.clone();
         for (prefix_bit, sibling) in path.prefix.bits.iter().zip(path.siblings.iter()) {
             current = self.merkle_tree_step(
-                current, sibling.clone(), prefix_bit.clone(), compress);
+                &current, sibling, prefix_bit, compress);
         }
         current
     }
 
     pub fn assert_merkle_tree_membership<E1, E2, MP, CF>(
         &mut self,
-        leaf: E1,
-        purported_root: E2,
-        path: MerklePath<F>,
+        leaf: &Expression<F>,
+        purported_root: &Expression<F>,
+        path: &MerklePath<F>,
         compress: &CF,
-    ) where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>,
-            MP: Borrow<MerklePath<F>>, CF: CompressionFunction<F> {
+    ) where CF: CompressionFunction<F> {
         let computed_root = self.merkle_tree_root(leaf, path, compress);
-        self.assert_equal(purported_root, computed_root)
+        self.assert_equal(purported_root, &computed_root)
     }
 }
 
@@ -97,8 +88,8 @@ mod tests {
         let sibling = builder.wire();
         let is_right = builder.boolean_wire();
         let parent_hash = builder.merkle_tree_step(
-            Expression::from(node), Expression::from(sibling),
-            BooleanExpression::from(is_right), &TestCompress);
+            &Expression::from(node), &Expression::from(sibling),
+            &BooleanExpression::from(is_right), &TestCompress);
         let gadget = builder.build();
 
         let mut values_3_4 = values!(node => 3u8.into(), sibling => 4u8.into());
@@ -120,14 +111,14 @@ mod tests {
         let path = MerklePath::new(
             BinaryExpression::from(&prefix_wire),
             vec![sibling_1.into(), sibling_2.into(), sibling_3.into()]);
-        let root_hash = builder.merkle_tree_root(Expression::one(), path, &TestCompress);
+        let root_hash = builder.merkle_tree_root(&Expression::one(), &path, &TestCompress);
         let gadget = builder.build();
 
         let mut values = values!(
             sibling_1 => 3u8.into(),
             sibling_2 => 3u8.into(),
             sibling_3 => 9u8.into());
-        values.set_binary_unsigned(prefix_wire, BigUint::from(0b010u8));
+        values.set_binary_unsigned(&prefix_wire, &BigUint::from(0b010u8));
         assert!(gadget.execute(&mut values));
         // The leaf is 1; the first parent hash is 2*1 + 3 = 5; the next parent hash is
         // 2*3 + 5 = 11; the root is 2*11 + 9 = 31.

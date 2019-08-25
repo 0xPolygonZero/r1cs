@@ -19,7 +19,7 @@ pub struct MiMCBlockCipher<F: Field> {
 
 impl<F: Field> MiMCBlockCipher<F> {
     fn new(round_constants: &[Element<F>]) -> Self {
-        assert!(Element::<F>::largest_element().integer_modulus(Element::from(3u8)).is_nonzero(),
+        assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
                 "MiMC requires a field with gcd(3, p − 1) = 1");
         MiMCBlockCipher { round_constants: round_constants.to_vec() }
     }
@@ -47,14 +47,14 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
         current += key;
 
         // Cube the current value.
-        current = builder.exp(current, Element::from(3u8));
+        current = builder.exp(&current, &Element::from(3u8));
 
         for round_constant in self.round_constants.iter() {
             // Add the key and the random round constant.
             current += key + Expression::from(round_constant);
 
             // Cube the current value.
-            current = builder.exp(current, Element::from(3u8));
+            current = builder.exp(&current, &Element::from(3u8));
         }
 
         // Final key addition, as per the spec.
@@ -70,31 +70,32 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
 
         for round_constant in self.round_constants.iter().rev() {
             // Undo the cubing permutation.
-            current = cube_root(builder, current);
+            current = cube_root(builder, &current);
 
             // Undo the key and random round constant additions.
             current -= key + Expression::from(round_constant);
         }
 
         // Undo the first round cubing and key addition. (There is no constant in the first round.)
-        current = cube_root(builder, current);
+        current = cube_root(builder, &current);
         current - key
     }
 }
 
-fn cube_root<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expression<F> {
-    assert!(Element::<F>::largest_element().integer_modulus(Element::from(3u8)).is_nonzero(),
+fn cube_root<F: Field>(builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
+    assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
             "x^-3 not well-defined over this field");
 
     let root_wire = builder.wire();
     let root = Expression::from(root_wire);
     let root_squared = builder.product(&root, &root);
-    builder.assert_product(&root, root_squared, &x);
+    builder.assert_product(&root, &root_squared, x);
 
     // By Fermat's little theorem, x^((2p - 1) / 3)^3 = x.
     let exponent = Element::from(
         (F::order() * BigUint::from(2u64) - BigUint::one()) / BigUint::from(3u64));
 
+    let x = x.clone();
     builder.generator(
         x.dependencies(),
         move |values: &mut WireValues<F>| {
@@ -137,8 +138,8 @@ mod tests {
         let mut builder = GadgetBuilder::<F11>::new();
         let x_wire = builder.wire();
         let x = Expression::from(x_wire);
-        let x_cubed = builder.exp(x, Element::from(3u8));
-        let cube_root = cube_root(&mut builder, x_cubed);
+        let x_cubed = builder.exp(&x, &Element::from(3u8));
+        let cube_root = cube_root(&mut builder, &x_cubed);
         let gadget = builder.build();
 
         for i in 0u8..11 {

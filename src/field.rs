@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
@@ -88,19 +87,19 @@ impl<F: Field> Element<F> {
         // From Fermat's little theorem.
         // TODO: Use a faster method, like the one described in "Fast Modular Reciprocals".
         // Or just wait for https://github.com/rust-num/num-bigint/issues/60
-        self.exp(-Self::from(2u8))
+        self.exp(&-Self::from(2u8))
     }
 
-    pub fn exp<R: Borrow<Self>>(&self, power: R) -> Self {
-        Self::from(self.to_biguint().modpow(power.borrow().to_biguint(), &F::order()))
+    pub fn exp(&self, power: &Self) -> Self {
+        Self::from(self.to_biguint().modpow(power.to_biguint(), &F::order()))
     }
 
-    pub fn integer_division<R: Borrow<Self>>(&self, rhs: R) -> Self {
-        Self::from(self.to_biguint() / rhs.borrow().to_biguint())
+    pub fn integer_division(&self, rhs: &Self) -> Self {
+        Self::from(self.to_biguint() / rhs.to_biguint())
     }
 
-    pub fn integer_modulus<R: Borrow<Self>>(&self, rhs: R) -> Self {
-        Self::from(self.to_biguint() % rhs.borrow().to_biguint())
+    pub fn integer_modulus(&self, rhs: &Self) -> Self {
+        Self::from(self.to_biguint() % rhs.to_biguint())
     }
 
     /// The number of bits needed to encode every element of `F`.

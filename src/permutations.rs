@@ -35,8 +35,8 @@ impl<F: Field> GadgetBuilder<F> {
                               a: &Expression<F>, b: &Expression<F>,
                               c: &Expression<F>, d: &Expression<F>) {
         let (switch, c_target, d_target) = self.create_switch(a, b);
-        self.assert_equal(c, c_target);
-        self.assert_equal(d, d_target);
+        self.assert_equal(c, &c_target);
+        self.assert_equal(d, &d_target);
         let a = a.clone();
         let b = b.clone();
         let c = c.clone();
@@ -65,7 +65,7 @@ impl<F: Field> GadgetBuilder<F> {
     fn create_switch(&mut self, a: &Expression<F>, b: &Expression<F>)
                      -> (BooleanWire, Expression<F>, Expression<F>) {
         let switch = self.boolean_wire();
-        let c = self.selection(BooleanExpression::from(switch), b, a);
+        let c = self.selection(&BooleanExpression::from(switch), b, a);
         let d = a + b - &c;
         (switch, c, d)
     }

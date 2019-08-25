@@ -1,5 +1,3 @@
-use core::borrow::Borrow;
-
 use crate::constraint::Constraint;
 use crate::expression::{BooleanExpression, Expression};
 use crate::field::{Element, Field};
@@ -36,7 +34,7 @@ impl<F: Field> GadgetBuilder<F> {
     /// Add a wire to the gadget, whose value is constrained to equal 0 or 1.
     pub fn boolean_wire(&mut self) -> BooleanWire {
         let w = self.wire();
-        self.assert_boolean(Expression::from(w));
+        self.assert_boolean(&Expression::from(w));
         BooleanWire::new_unsafe(w)
     }
 
@@ -58,26 +56,23 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// x == y
-    pub fn equal<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        self.zero(x.borrow() - y.borrow())
+    pub fn equal(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
+        self.zero(&(x - y))
     }
 
     /// x == 0
-    pub fn zero<E: Borrow<Expression<F>>>(&mut self, x: E) -> BooleanExpression<F> {
+    pub fn zero(&mut self, x: &Expression<F>) -> BooleanExpression<F> {
         let nonzero = self.nonzero(x);
-        self.not(nonzero)
+        self.not(&nonzero)
     }
 
     /// x != 0
-    pub fn nonzero<E: Borrow<Expression<F>>>(&mut self, x: E) -> BooleanExpression<F> {
-        let x = x.borrow();
-
+    pub fn nonzero(&mut self, x: &Expression<F>) -> BooleanExpression<F> {
         // See the Pinocchio paper for an explanation.
         let (y, m) = (self.wire(), self.wire());
         let (y_exp, m_exp) = (Expression::from(y), Expression::from(m));
-        self.assert_product(x, m_exp, &y_exp);
-        self.assert_product(Expression::one() - &y_exp, x, Expression::zero());
+        self.assert_product(x, &m_exp, &y_exp);
+        self.assert_product(&(Expression::one() - &y_exp), x, &Expression::zero());
 
         let x = x.clone();
         self.generator(
@@ -105,63 +100,58 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// if c { x } else { y }. Assumes c is binary.
-    pub fn selection<BE, E1, E2>(&mut self, c: BE, x: E1, y: E2) -> Expression<F>
-        where BE: Borrow<BooleanExpression<F>>, E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        let c = c.borrow();
-        let x = x.borrow();
-        let y = y.borrow();
-        y + self.product(c.expression(), x - y)
+    pub fn selection(
+        &mut self, c: &BooleanExpression<F>, x: &Expression<F>, y: &Expression<F>
+    ) -> Expression<F> {
+        y + self.product(c.expression(), &(x - y))
     }
 
     /// Assert that x * y = z;
-    pub fn assert_product<E1, E2, E3>(&mut self, x: E1, y: E2, z: E3)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>>, E3: Borrow<Expression<F>> {
+    pub fn assert_product(&mut self, x: &Expression<F>, y: &Expression<F>, z: &Expression<F>) {
         self.constraints.push(Constraint {
-            a: x.borrow().clone(),
-            b: y.borrow().clone(),
-            c: z.borrow().clone(),
+            a: x.clone(),
+            b: y.clone(),
+            c: z.clone(),
         });
     }
 
-    /// Assert that the given quantity is in [0, 1].
-    pub fn assert_boolean<E: Borrow<Expression<F>>>(&mut self, x: E) -> BooleanExpression<F> {
-        self.assert_product(x.borrow(), x.borrow() - Expression::one(), Expression::zero());
-        BooleanExpression::new_unsafe(x.borrow().clone())
+    /// Assert that the given quantity is in [0, 1], and return it as a `BooleanExpression`.
+    pub fn assert_boolean(&mut self, x: &Expression<F>) -> BooleanExpression<F> {
+        self.assert_product(x, &(x - Expression::one()), &Expression::zero());
+        BooleanExpression::new_unsafe(x.clone())
     }
 
     /// Assert that x == y.
-    pub fn assert_equal<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        self.assert_product(x, Expression::one(), y);
+    pub fn assert_equal(&mut self, x: &Expression<F>, y: &Expression<F>) {
+        self.assert_product(x, &Expression::one(), y);
     }
 
     /// Assert that x != y.
-    pub fn assert_nonequal<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        let difference = x.borrow() - y.borrow();
-        self.assert_nonzero(difference);
+    pub fn assert_nonequal(&mut self, x: &Expression<F>, y: &Expression<F>) {
+        let difference = x - y;
+        self.assert_nonzero(&difference);
     }
 
     /// Assert that x == 0.
-    pub fn assert_zero<E: Borrow<Expression<F>>>(&mut self, x: E) {
-        self.assert_equal(x, Expression::zero());
+    pub fn assert_zero(&mut self, x: &Expression<F>) {
+        self.assert_equal(x, &Expression::zero());
     }
 
     /// Assert that x != 0.
-    pub fn assert_nonzero<E: Borrow<Expression<F>>>(&mut self, x: E) {
+    pub fn assert_nonzero(&mut self, x: &Expression<F>) {
         // A field element is non-zero iff it has a multiplicative inverse.
         // We don't care what the inverse is, but calling inverse(x) will require that it exists.
         self.inverse(x);
     }
 
     /// Assert that x == 1.
-    pub fn assert_true<BE: Borrow<BooleanExpression<F>>>(&mut self, x: BE) {
-        self.assert_equal(x.borrow().expression(), Expression::one());
+    pub fn assert_true(&mut self, x: &BooleanExpression<F>) {
+        self.assert_equal(x.expression(), &Expression::one());
     }
 
     /// Assert that x == 0.
-    pub fn assert_false<BE: Borrow<BooleanExpression<F>>>(&mut self, x: BE) {
-        self.assert_equal(x.borrow().expression(), Expression::zero());
+    pub fn assert_false(&mut self, x: &BooleanExpression<F>) {
+        self.assert_equal(x.expression(), &Expression::zero());
     }
 
     pub fn build(self) -> Gadget<F> {
@@ -183,7 +173,7 @@ mod tests {
     fn assert_binary_0_1() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
-        builder.assert_boolean(Expression::from(x));
+        builder.assert_boolean(&Expression::from(x));
         let gadget = builder.build();
 
         // With x = 0, the constraint should be satisfied.
@@ -199,7 +189,7 @@ mod tests {
     fn assert_binary_2() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
-        builder.assert_boolean(Expression::from(x));
+        builder.assert_boolean(&Expression::from(x));
         let gadget = builder.build();
 
         // With x = 2, the constraint should NOT be satisfied.
@@ -212,7 +202,7 @@ mod tests {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let (c, x, y) = (builder.boolean_wire(), builder.wire(), builder.wire());
         let selection = builder.selection(
-            BooleanExpression::from(c), Expression::from(x), Expression::from(y));
+            &BooleanExpression::from(c), &Expression::from(x), &Expression::from(y));
         let gadget = builder.build();
 
         let values_3_5 = values!(x => 3u8.into(), y => 5u8.into());
@@ -232,7 +222,7 @@ mod tests {
     fn equal() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let (x, y) = (builder.wire(), builder.wire());
-        let equal = builder.equal(Expression::from(x), Expression::from(y));
+        let equal = builder.equal(&Expression::from(x), &Expression::from(y));
         let gadget = builder.build();
 
         let mut values_7_7 = values!(x => 7u8.into(), y => 7u8.into());

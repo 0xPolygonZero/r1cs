@@ -1,7 +1,5 @@
 //! This module extends GadgetBuilder with an implementation of the Merkle-Damgard construction.
 
-use core::borrow::Borrow;
-
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 
@@ -15,10 +13,9 @@ type CompressionFunction<F> = fn(builder: &mut GadgetBuilder<F>,
 
 impl<F: Field> GadgetBuilder<F> {
     /// Creates a Merkle–Damgård hash function from the given one-way compression function.
-    pub fn merkle_damgard<E>(&mut self, initial_value: E, blocks: &[Expression<F>],
-                             compress: CompressionFunction<F>) -> Expression<F>
-        where E: Borrow<Element<F>> {
-        let mut current = Expression::from(initial_value.borrow());
+    pub fn merkle_damgard(&mut self, initial_value: &Element<F>, blocks: &[Expression<F>],
+                          compress: CompressionFunction<F>) -> Expression<F> {
+        let mut current = Expression::from(initial_value);
         let mut len = 0usize;
         for block in blocks {
             current = compress(self, &current, block);
@@ -35,7 +32,7 @@ impl<F: Field> GadgetBuilder<F> {
                                    compress: CompressionFunction<F>) -> Expression<F> {
         let mut rng = ChaChaRng::seed_from_u64(0);
         let initial_value = Element::random(&mut rng);
-        self.merkle_damgard(initial_value, blocks, compress)
+        self.merkle_damgard(&initial_value, blocks, compress)
     }
 }
 
@@ -61,7 +58,7 @@ mod tests {
         let x = Expression::from(x_wire);
         let y = Expression::from(y_wire);
         let blocks = &[x, y];
-        let md = builder.merkle_damgard(Element::from(2u8), blocks, test_compress);
+        let md = builder.merkle_damgard(&Element::from(2u8), blocks, test_compress);
         let gadget = builder.build();
 
         let mut values = values!(x_wire => 3u8.into(), y_wire => 4u8.into());
