@@ -3,8 +3,11 @@ use crate::field::Field;
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
 
+/// An R1CS gadget.
 pub struct Gadget<F: Field> {
+    /// The set of rank-1 constraints which define the R1CS instance.
     pub constraints: Vec<Constraint<F>>,
+    /// The set of generators used to generate a complete witness from inputs.
     pub witness_generators: Vec<WitnessGenerator<F>>,
 }
 

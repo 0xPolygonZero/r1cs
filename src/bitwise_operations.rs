@@ -6,7 +6,7 @@ use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// ~x
+    /// The bitwise negation of a binary expression `x`, a.k.a. `~x`.
     pub fn bitwise_not(&mut self, x: &BinaryExpression<F>) -> BinaryExpression<F> {
         let bits = x.bits.iter()
             .map(|w| self.not(w))
@@ -14,7 +14,7 @@ impl<F: Field> GadgetBuilder<F> {
         BinaryExpression { bits }
     }
 
-    /// x & y
+    /// The bitwise conjunction of two binary expressions `x` and `y`, a.k.a. `x & y`.
     pub fn bitwise_and(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
     ) -> BinaryExpression<F> {
@@ -26,7 +26,7 @@ impl<F: Field> GadgetBuilder<F> {
         BinaryExpression { bits }
     }
 
-    /// x | y
+    /// The bitwise disjunction of two binary expressions `x` and `y`, a.k.a. `x | y`.
     pub fn bitwise_or(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
     ) -> BinaryExpression<F> {
@@ -38,7 +38,7 @@ impl<F: Field> GadgetBuilder<F> {
         BinaryExpression { bits }
     }
 
-    /// x | y
+    /// The bitwise exclusive disjunction of two binary expressions `x` and `y`, a.k.a. `x ^ y`.
     pub fn bitwise_xor<BE1, BE2>(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
     ) -> BinaryExpression<F> {
@@ -47,19 +47,6 @@ impl<F: Field> GadgetBuilder<F> {
         let bits = (0..l).map(|i|
             self.xor(&x.bits[i], &y.bits[i])
         ).collect();
-        BinaryExpression { bits }
-    }
-
-    /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
-    /// in most programming languages.
-    pub fn bitwise_rotate_dec_significance(
-        &mut self, x: &BinaryExpression<F>, n: usize
-    ) -> BinaryExpression<F> {
-        let l = x.len();
-        let bits = (0..l).map(|i| {
-            let from_idx = (i + n) % l;
-            x.bits[from_idx].clone()
-        }).collect();
         BinaryExpression { bits }
     }
 
@@ -77,6 +64,22 @@ impl<F: Field> GadgetBuilder<F> {
         BinaryExpression { bits }
     }
 
+    /// Rotate bits in the direction of increasing significance. This is equivalent to "right
+    /// rotate" in most programming languages.
+    pub fn bitwise_rotate_dec_significance(
+        &mut self, x: &BinaryExpression<F>, n: usize
+    ) -> BinaryExpression<F> {
+        let l = x.len();
+        let bits = (0..l).map(|i| {
+            let from_idx = (i + n) % l;
+            x.bits[from_idx].clone()
+        }).collect();
+        BinaryExpression { bits }
+    }
+
+    /// Shift bits in the direction of increasing significance, discarding bits on the most
+    /// significant end and inserting zeros on the least significant end. This is equivalent to
+    /// "left shift" in most programming languages.
     pub fn bitwise_shift_inc_significance(
         &mut self, x: &BinaryExpression<F>, n: usize
     ) -> BinaryExpression<F> {
@@ -91,6 +94,9 @@ impl<F: Field> GadgetBuilder<F> {
         BinaryExpression { bits }
     }
 
+    /// Shift bits in the direction of decreasing significance, discarding bits on the least
+    /// significant end and inserting zeros on the most significant end. This is equivalent to
+    /// "right shift" in most programming languages.
     pub fn bitwise_shift_dec_significance(
         &mut self, x: &BinaryExpression<F>, n: usize
     ) -> BinaryExpression<F> {

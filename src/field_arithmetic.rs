@@ -6,7 +6,7 @@ use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// x * y
+    /// The product of two `Expression`s `x` and `y`, i.e. `x * y`.
     pub fn product(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         if let Some(c) = x.as_constant() {
             return y * c;
@@ -34,7 +34,7 @@ impl<F: Field> GadgetBuilder<F> {
         product_exp
     }
 
-    /// x^p for a constant p.
+    /// `x^p` for a constant `p`.
     pub fn exp(&mut self, x: &Expression<F>, p: &Element<F>) -> Expression<F> {
         // This is exponentiation by squaring. For each 1 bit of p, multiply by the associated
         // square power.
@@ -57,7 +57,8 @@ impl<F: Field> GadgetBuilder<F> {
         product
     }
 
-    /// 1 / x. Assumes x is non-zero. If x is zero, the resulting gadget will not be satisfiable.
+    /// Returns `1 / x`, assuming `x` is non-zero. If `x` is zero, the gadget will not be
+    /// satisfiable.
     pub fn inverse(&mut self, x: &Expression<F>) -> Expression<F> {
         // TODO: Remove?
         let x = x.clone();
@@ -77,13 +78,15 @@ impl<F: Field> GadgetBuilder<F> {
         x_inv.into()
     }
 
-    /// x / y. Assumes y is non-zero. If y is zero, the resulting gadget will not be satisfiable.
+    /// Returns `x / y`, assuming `y` is non-zero. If `y` is zero, the gadget will not be
+    /// satisfiable.
     pub fn quotient(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         let y_inv = self.inverse(y);
         self.product(x, &y_inv)
     }
 
-    /// x mod y.
+    /// Returns `x mod y`, assuming `y` is non-zero. If `y` is zero, the gadget will not be
+    /// satisfiable.
     pub fn modulus(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         // We will non-deterministically compute a quotient q and remainder r such that:
         //     y * q = x - r
@@ -111,7 +114,7 @@ impl<F: Field> GadgetBuilder<F> {
         r.into()
     }
 
-    /// if x | y { 1 } else { 0 }.
+    /// Returns whether `x` divides `y`, i.e. `x | y`.
     pub fn divides(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         let m = self.modulus(y, x);
         self.zero(&m)

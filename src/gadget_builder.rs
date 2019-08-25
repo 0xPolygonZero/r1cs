@@ -12,10 +12,11 @@ pub struct GadgetBuilder<F: Field> {
     witness_generators: Vec<WitnessGenerator<F>>,
 }
 
-/// A utility for building `Gadget`s. See the readme for examples.
 // Default for a builder seems weird.
 #[allow(clippy::new_without_default)]
+/// A utility for building `Gadget`s. See the readme for examples.
 impl<F: Field> GadgetBuilder<F> {
+    /// Creates a new `GadgetBuilder`, starting with no constraints or generators.
     pub fn new() -> Self {
         GadgetBuilder {
             next_wire_index: 1,
@@ -154,6 +155,7 @@ impl<F: Field> GadgetBuilder<F> {
         self.assert_equal(x.expression(), &Expression::zero());
     }
 
+    /// Builds the gadget.
     pub fn build(self) -> Gadget<F> {
         Gadget {
             constraints: self.constraints,

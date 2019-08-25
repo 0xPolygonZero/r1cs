@@ -6,14 +6,15 @@ use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, CompressionFunction};
 use std::marker::PhantomData;
 
-/// This is the additive variant of Davies-Meyer, which creates a one-way compression function from
-/// a block cipher.
+/// The additive variant of Davies-Meyer, which creates a one-way compression function from a block
+/// cipher.
 pub struct DaviesMeyer<F: Field, BC: BlockCipher<F>> {
     cipher: BC,
     phantom: PhantomData<F>
 }
 
 impl<F: Field, BC: BlockCipher<F>> DaviesMeyer<F, BC> {
+    /// Create a new Davies-Meyer compression function from the given block cipher.
     pub fn new(cipher: BC) -> Self {
         DaviesMeyer { cipher, phantom: PhantomData }
     }

@@ -8,97 +8,97 @@ use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// Assert that x < y.
+    /// Assert that `x < y`.
     pub fn assert_lt(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let lt = self.lt(x, y);
         self.assert_true(&lt);
     }
 
-    /// Assert that x <= y.
+    /// Assert that `x <= y`.
     pub fn assert_le(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let le = self.le(x, y);
         self.assert_true(&le);
     }
 
-    /// Assert that x > y.
+    /// Assert that `x > y`.
     pub fn assert_gt(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let gt = self.gt(x, y);
         self.assert_true(&gt);
     }
 
-    /// Assert that x >= y.
+    /// Assert that `x >= y`.
     pub fn assert_ge(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let ge = self.ge(x, y);
         self.assert_true(&ge);
     }
 
-    /// Assert that x < y.
+    /// Assert that `x < y`.
     pub fn assert_lt_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>) {
         let lt = self.lt_binary(x, y);
         self.assert_true(&lt);
     }
 
-    /// Assert that x <= y.
+    /// Assert that `x <= y`.
     pub fn assert_le_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>) {
         let le = self.le_binary(x, y);
         self.assert_true(&le);
     }
 
-    /// Assert that x > y.
+    /// Assert that `x > y`.
     pub fn assert_gt_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>) {
         let gt = self.gt_binary(x, y);
         self.assert_true(&gt);
     }
 
-    /// Assert that x >= y.
+    /// Assert that `x >= y`.
     pub fn assert_ge_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>)
     {
         let ge = self.ge_binary(x, y);
         self.assert_true(&ge);
     }
 
-    /// x < y
+    /// Returns `x < y`.
     pub fn lt(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, true, true)
     }
 
-    /// x <= y
+    /// Returns `x <= y`.
     pub fn le(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, true, false)
     }
 
-    /// x > y
+    /// Returns `x > y`.
     pub fn gt(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, false, true)
     }
 
-    /// x >= y
+    /// Returns `x >= y`.
     pub fn ge(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, false, false)
     }
 
-    /// x < y
+    /// Returns `x < y`.
     pub fn lt_binary(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BooleanExpression<F> {
         self.cmp_binary(x, y, true, true)
     }
 
-    /// x <= y
+    /// Returns `x <= y`.
     pub fn le_binary(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BooleanExpression<F> {
         self.cmp_binary(x, y, true, false)
     }
 
-    /// x > y
+    /// Returns `x > y`.
     pub fn gt_binary(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BooleanExpression<F> {
         self.cmp_binary(x, y, false, true)
     }
 
-    /// x >= y
+    /// Returns `x >= y`.
     pub fn ge_binary(
         &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BooleanExpression<F> {

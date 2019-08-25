@@ -67,6 +67,7 @@ impl<F: Field> Clone for WireValues<F> {
     }
 }
 
+/// Creates an instance of `WireValues` from the given wires and field element values.
 #[macro_export]
 macro_rules! values {
     ( $( $wire:expr => $value:expr ),* ) => {
@@ -80,6 +81,7 @@ macro_rules! values {
     }
 }
 
+/// Creates an instance of `WireValues` from the given boolean wires and boolean values.
 #[macro_export]
 macro_rules! boolean_values {
     ( $( $wire:expr => $value:expr ),* ) => {
@@ -93,6 +95,7 @@ macro_rules! boolean_values {
     }
 }
 
+/// Creates an instance of `WireValues` from the given binary wires and `BigUint` values.
 #[macro_export]
 macro_rules! binary_unsigned_values {
     ( $( $wire:expr => $value:expr ),* ) => {
