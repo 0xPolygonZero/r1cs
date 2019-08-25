@@ -1,3 +1,10 @@
+// TODO: Copy some examples etc. here when the API is more stable.
+
+//! This is a rust library for building R1CS gadgets over prime fields, which are useful in SNARKs
+//! and other argument systems.
+//!
+//! See the [readme](https://github.com/mir-protocol/r1cs) for more information and examples.
+
 #[macro_use]
 pub mod wire_values;
 
