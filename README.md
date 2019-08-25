@@ -28,7 +28,7 @@ let mut builder = GadgetBuilder::<Bn128>::new();
 let x = builder.wire();
 let x_exp = Expression::from(x);
 let x_squared = builder.product(&x_exp, &x_exp);
-let x_cubed = builder.product(x_squared, x_exp);
+let x_cubed = builder.product(&x_squared, &x_exp);
 let gadget = builder.build();
 
 // This structure maps wires to their (field element) values. Since
@@ -76,8 +76,8 @@ fn maj<F: Field>(builder: &mut GadgetBuilder<F>,
     let x_y = builder.and(&x, &y);
     let x_z = builder.and(&x, &z);
     let y_z = builder.and(&y, &z);
-    let x_y_xor_x_z = builder.xor(x_y, x_z);
-    builder.xor(x_y_xor_x_z, y_z)
+    let x_y_xor_x_z = builder.xor(&x_y, &x_z);
+    builder.xor(&x_y_xor_x_z, &y_z)
 }
 ```
 
@@ -105,8 +105,8 @@ fn inverse<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expres
     let x_inv = builder.wire();
 
     // Add the constraint x * x_inv = 1.
-    builder.assert_product(&x, Expression::from(x_inv),
-                           Expression::one());
+    builder.assert_product(&x, &Expression::from(x_inv),
+                           &Expression::one());
 
     // Non-deterministically generate x_inv = 1 / x.
     builder.generator(
