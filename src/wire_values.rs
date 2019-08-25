@@ -71,7 +71,7 @@ impl<F: Field> Clone for WireValues<F> {
 macro_rules! values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = $crate::wire_values::WireValues::new();
+            let mut values = $crate::WireValues::new();
             $(
                 values.set($wire, $value);
             )*
@@ -84,7 +84,7 @@ macro_rules! values {
 macro_rules! boolean_values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = $crate::wire_values::WireValues::new();
+            let mut values = $crate::WireValues::new();
             $(
                 values.set_boolean($wire, $value);
             )*
@@ -97,7 +97,7 @@ macro_rules! boolean_values {
 macro_rules! binary_unsigned_values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = $crate::wire_values::WireValues::new();
+            let mut values = $crate::WireValues::new();
             $(
                 values.set_binary_unsigned($wire, $value);
             )*

@@ -5,6 +5,8 @@
 //!
 //! See the [readme](https://github.com/mir-protocol/r1cs) for more information and examples.
 
+pub use num;
+
 #[macro_use]
 mod wire_values;
 
@@ -31,6 +33,9 @@ mod splitting;
 mod wire;
 mod witness_generator;
 
+#[cfg(test)]
+mod test_util;
+
 pub use constraint::*;
 pub use davies_meyer::*;
 pub use expression::*;
@@ -44,6 +49,3 @@ pub use mimc::*;
 pub use wire::*;
 pub use witness_generator::*;
 pub use wire_values::*;
-
-#[cfg(test)]
-mod test_util;
