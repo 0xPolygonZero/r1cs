@@ -30,6 +30,7 @@ mod permutations;
 mod random_access;
 mod sorting;
 mod splitting;
+mod sponge;
 mod wire;
 mod witness_generator;
 
@@ -45,7 +46,8 @@ pub use gadget_builder::*;
 pub use gadget_traits::*;
 pub use merkle_damgard::*;
 pub use merkle_trees::*;
+pub use sponge::*;
 pub use mimc::*;
 pub use wire::*;
-pub use witness_generator::*;
 pub use wire_values::*;
+pub use witness_generator::*;

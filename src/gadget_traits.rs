@@ -68,9 +68,23 @@ pub trait Permutation<F: Field> {
     }
 }
 
-/// A permutation of multiple field elements.
+/// A permutation whose inputs and outputs consist of multiple field elements.
 pub trait MultiPermutation<F: Field> {
-    // TODO figure out a good interface. Const generics would be nice...
+    /// Permute the given sequence of field elements.
+    fn permute(&self, builder: &mut GadgetBuilder<F>, inputs: &[Expression<F>])
+               -> Vec<Expression<F>>;
+
+    fn permute_evaluate(&self, inputs: &[Element<F>]) -> Vec<Element<F>> {
+        let mut builder = GadgetBuilder::new();
+        let input_expressions = inputs.iter().map(Expression::from).collect_vec();
+        let permuted = self.permute(&mut builder, &input_expressions);
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        permuted.iter().map(|e| e.evaluate(&values)).collect()
+    }
+
+    /// The size of the permutation, in field elements.
+    fn size(&self) -> usize;
 }
 
 /// A function which hashes a sequence of field elements, outputting a single field element.
