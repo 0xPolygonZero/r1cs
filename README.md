@@ -7,6 +7,20 @@ An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode th
 A *gadget* for some R1CS instance takes a set of inputs, which are a subset of the witness vector. If the given inputs are valid, it extends the input set into a complete witness vector which satisfies the R1CS instance.
 
 
+## Features
+
+The goal of this library is to make SNARK programming easy. To that end, we support a broad set of features, including some fairly high-level abstractions:
+
+- Basic operations on field elements, such as multiplication, division, and comparisons
+- Type-safe boolean operations, such as `GadgetBuilder::and` and `GadgetBuilder::bitwise_and`
+- Type-safe binary operations, such as `GadgetBuilder::binary_sum`
+- `GadgetBuilder::assert_permutation`, which efficiently verifies a permutation using AS-Waksman networks
+- Methods for sorting lists of expressions, such as `GadgetBuilder::sort_ascending`
+- Methods for working with Merkle trees, such as `GadgetBuilder::merkle_tree_root`
+- Common cryptographic constructions such as Merkle–Damgård, Davies-Meyer, and Sponge functions.
+- MiMC (more primitives coming soon)
+
+
 ## Core types
 
 `Field` is a trait representing prime fields. An `Element<F>` is an element of the prime field `F`.
@@ -49,7 +63,7 @@ This can also be done more succinctly with `builder.exp(x_exp, 3)`, which perfor
 
 ## Custom fields
 
-You can define a custom field by implementing the `field::Field` trait. As an example, here's the definition of `Bn128` which was referenced above:
+You can define a custom field by implementing the `Field` trait. As an example, here's the definition of `Bn128` which was referenced above:
 
 ```rust
 pub struct Bn128 {}
@@ -64,26 +78,21 @@ impl Field for Bn128 {
 ```
 
 
-## Boolean algebra
+## Cryptographic tools
 
-The example above involved native field arithmetic, but this library also supports boolean algebra. For example, here is a function which implements the boolean function `Maj`, as defined in the SHA-256 specification:
+Suppose we wanted to hash a vector of `Expression`s. One approach would be to take a bloc cipher like MiMC, transform it into a one-way compression function using the Davies-Meyer construction, and transform that into a hash function using the Merkle–Damgård construction. We could do that like so:
 
 ```rust
-fn maj<F: Field>(builder: &mut GadgetBuilder<F>,
-                 x: BooleanExpression<F>,
-                 y: BooleanExpression<F>,
-                 z: BooleanExpression<F>) -> BooleanExpression<F> {
-    let x_y = builder.and(&x, &y);
-    let x_z = builder.and(&x, &z);
-    let y_z = builder.and(&y, &z);
-    let x_y_xor_x_z = builder.xor(&x_y, &x_z);
-    builder.xor(&x_y_xor_x_z, &y_z)
+fn hash<F: Field>(
+    builder: &mut GadgetBuilder<F>,
+    blocks: &[Expression<F>]
+) -> Expression<F> {
+    let cipher = MiMCBlockCipher::default();
+    let compress = DaviesMeyer::new(cipher);
+    let hash = MerkleDamgard::new_defaults(compress);
+    hash.hash(builder, blocks)
 }
 ```
-
-## Binary operations
-
-This library also supports bitwise operations, such as `bitwise_and`, and binary arithmetic operations, such as `binary_sum`.
 
 
 ## Permutation networks
