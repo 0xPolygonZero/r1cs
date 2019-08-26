@@ -2,10 +2,11 @@
 
 use std::borrow::Borrow;
 
+use num::BigUint;
+
 use crate::expression::BooleanExpression;
 use crate::field::Field;
 use crate::wire_values::WireValues;
-use num::BigUint;
 
 pub fn assert_eq_true<F, T>(x: T, values: &WireValues<F>)
     where F: Field, T: Borrow<BooleanExpression<F>> {

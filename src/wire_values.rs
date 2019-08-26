@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 
 use num::BigUint;
@@ -39,11 +38,7 @@ impl<F: Field> WireValues<F> {
         self.set(wire.wire(), Element::from(value));
     }
 
-    pub fn set_binary_unsigned<BW, BU>(&mut self, wire: BW, value: BU)
-        where BW: Borrow<BinaryWire>, BU: Borrow<BigUint> {
-        let wire = wire.borrow();
-        let value = value.borrow();
-
+    pub fn set_binary_unsigned(&mut self, wire: &BinaryWire, value: &BigUint) {
         let l = wire.len();
         assert!(value.bits() <= l, "Value does not fit");
 
@@ -72,11 +67,12 @@ impl<F: Field> Clone for WireValues<F> {
     }
 }
 
+/// Creates an instance of `WireValues` from the given wires and field element values.
 #[macro_export]
 macro_rules! values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = $crate::wire_values::WireValues::new();
+            let mut values = $crate::WireValues::new();
             $(
                 values.set($wire, $value);
             )*
@@ -85,11 +81,12 @@ macro_rules! values {
     }
 }
 
+/// Creates an instance of `WireValues` from the given boolean wires and boolean values.
 #[macro_export]
 macro_rules! boolean_values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = $crate::wire_values::WireValues::new();
+            let mut values = $crate::WireValues::new();
             $(
                 values.set_boolean($wire, $value);
             )*
@@ -98,11 +95,12 @@ macro_rules! boolean_values {
     }
 }
 
+/// Creates an instance of `WireValues` from the given binary wires and `BigUint` values.
 #[macro_export]
 macro_rules! binary_unsigned_values {
     ( $( $wire:expr => $value:expr ),* ) => {
         {
-            let mut values = $crate::wire_values::WireValues::new();
+            let mut values = $crate::WireValues::new();
             $(
                 values.set_binary_unsigned($wire, $value);
             )*

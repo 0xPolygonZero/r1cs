@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
@@ -48,6 +47,9 @@ impl Field for Bls12_381 {
 #[derive(Debug)]
 pub struct Element<F: Field> {
     n: BigUint,
+    /// F needs to be present in a struct field, otherwise the compiler will complain that it is
+    /// unused. In reality it is used, but only at compile time. For example, some functions take an
+    /// `Element<F>` and call `F::order()`.
     phantom: PhantomData<F>,
 }
 
@@ -88,20 +90,22 @@ impl<F: Field> Element<F> {
 
     pub fn multiplicative_inverse(&self) -> Self {
         assert!(!self.is_zero(), "Zero does not have a multiplicative inverse");
-        // From Euler's theorem.
+        // From Fermat's little theorem.
         // TODO: Use a faster method, like the one described in "Fast Modular Reciprocals".
         // Or just wait for https://github.com/rust-num/num-bigint/issues/60
-        Self::from(self.to_biguint().modpow(
-            &(F::order() - BigUint::from(2u128)),
-            &F::order()))
+        self.exp(&-Self::from(2u8))
     }
 
-    pub fn integer_division<R: Borrow<Self>>(&self, rhs: R) -> Self {
-        Self::from(self.to_biguint() / rhs.borrow().to_biguint())
+    pub fn exp(&self, power: &Self) -> Self {
+        Self::from(self.to_biguint().modpow(power.to_biguint(), &F::order()))
     }
 
-    pub fn integer_modulus<R: Borrow<Self>>(&self, rhs: R) -> Self {
-        Self::from(self.to_biguint() % rhs.borrow().to_biguint())
+    pub fn integer_division(&self, rhs: &Self) -> Self {
+        Self::from(self.to_biguint() / rhs.to_biguint())
+    }
+
+    pub fn integer_modulus(&self, rhs: &Self) -> Self {
+        Self::from(self.to_biguint() % rhs.to_biguint())
     }
 
     /// The number of bits needed to encode every element of `F`.

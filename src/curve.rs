@@ -36,27 +36,21 @@ impl<F: Field> From<(Element<F>, Element<F>)> for EdwardsCurve<F> {
     }
 }
 
-/// A point on an elliptic curve
-pub trait CurvePoint<F: Field> {
-}
-
 /// A point on an embedded Edwards curve in affine coordinates
 pub struct EdwardsPoint<F: Field> {
     x: Element<F>,
     y: Element<F>,
 }
 
-impl<F: Field> CurvePoint<F> for EdwardsPoint<F> {
-}
-
-impl<F: Field> From<(Element<F>, Element<F>)> for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
+impl<F: Field> From<(Element<F>, Element<F>)> for EdwardsPoint<F>
+    where EdwardsCurve<F>: EmbeddedCurve<F> {
     fn from(coordinates: (Element<F>, Element<F>)) -> EdwardsPoint<F> {
         let c = EdwardsCurve::<F>::from(EdwardsCurve::<F>::parameters());
         let p = EdwardsPoint {
             x: coordinates.0,
             y: coordinates.1
         };
-        assert!(c.contains_point(&p), "Point is not contained in the curve.");
+        assert!(c.contains_point(&p), "Point is not on the curve.");
         p
     }
 }
@@ -95,7 +89,8 @@ impl<F: Field> Neg for &EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> 
     }
 }
 
-impl<F: Field> Add<EdwardsPoint<F>> for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
+impl<F: Field> Add<EdwardsPoint<F>> for EdwardsPoint<F>
+    where EdwardsCurve<F>: EmbeddedCurve<F> {
     type Output = EdwardsPoint<F>;
 
     fn add(self, rhs: EdwardsPoint<F>) -> EdwardsPoint<F> {
@@ -103,7 +98,8 @@ impl<F: Field> Add<EdwardsPoint<F>> for EdwardsPoint<F> where EdwardsCurve<F>: E
     }
 }
 
-impl<F: Field> Add<&EdwardsPoint<F>> for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
+impl<F: Field> Add<&EdwardsPoint<F>> for EdwardsPoint<F>
+    where EdwardsCurve<F>: EmbeddedCurve<F> {
     type Output = EdwardsPoint<F>;
 
     fn add(self, rhs: &EdwardsPoint<F>) -> EdwardsPoint<F> {
@@ -111,7 +107,8 @@ impl<F: Field> Add<&EdwardsPoint<F>> for EdwardsPoint<F> where EdwardsCurve<F>: 
     }
 }
 
-impl<F: Field> Add<EdwardsPoint<F>> for &EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
+impl<F: Field> Add<EdwardsPoint<F>> for &EdwardsPoint<F>
+    where EdwardsCurve<F>: EmbeddedCurve<F> {
     type Output = EdwardsPoint<F>;
 
     fn add(self, rhs: EdwardsPoint<F>) -> EdwardsPoint<F> {
@@ -119,9 +116,9 @@ impl<F: Field> Add<EdwardsPoint<F>> for &EdwardsPoint<F> where EdwardsCurve<F>: 
     }
 }
 
-/// Uses the non-optimized algorithm for Edwards curve
-/// addition in affine coordinates.
-impl<F: Field> Add<&EdwardsPoint<F>> for &EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
+/// Uses the non-optimized algorithm for Edwards curve addition in affine coordinates.
+impl<F: Field> Add<&EdwardsPoint<F>> for &EdwardsPoint<F>
+    where EdwardsCurve<F>: EmbeddedCurve<F> {
     type Output = EdwardsPoint<F>;
 
     fn add(self, rhs: &EdwardsPoint<F>) -> EdwardsPoint<F> {
@@ -145,7 +142,8 @@ impl<F: Field> AddAssign for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurv
     }
 }
 
-impl<F: Field> AddAssign<&EdwardsPoint<F>> for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
+impl<F: Field> AddAssign<&EdwardsPoint<F>> for EdwardsPoint<F>
+    where EdwardsCurve<F>: EmbeddedCurve<F> {
     fn add_assign(&mut self, rhs: &EdwardsPoint<F>) {
         *self = &*self + rhs;
     }
@@ -223,5 +221,4 @@ mod tests {
         let inverse = -&point;
         assert!(point + inverse == EdwardsPoint::identity())
     }
-
 }

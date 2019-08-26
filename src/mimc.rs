@@ -1,86 +1,131 @@
 //! This module extends GadgetBuilder with an implementation of MiMC.
 
-use std::borrow::Borrow;
-
+use num::BigUint;
+use num_traits::One;
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 
 use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
+use crate::gadget_traits::{BlockCipher, Permutation};
+use crate::wire_values::WireValues;
 
-impl<F: Field> GadgetBuilder<F> {
-    /// The MiMC block cipher in its more raw form. This method takes a list of round constants as
-    /// input. The number of rounds will be one greater than the length of that list (since the
-    /// first round has no random constant).
-    pub fn mimc<E1, E2>(&mut self, key: E1, input: E2, round_constants: &[Element<F>])
-                        -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        assert!(Element::<F>::largest_element().integer_modulus(Element::from(3u8)).is_nonzero(),
+/// The MiMC block cipher.
+pub struct MiMCBlockCipher<F: Field> {
+    round_constants: Vec<Element<F>>
+}
+
+impl<F: Field> MiMCBlockCipher<F> {
+    /// Creates an instance of the MiMC block cipher with the given round constants, which should be
+    /// generated randomly.
+    ///
+    /// The number of rounds will be `round_constants.len() + 1`, since the first round has no
+    /// random constant.
+    fn new(round_constants: &[Element<F>]) -> Self {
+        assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
                 "MiMC requires a field with gcd(3, p − 1) = 1");
+        MiMCBlockCipher { round_constants: round_constants.to_vec() }
+    }
+}
 
-        let key = key.borrow();
-        let input = input.borrow();
+impl<F: Field> Default for MiMCBlockCipher<F> {
+    /// Configures MiMC with the number of rounds recommended in the paper. Uses ChaCha20 (seeded
+    /// with 0) as the source of randomness for these constants.
+    fn default() -> Self {
+        let mut rng = ChaChaRng::seed_from_u64(0);
+        let mut round_constants = Vec::new();
+        for _r in 0..mimc_recommended_rounds::<F>() {
+            round_constants.push(Element::random(&mut rng));
+        }
+        MiMCBlockCipher::new(&round_constants)
+    }
+}
+
+impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
+    fn encrypt(&self, builder: &mut GadgetBuilder<F>, key: &Expression<F>, input: &Expression<F>)
+               -> Expression<F> {
         let mut current = input.clone();
 
         // In the first round, there is no round constant, so just add the key.
         current += key;
 
         // Cube the current value.
-        current = self.exp(current, 3);
+        current = builder.exp(&current, &Element::from(3u8));
 
-        for round_constant in round_constants {
+        for round_constant in self.round_constants.iter() {
             // Add the key and the random round constant.
             current += key + Expression::from(round_constant);
 
             // Cube the current value.
-            current = self.exp(current, 3);
+            current = builder.exp(&current, &Element::from(3u8));
         }
 
         // Final key addition, as per the spec.
         current + key
     }
 
-    /// The MiMC block cipher, using the recommended number of rounds, and using ChaCha20 (seeded
-    /// with 0) as the source of randomness for round constants.
-    pub fn mimc_chacha20<E1, E2>(&mut self, key: E1, input: E2) -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        self.mimc_chacha20_refs(key.borrow(), input.borrow())
-    }
+    fn decrypt(&self, builder: &mut GadgetBuilder<F>, key: &Expression<F>, output: &Expression<F>)
+               -> Expression<F> {
+        let mut current = output.clone();
 
-    /// Like `mimc_chacha20`, but takes plain references instead of `Borrow`s.
-    fn mimc_chacha20_refs(&mut self, key: &Expression<F>, input: &Expression<F>) -> Expression<F> {
-        let mut rng = ChaChaRng::seed_from_u64(0);
-        let mut round_constants = Vec::new();
-        for _r in 0..Self::mimc_recommended_rounds() {
-            round_constants.push(Element::random(&mut rng));
+        // Undo final key adddition.
+        current -= key;
+
+        for round_constant in self.round_constants.iter().rev() {
+            // Undo the cubing permutation.
+            current = cube_root(builder, &current);
+
+            // Undo the key and random round constant additions.
+            current -= key + Expression::from(round_constant);
         }
-        self.mimc(key, input, &round_constants)
-    }
 
-    /// A compression function based on MiMC and the additive variant of Davies-Meyer. Uses ChaCha20
-    /// (seeded with 0) as the source of randomness for MiMC round constants.
-    pub fn mimc_compress<E1, E2>(&mut self, x: E1, y: E2) -> Expression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
-        self.mimc_compress_refs(x.borrow(), y.borrow())
+        // Undo the first round cubing and key addition. (There is no constant in the first round.)
+        current = cube_root(builder, &current);
+        current - key
     }
+}
 
-    /// Like `mimc_compress`, but takes plain references instead of `Borrow`s.
-    pub fn mimc_compress_refs(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
-        self.davies_meyer(x, y, Self::mimc_chacha20_refs)
-    }
+fn cube_root<F: Field>(builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
+    assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
+            "x^-3 not well-defined over this field");
 
-    /// A hash function based on MiMC, the additive variant of Davies-Meyer, and Merkle-Damgard.
-    /// Uses ChaCha20 (seeded with 0) as the source of randomness for constants.
-    pub fn mimc_hash(&mut self, blocks: &[Expression<F>]) -> Expression<F> {
-        self.merkle_damgard_chacha20(blocks, Self::mimc_compress_refs)
-    }
+    let root_wire = builder.wire();
+    let root = Expression::from(root_wire);
+    let root_squared = builder.product(&root, &root);
+    builder.assert_product(&root, &root_squared, x);
 
-    /// The recommended number of rounds to use in MiMC, based on the paper.
-    pub fn mimc_recommended_rounds() -> usize {
-        let n = Element::<F>::max_bits();
-        (n as f64 / 3f64.log2()).ceil() as usize
+    // By Fermat's little theorem, x^((2p - 1) / 3)^3 = x.
+    let exponent = Element::from(
+        (F::order() * BigUint::from(2u64) - BigUint::one()) / BigUint::from(3u64));
+
+    let x = x.clone();
+    builder.generator(
+        x.dependencies(),
+        move |values: &mut WireValues<F>| {
+            let root_value = x.evaluate(values).exp(&exponent);
+            values.set(root_wire, root_value);
+        });
+
+    root
+}
+
+/// The MiMC permutation, which is equivalent to MiMC encryption with a key of zero.
+pub struct MiMCPermutation<F: Field> {
+    cipher: MiMCBlockCipher<F>
+}
+
+impl<F: Field> Permutation<F> for MiMCPermutation<F> {
+    fn permute(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
+        // As per the paper, we just use a key of zero.
+        self.cipher.encrypt(builder, &Expression::zero(), x)
     }
+}
+
+/// The recommended number of rounds to use in MiMC, based on the paper.
+fn mimc_recommended_rounds<F: Field>() -> usize {
+    let n = Element::<F>::max_bits();
+    (n as f64 / 3f64.log2()).ceil() as usize
 }
 
 #[cfg(test)]
@@ -88,7 +133,42 @@ mod tests {
     use crate::expression::Expression;
     use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::gadget_traits::BlockCipher;
+    use crate::mimc::{cube_root, MiMCBlockCipher};
     use crate::test_util::{F11, F7};
+
+    #[test]
+    fn cube_and_cube_root() {
+        let mut builder = GadgetBuilder::<F11>::new();
+        let x_wire = builder.wire();
+        let x = Expression::from(x_wire);
+        let x_cubed = builder.exp(&x, &Element::from(3u8));
+        let cube_root = cube_root(&mut builder, &x_cubed);
+        let gadget = builder.build();
+
+        for i in 0u8..11 {
+            let mut values = values!(x_wire => i.into());
+            assert!(gadget.execute(&mut values));
+            assert_eq!(Element::from(i), cube_root.evaluate(&values));
+        }
+    }
+
+    #[test]
+    fn mimc_encrypt_and_decrypt() {
+        let mut builder = GadgetBuilder::<F11>::new();
+        let key_wire = builder.wire();
+        let input_wire = builder.wire();
+        let key = Expression::from(key_wire);
+        let input = Expression::from(input_wire);
+        let mimc = MiMCBlockCipher::default();
+        let encrypted = mimc.encrypt(&mut builder, &key, &input);
+        let decrypted = mimc.decrypt(&mut builder, &key, &encrypted);
+        let gadget = builder.build();
+
+        let mut values = values!(key_wire => 2u8.into(), input_wire => 3u8.into());
+        assert!(gadget.execute(&mut values));
+        assert_eq!(input.evaluate(&values), decrypted.evaluate(&values));
+    }
 
     #[test]
     fn mimc_f11() {
@@ -99,19 +179,19 @@ mod tests {
         let input_wire = builder.wire();
         let key = Expression::from(key_wire);
         let input = Expression::from(input_wire);
-        let mimc = builder.mimc(key, input, constants);
+        let mimc = MiMCBlockCipher::new(constants);
+        let mimc_output = mimc.encrypt(&mut builder, &key, &input);
         let gadget = builder.build();
 
         let mut values = values!(key_wire => 3u8.into(), input_wire => 6u8.into());
         assert!(gadget.execute(&mut values));
-        assert_eq!(Element::from(2u8), mimc.evaluate(&values));
+        assert_eq!(Element::from(2u8), mimc_output.evaluate(&values));
     }
 
     /// MiMC is incompatible with F_7, because cubing is not a permutation in this field.
     #[test]
     #[should_panic]
     fn mimc_f7_incompatible() {
-        let mut builder = GadgetBuilder::<F7>::new();
-        builder.mimc_chacha20(Expression::zero(), Expression::zero());
+        MiMCBlockCipher::<F7>::default();
     }
 }

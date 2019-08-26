@@ -6,7 +6,7 @@ use std::str::FromStr;
 use num::bigint::ParseBigIntError;
 use crate::field::{Element, Field};
 use crate::field::{Bn128, Bls12_381};
-use crate::curve::{EdwardsCurve, Curve, CurvePoint, EdwardsPoint};
+use crate::curve::{EdwardsCurve, Curve, EdwardsPoint};
 
 /// Families of "embedded" curves, defined over
 /// the same base field as the constraint system.

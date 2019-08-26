@@ -1,7 +1,5 @@
 //! This module extends GadgetBuilder with methods for splitting field elements into bits.
 
-use core::borrow::Borrow;
-
 use crate::expression::{BinaryExpression, Expression};
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
@@ -9,9 +7,9 @@ use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
     /// Split an arbitrary field element `x` into its canonical binary representation.
-    pub fn split<E: Borrow<Expression<F>>>(&mut self, x: E) -> BinaryExpression<F> {
+    pub fn split(&mut self, x: &Expression<F>) -> BinaryExpression<F> {
         let result = self.split_without_range_check(x, Element::<F>::max_bits());
-        self.assert_lt_binary(&result, BinaryExpression::from(F::order()));
+        self.assert_lt_binary(&result, &BinaryExpression::from(F::order()));
         result
     }
 
@@ -20,27 +18,23 @@ impl<F: Field> GadgetBuilder<F> {
     /// representation where the weighted sum of bits overflows the field size. This minimizes
     /// constraints, but the ambiguity can be a security problem depending on the context. If in
     /// doubt, use `split` instead.
-    pub fn split_allowing_ambiguity<E>(&mut self, x: E) -> BinaryExpression<F>
-        where E: Borrow<Expression<F>> {
+    pub fn split_allowing_ambiguity(&mut self, x: &Expression<F>) -> BinaryExpression<F> {
         self.split_without_range_check(x, Element::<F>::max_bits())
     }
 
     /// Split `x` into `bits` bit wires. This method assumes `x < 2^bits < |F|`. Note that only one
     /// binary representation is possible here, since `bits` bits is not enough to overflow the
     /// field size.
-    pub fn split_bounded<E>(&mut self, x: E, bits: usize) -> BinaryExpression<F>
-        where E: Borrow<Expression<F>> {
+    pub fn split_bounded(&mut self, x: &Expression<F>, bits: usize) -> BinaryExpression<F> {
         assert!(bits < Element::<F>::max_bits());
         self.split_without_range_check(x, bits)
     }
 
-    fn split_without_range_check<E: Borrow<Expression<F>>>(&mut self, x: E, bits: usize)
-                                                           -> BinaryExpression<F> {
-        let x = x.borrow();
+    fn split_without_range_check(&mut self, x: &Expression<F>, bits: usize) -> BinaryExpression<F> {
         let binary_wire = self.binary_wire(bits);
         let binary_exp = BinaryExpression::from(&binary_wire);
         let weighted_sum = binary_exp.join_allowing_overflow();
-        self.assert_equal(x, weighted_sum);
+        self.assert_equal(x, &weighted_sum);
 
         let x = x.clone();
         self.generator(
@@ -68,7 +62,7 @@ mod tests {
     fn split_19_32() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let wire = builder.wire();
-        let bit_wires = builder.split_bounded(Expression::from(wire), 32);
+        let bit_wires = builder.split_bounded(&Expression::from(wire), 32);
         let gadget = builder.build();
 
         let mut wire_values = values!(wire => 19u8.into());

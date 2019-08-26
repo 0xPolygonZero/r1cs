@@ -1,10 +1,24 @@
-# r1cs [![Crates.io](https://img.shields.io/crates/v/r1cs)](https://crates.io/crates/r1cs)
+# r1cs [![Crates.io](https://img.shields.io/crates/v/r1cs)](https://crates.io/crates/r1cs) [![docs.rs](https://docs.rs/r1cs/badge.svg)](https://docs.rs/r1cs)
 
 This is a rust library for building R1CS gadgets over prime fields, which are useful in SNARKs and other argument systems.
 
 An R1CS instance is defined by three matrices, `A`, `B` and `C`. These encode the following NP-complete decision problem: does there exist a witness vector `w` such that `Aw ∘ Bw = Cw`?
 
 A *gadget* for some R1CS instance takes a set of inputs, which are a subset of the witness vector. If the given inputs are valid, it extends the input set into a complete witness vector which satisfies the R1CS instance.
+
+
+## Features
+
+The goal of this library is to make SNARK programming easy. To that end, we support a broad set of features, including some fairly high-level abstractions:
+
+- Basic operations on field elements, such as multiplication, division, and comparisons
+- Type-safe boolean operations, such as `GadgetBuilder::and` and `GadgetBuilder::bitwise_and`
+- Type-safe binary operations, such as `GadgetBuilder::binary_sum`
+- `GadgetBuilder::assert_permutation`, which efficiently verifies a permutation using AS-Waksman networks
+- Methods for sorting lists of expressions, such as `GadgetBuilder::sort_ascending`
+- Methods for working with Merkle trees, such as `GadgetBuilder::merkle_tree_root`
+- Common cryptographic constructions such as Merkle–Damgård, Davies-Meyer, and Sponge functions.
+- MiMC (more primitives coming soon)
 
 
 ## Core types
@@ -28,7 +42,7 @@ let mut builder = GadgetBuilder::<Bn128>::new();
 let x = builder.wire();
 let x_exp = Expression::from(x);
 let x_squared = builder.product(&x_exp, &x_exp);
-let x_cubed = builder.product(x_squared, x_exp);
+let x_cubed = builder.product(&x_squared, &x_exp);
 let gadget = builder.build();
 
 // This structure maps wires to their (field element) values. Since
@@ -49,7 +63,7 @@ This can also be done more succinctly with `builder.exp(x_exp, 3)`, which perfor
 
 ## Custom fields
 
-You can define a custom field by implementing the `field::Field` trait. As an example, here's the definition of `Bn128` which was referenced above:
+You can define a custom field by implementing the `Field` trait. As an example, here's the definition of `Bn128` which was referenced above:
 
 ```rust
 pub struct Bn128 {}
@@ -64,26 +78,21 @@ impl Field for Bn128 {
 ```
 
 
-## Boolean algebra
+## Cryptographic tools
 
-The example above involved native field arithmetic, but this library also supports boolean algebra. For example, here is a function which implements the boolean function `Maj`, as defined in the SHA-256 specification:
+Suppose we wanted to hash a vector of `Expression`s. One approach would be to take a bloc cipher like MiMC, transform it into a one-way compression function using the Davies-Meyer construction, and transform that into a hash function using the Merkle–Damgård construction. We could do that like so:
 
 ```rust
-fn maj<F: Field>(builder: &mut GadgetBuilder<F>,
-                 x: BooleanExpression<F>,
-                 y: BooleanExpression<F>,
-                 z: BooleanExpression<F>) -> BooleanExpression<F> {
-    let x_y = builder.and(&x, &y);
-    let x_z = builder.and(&x, &z);
-    let y_z = builder.and(&y, &z);
-    let x_y_xor_x_z = builder.xor(x_y, x_z);
-    builder.xor(x_y_xor_x_z, y_z)
+fn hash<F: Field>(
+    builder: &mut GadgetBuilder<F>,
+    blocks: &[Expression<F>]
+) -> Expression<F> {
+    let cipher = MiMCBlockCipher::default();
+    let compress = DaviesMeyer::new(cipher);
+    let hash = MerkleDamgard::new_defaults(compress);
+    hash.hash(builder, blocks)
 }
 ```
-
-## Binary operations
-
-This library also supports bitwise operations, such as `bitwise_and`, and binary arithmetic operations, such as `binary_sum`.
 
 
 ## Permutation networks
@@ -105,8 +114,8 @@ fn inverse<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expres
     let x_inv = builder.wire();
 
     // Add the constraint x * x_inv = 1.
-    builder.assert_product(&x, Expression::from(x_inv),
-                           Expression::one());
+    builder.assert_product(&x, &Expression::from(x_inv),
+                           &Expression::one());
 
     // Non-deterministically generate x_inv = 1 / x.
     builder.generator(

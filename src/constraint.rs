@@ -5,7 +5,7 @@ use crate::expression::Expression;
 use crate::field::Field;
 use crate::wire_values::WireValues;
 
-/// An R1CS constraint, of the form a * b = c, where a, b, and c are linear combinations of wires.
+/// An rank-1 constraint of the form a * b = c, where a, b, and c are linear combinations of wires.
 #[derive(Clone, Debug)]
 pub struct Constraint<F: Field> {
     pub a: Expression<F>,

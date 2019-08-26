@@ -430,8 +430,9 @@ impl<F: Field> From<bool> for BooleanExpression<F> {
     }
 }
 
-/// A `BinaryExpression` is comprised of several bits, each one being a `BooleanExpression`. The
-/// sequence of bits is often interpreted as an unsigned integer for the purpose of binary
+/// A `BinaryExpression` is comprised of several bits, each one being a `BooleanExpression`.
+///
+/// The sequence of bits is often interpreted as an unsigned integer for the purpose of binary
 /// arithmetic. When doing so, our convention is to treat the left-most bit as the least
 /// significant, and the right-most bit as the most significant.
 #[derive(Debug)]

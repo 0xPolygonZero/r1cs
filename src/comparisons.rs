@@ -1,7 +1,5 @@
 //! This module extends GadgetBuilder with methods for comparing native field elements.
 
-use core::borrow::Borrow;
-
 use itertools::enumerate;
 
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};
@@ -10,112 +8,106 @@ use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
 
 impl<F: Field> GadgetBuilder<F> {
-    /// Assert that x < y.
-    pub fn assert_lt<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Assert that `x < y`.
+    pub fn assert_lt(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let lt = self.lt(x, y);
-        self.assert_true(lt);
+        self.assert_true(&lt);
     }
 
-    /// Assert that x <= y.
-    pub fn assert_le<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Assert that `x <= y`.
+    pub fn assert_le(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let le = self.le(x, y);
-        self.assert_true(le);
+        self.assert_true(&le);
     }
 
-    /// Assert that x > y.
-    pub fn assert_gt<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Assert that `x > y`.
+    pub fn assert_gt(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let gt = self.gt(x, y);
-        self.assert_true(gt);
+        self.assert_true(&gt);
     }
 
-    /// Assert that x >= y.
-    pub fn assert_ge<E1, E2>(&mut self, x: E1, y: E2)
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Assert that `x >= y`.
+    pub fn assert_ge(&mut self, x: &Expression<F>, y: &Expression<F>) {
         let ge = self.ge(x, y);
-        self.assert_true(ge);
+        self.assert_true(&ge);
     }
 
-    /// Assert that x < y.
-    pub fn assert_lt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
+    /// Assert that `x < y`.
+    pub fn assert_lt_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>) {
         let lt = self.lt_binary(x, y);
-        self.assert_true(lt);
+        self.assert_true(&lt);
     }
 
-    /// Assert that x <= y.
-    pub fn assert_le_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
+    /// Assert that `x <= y`.
+    pub fn assert_le_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>) {
         let le = self.le_binary(x, y);
-        self.assert_true(le);
+        self.assert_true(&le);
     }
 
-    /// Assert that x > y.
-    pub fn assert_gt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
+    /// Assert that `x > y`.
+    pub fn assert_gt_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>) {
         let gt = self.gt_binary(x, y);
-        self.assert_true(gt);
+        self.assert_true(&gt);
     }
 
-    /// Assert that x >= y.
-    pub fn assert_ge_binary<BE1, BE2>(&mut self, x: BE1, y: BE2)
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
+    /// Assert that `x >= y`.
+    pub fn assert_ge_binary(&mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>)
+    {
         let ge = self.ge_binary(x, y);
-        self.assert_true(ge);
+        self.assert_true(&ge);
     }
 
-    /// x < y
-    pub fn lt<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Returns `x < y`.
+    pub fn lt(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, true, true)
     }
 
-    /// x <= y
-    pub fn le<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Returns `x <= y`.
+    pub fn le(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, true, false)
     }
 
-    /// x > y
-    pub fn gt<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Returns `x > y`.
+    pub fn gt(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, false, true)
     }
 
-    /// x >= y
-    pub fn ge<E1, E2>(&mut self, x: E1, y: E2) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    /// Returns `x >= y`.
+    pub fn ge(&mut self, x: &Expression<F>, y: &Expression<F>) -> BooleanExpression<F> {
         self.cmp(x, y, false, false)
     }
 
-    /// x < y
-    pub fn lt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.cmp_binary(x.borrow(), y.borrow(), true, true)
+    /// Returns `x < y`.
+    pub fn lt_binary(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
+    ) -> BooleanExpression<F> {
+        self.cmp_binary(x, y, true, true)
     }
 
-    /// x <= y
-    pub fn le_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.cmp_binary(x.borrow(), y.borrow(), true, false)
+    /// Returns `x <= y`.
+    pub fn le_binary(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
+    ) -> BooleanExpression<F> {
+        self.cmp_binary(x, y, true, false)
     }
 
-    /// x > y
-    pub fn gt_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.cmp_binary(x.borrow(), y.borrow(), false, true)
+    /// Returns `x > y`.
+    pub fn gt_binary(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
+    ) -> BooleanExpression<F> {
+        self.cmp_binary(x, y, false, true)
     }
 
-    /// x >= y
-    pub fn ge_binary<BE1, BE2>(&mut self, x: BE1, y: BE2) -> BooleanExpression<F>
-        where BE1: Borrow<BinaryExpression<F>>, BE2: Borrow<BinaryExpression<F>> {
-        self.cmp_binary(x.borrow(), y.borrow(), false, false)
+    /// Returns `x >= y`.
+    pub fn ge_binary(
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
+    ) -> BooleanExpression<F> {
+        self.cmp_binary(x, y, false, false)
     }
 
-    fn cmp<E1, E2>(&mut self, x: E1, y: E2, less: bool, strict: bool) -> BooleanExpression<F>
-        where E1: Borrow<Expression<F>>, E2: Borrow<Expression<F>> {
+    fn cmp(
+        &mut self, x: &Expression<F>, y: &Expression<F>, less: bool, strict: bool,
+    ) -> BooleanExpression<F> {
         let (x_bin, y_bin) = if less {
             // We're asserting x <[=] y. We don't need x's canonical encoding, because the
             // non-canonical encoding would give x_bin > |F| and thus x_bin > y_bin, rendering the
@@ -128,8 +120,12 @@ impl<F: Field> GadgetBuilder<F> {
         self.cmp_binary(&x_bin, &y_bin, less, strict)
     }
 
-    fn cmp_binary(&mut self, x_bits: &BinaryExpression<F>, y_bits: &BinaryExpression<F>,
-                  less: bool, strict: bool) -> BooleanExpression<F> {
+    fn cmp_binary(
+        &mut self,
+        x_bits: &BinaryExpression<F>,
+        y_bits: &BinaryExpression<F>,
+        less: bool, strict: bool,
+    ) -> BooleanExpression<F> {
         assert_eq!(x_bits.len(), y_bits.len());
         let operand_bits = x_bits.len();
 
@@ -147,10 +143,10 @@ impl<F: Field> GadgetBuilder<F> {
         let mask = self.wires(chunks);
         // Each mask bit wire must equal 0 or 1.
         for &m in &mask {
-            self.assert_boolean(Expression::from(m));
+            self.assert_boolean(&Expression::from(m));
         }
         // The sum of all masks must equal 0 or 1, so that at most one mask can equal 1.
-        let diff_exists = self.assert_boolean(Expression::sum_of_wires(&mask));
+        let diff_exists = self.assert_boolean(&Expression::sum_of_wires(&mask));
 
         {
             let x_chunks = x_chunks.clone();
@@ -175,7 +171,8 @@ impl<F: Field> GadgetBuilder<F> {
         // Compute the dot product of the mask vector with (x_chunks - y_chunks).
         let mut diff_chunk = Expression::zero();
         for i in 0..chunks {
-            diff_chunk += self.product(Expression::from(mask[i]), &x_chunks[i] - &y_chunks[i]);
+            let diff = &x_chunks[i] - &y_chunks[i];
+            diff_chunk += self.product(&Expression::from(mask[i]), &diff);
         }
 
         // Verify that any more significant pairs of chunks are equal.
@@ -185,8 +182,8 @@ impl<F: Field> GadgetBuilder<F> {
             // If diff_seen = 1, we require that x_chunk = y_chunk.
             // Equivalently, we require that diff_seen * (x_chunk - y_chunk) = 0.
             self.assert_product(&diff_seen,
-                                &x_chunks[i] - &y_chunks[i],
-                                Expression::zero());
+                                &(&x_chunks[i] - &y_chunks[i]),
+                                &Expression::zero());
             diff_seen += Expression::from(mask[i]);
         }
 
@@ -195,8 +192,8 @@ impl<F: Field> GadgetBuilder<F> {
         // comparison operation applied to the selected chunks will enforce that they differ.
         if !strict {
             // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
-            let nonzero = self.selection(diff_exists, &diff_chunk, Expression::from(42u128));
-            self.assert_nonzero(nonzero);
+            let nonzero = self.selection(&diff_exists, &diff_chunk, &Expression::from(42u8));
+            self.assert_nonzero(&nonzero);
         }
 
         // Finally, apply a different comparison algorithm to the (small) differing chunks.
@@ -215,7 +212,7 @@ impl<F: Field> GadgetBuilder<F> {
         let base = Expression::from(
             (Element::one() << bits) - Element::from(strict));
         let z = base + if less { -diff } else { diff };
-        self.split_bounded(z, bits + 1).bits[bits].clone()
+        self.split_bounded(&z, bits + 1).bits[bits].clone()
     }
 
     /// The number of constraints used by `cmp_binary`, given a certain chunk size.

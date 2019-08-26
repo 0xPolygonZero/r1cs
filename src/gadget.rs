@@ -3,8 +3,11 @@ use crate::field::Field;
 use crate::wire_values::WireValues;
 use crate::witness_generator::WitnessGenerator;
 
+/// An R1CS gadget.
 pub struct Gadget<F: Field> {
+    /// The set of rank-1 constraints which define the R1CS instance.
     pub constraints: Vec<Constraint<F>>,
+    /// The set of generators used to generate a complete witness from inputs.
     pub witness_generators: Vec<WitnessGenerator<F>>,
 }
 
@@ -56,7 +59,7 @@ mod tests {
     fn constraint_not_satisfied() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let (x, y) = (builder.wire(), builder.wire());
-        builder.assert_equal(Expression::from(x), Expression::from(y));
+        builder.assert_equal(&Expression::from(x), &Expression::from(y));
         let gadget = builder.build();
 
         let mut values = values!(x => 42u8.into(), y => 43u8.into());
@@ -69,7 +72,7 @@ mod tests {
     fn missing_generator() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let (x, y, z) = (builder.wire(), builder.wire(), builder.wire());
-        builder.assert_product(Expression::from(x), Expression::from(y), Expression::from(z));
+        builder.assert_product(&Expression::from(x), &Expression::from(y), &Expression::from(z));
         let gadget = builder.build();
 
         let mut values = values!(x => 2u8.into(), y => 3u8.into());
@@ -81,7 +84,7 @@ mod tests {
     fn missing_input() {
         let mut builder = GadgetBuilder::<Bn128>::new();
         let x = builder.wire();
-        builder.inverse(Expression::from(x));
+        builder.inverse(&Expression::from(x));
         let gadget = builder.build();
 
         let mut values = WireValues::new();
