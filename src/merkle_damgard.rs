@@ -9,21 +9,21 @@ use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 
 /// A hash function based on the Merkle–Damgård construction.
-pub struct MerkleDamgard<F: Field, C: CompressionFunction<F>> {
+pub struct MerkleDamgard<F: Field, CF: CompressionFunction<F>> {
     initial_value: Element<F>,
-    compress: C
+    compress: CF
 }
 
-impl<F: Field, C: CompressionFunction<F>> MerkleDamgard<F, C> {
+impl<F: Field, CF: CompressionFunction<F>> MerkleDamgard<F, CF> {
     /// Creates a Merkle–Damgård hash function from the given initial value and one-way compression
     /// function.
-    pub fn new(initial_value: Element<F>, compress: C) -> Self {
+    pub fn new(initial_value: Element<F>, compress: CF) -> Self {
         MerkleDamgard { initial_value, compress }
     }
 
     /// Creates a Merkle–Damgård hash function from the given one-way compression function. Uses
     /// ChaCha20 (seeded with 0) as a source of randomness for the initial value.
-    pub fn new_default_initial_value(compress: C) -> Self {
+    pub fn new_default_initial_value(compress: CF) -> Self {
         let mut rng = ChaChaRng::seed_from_u64(0);
         let initial_value = Element::random(&mut rng);
         Self::new(initial_value, compress)
@@ -56,7 +56,9 @@ mod tests {
         struct TestCompress;
 
         impl<F: Field> CompressionFunction<F> for TestCompress {
-            fn compress(&self, _builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
+            fn compress(
+                &self, _builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>
+            ) -> Expression<F> {
                 x * 2 + y * 3
             }
         }
