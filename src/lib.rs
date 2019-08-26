@@ -7,6 +7,21 @@
 
 pub use num;
 
+pub use constraint::*;
+pub use davies_meyer::*;
+pub use expression::*;
+pub use field::*;
+pub use gadget::*;
+pub use gadget_builder::*;
+pub use gadget_traits::*;
+pub use merkle_damgard::*;
+pub use merkle_trees::*;
+pub use mimc::*;
+pub use sponge::*;
+pub use wire::*;
+pub use wire_values::*;
+pub use witness_generator::*;
+
 #[macro_use]
 mod wire_values;
 
@@ -37,17 +52,3 @@ mod witness_generator;
 #[cfg(test)]
 mod test_util;
 
-pub use constraint::*;
-pub use davies_meyer::*;
-pub use expression::*;
-pub use field::*;
-pub use gadget::*;
-pub use gadget_builder::*;
-pub use gadget_traits::*;
-pub use merkle_damgard::*;
-pub use merkle_trees::*;
-pub use sponge::*;
-pub use mimc::*;
-pub use wire::*;
-pub use wire_values::*;
-pub use witness_generator::*;

@@ -1,10 +1,11 @@
 //! This module extends GadgetBuilder with an implementation of the Davies-Meyer construction.
 
+use std::marker::PhantomData;
+
 use crate::expression::Expression;
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, CompressionFunction};
-use std::marker::PhantomData;
 
 /// The additive variant of Davies-Meyer, which creates a one-way compression function from a block
 /// cipher.

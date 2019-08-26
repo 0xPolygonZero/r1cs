@@ -27,11 +27,12 @@ impl<F: Field> GadgetBuilder<F> {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use crate::expression::Expression;
     use crate::field::{Bn128, Element};
     use crate::gadget_builder::GadgetBuilder;
     use crate::wire_values::WireValues;
-    use itertools::Itertools;
 
     #[test]
     fn random_access() {

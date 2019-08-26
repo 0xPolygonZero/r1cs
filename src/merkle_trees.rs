@@ -78,8 +78,8 @@ mod tests {
     use crate::expression::{BinaryExpression, BooleanExpression, Expression};
     use crate::field::{Bn128, Element, Field};
     use crate::gadget_builder::GadgetBuilder;
-    use crate::merkle_trees::MerklePath;
     use crate::gadget_traits::CompressionFunction;
+    use crate::merkle_trees::MerklePath;
 
     #[test]
     fn merkle_step() {
