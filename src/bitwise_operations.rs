@@ -16,7 +16,7 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// The bitwise conjunction of two binary expressions `x` and `y`, a.k.a. `x & y`.
     pub fn bitwise_and(
-        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BinaryExpression<F> {
         assert_eq!(x.len(), y.len());
         let l = x.len();
@@ -28,7 +28,7 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// The bitwise disjunction of two binary expressions `x` and `y`, a.k.a. `x | y`.
     pub fn bitwise_or(
-        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BinaryExpression<F> {
         assert_eq!(x.len(), y.len());
         let l = x.len();
@@ -40,7 +40,7 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// The bitwise exclusive disjunction of two binary expressions `x` and `y`, a.k.a. `x ^ y`.
     pub fn bitwise_xor<BE1, BE2>(
-        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>
+        &mut self, x: &BinaryExpression<F>, y: &BinaryExpression<F>,
     ) -> BinaryExpression<F> {
         assert_eq!(x.len(), y.len());
         let l = x.len();
@@ -53,7 +53,7 @@ impl<F: Field> GadgetBuilder<F> {
     /// Rotate bits in the direction of increasing significance. This is equivalent to "left rotate"
     /// in most programming languages.
     pub fn bitwise_rotate_inc_significance(
-        &mut self, x: &BinaryExpression<F>, n: usize
+        &mut self, x: &BinaryExpression<F>, n: usize,
     ) -> BinaryExpression<F> {
         let l = x.len();
         let bits = (0..l).map(|i| {
@@ -67,7 +67,7 @@ impl<F: Field> GadgetBuilder<F> {
     /// Rotate bits in the direction of increasing significance. This is equivalent to "right
     /// rotate" in most programming languages.
     pub fn bitwise_rotate_dec_significance(
-        &mut self, x: &BinaryExpression<F>, n: usize
+        &mut self, x: &BinaryExpression<F>, n: usize,
     ) -> BinaryExpression<F> {
         let l = x.len();
         let bits = (0..l).map(|i| {
@@ -81,7 +81,7 @@ impl<F: Field> GadgetBuilder<F> {
     /// significant end and inserting zeros on the least significant end. This is equivalent to
     /// "left shift" in most programming languages.
     pub fn bitwise_shift_inc_significance(
-        &mut self, x: &BinaryExpression<F>, n: usize
+        &mut self, x: &BinaryExpression<F>, n: usize,
     ) -> BinaryExpression<F> {
         let bits = (0..x.len()).map(|i| {
             if i < n {
@@ -98,7 +98,7 @@ impl<F: Field> GadgetBuilder<F> {
     /// significant end and inserting zeros on the most significant end. This is equivalent to
     /// "right shift" in most programming languages.
     pub fn bitwise_shift_dec_significance(
-        &mut self, x: &BinaryExpression<F>, n: usize
+        &mut self, x: &BinaryExpression<F>, n: usize,
     ) -> BinaryExpression<F> {
         let l = x.len();
         let bits = (0..l).map(|i| {

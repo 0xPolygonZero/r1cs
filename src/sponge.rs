@@ -16,7 +16,7 @@ pub struct Sponge<F: Field, MP: MultiPermutation<F>> {
     permutation: MP,
     bitrate: usize,
     capacity: usize,
-    phantom: PhantomData<F>
+    phantom: PhantomData<F>,
 }
 
 impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
@@ -33,7 +33,7 @@ impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
     }
 
     pub fn evaluate(
-        &self, builder: &mut GadgetBuilder<F>, inputs: &[Expression<F>], output_len: usize
+        &self, builder: &mut GadgetBuilder<F>, inputs: &[Expression<F>], output_len: usize,
     ) -> Vec<Expression<F>> {
         let mut input_section = iter::repeat(Expression::zero())
             .take(self.bitrate).collect_vec();
@@ -90,7 +90,7 @@ mod tests {
 
         impl<F: Field> MultiPermutation<F> for TestPermutation {
             fn permute(
-                &self, _builder: &mut GadgetBuilder<F>, blocks: &[Expression<F>]
+                &self, _builder: &mut GadgetBuilder<F>, blocks: &[Expression<F>],
             ) -> Vec<Expression<F>> {
                 assert_eq!(blocks.len(), 2);
                 let x = &blocks[0];

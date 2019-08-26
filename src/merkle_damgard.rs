@@ -11,7 +11,7 @@ use crate::gadget_builder::GadgetBuilder;
 /// A hash function based on the Merkle–Damgård construction.
 pub struct MerkleDamgard<F: Field, CF: CompressionFunction<F>> {
     initial_value: Element<F>,
-    compress: CF
+    compress: CF,
 }
 
 impl<F: Field, CF: CompressionFunction<F>> MerkleDamgard<F, CF> {
@@ -57,7 +57,7 @@ mod tests {
 
         impl<F: Field> CompressionFunction<F> for TestCompress {
             fn compress(
-                &self, _builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>
+                &self, _builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>,
             ) -> Expression<F> {
                 x * 2 + y * 3
             }

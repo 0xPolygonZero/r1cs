@@ -14,7 +14,7 @@ impl<F: Field> GadgetBuilder<F> {
     /// out-of-range indices, you can do so with a separate call to `assert_lt`.
     // TODO: We can do this more efficiently with a binary MUX structure.
     pub fn random_access(
-        &mut self, items: &[Expression<F>], index: &Expression<F>
+        &mut self, items: &[Expression<F>], index: &Expression<F>,
     ) -> Expression<F> {
         let mut result = Expression::zero();
         for (i, item) in enumerate(items) {

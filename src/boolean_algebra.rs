@@ -12,14 +12,14 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// The conjunction of two boolean values.
     pub fn and(
-        &mut self, x: &BooleanExpression<F>, y: &BooleanExpression<F>
+        &mut self, x: &BooleanExpression<F>, y: &BooleanExpression<F>,
     ) -> BooleanExpression<F> {
         BooleanExpression::new_unsafe(self.product(x.expression(), y.expression()))
     }
 
     /// The disjunction of two boolean values.
     pub fn or(
-        &mut self, x: &BooleanExpression<F>, y: &BooleanExpression<F>
+        &mut self, x: &BooleanExpression<F>, y: &BooleanExpression<F>,
     ) -> BooleanExpression<F> {
         let x_exp = x.expression();
         let y_exp = y.expression();
@@ -29,7 +29,7 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// The exclusive disjunction of two boolean values.
     pub fn xor(
-        &mut self, x: &BooleanExpression<F>, y: &BooleanExpression<F>
+        &mut self, x: &BooleanExpression<F>, y: &BooleanExpression<F>,
     ) -> BooleanExpression<F> {
         let x_exp = x.expression();
         let y_exp = y.expression();

@@ -11,7 +11,7 @@ use crate::gadget_traits::{BlockCipher, CompressionFunction};
 /// cipher.
 pub struct DaviesMeyer<F: Field, BC: BlockCipher<F>> {
     cipher: BC,
-    phantom: PhantomData<F>
+    phantom: PhantomData<F>,
 }
 
 impl<F: Field, BC: BlockCipher<F>> DaviesMeyer<F, BC> {

@@ -101,7 +101,7 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// if c { x } else { y }. Assumes c is binary.
     pub fn selection(
-        &mut self, c: &BooleanExpression<F>, x: &Expression<F>, y: &Expression<F>
+        &mut self, c: &BooleanExpression<F>, x: &Expression<F>, y: &Expression<F>,
     ) -> Expression<F> {
         y + self.product(c.expression(), &(x - y))
     }
