@@ -23,7 +23,7 @@ impl<F: Field, CF: CompressionFunction<F>> MerkleDamgard<F, CF> {
 
     /// Creates a Merkle–Damgård hash function from the given one-way compression function. Uses
     /// ChaCha20 (seeded with 0) as a source of randomness for the initial value.
-    pub fn new_default_initial_value(compress: CF) -> Self {
+    pub fn new_defaults(compress: CF) -> Self {
         let mut rng = ChaChaRng::seed_from_u64(0);
         let initial_value = Element::random(&mut rng);
         Self::new(initial_value, compress)
