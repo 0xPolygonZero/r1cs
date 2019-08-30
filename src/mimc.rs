@@ -1,7 +1,5 @@
 //! This module extends GadgetBuilder with an implementation of MiMC.
 
-use num::BigUint;
-use num_traits::One;
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 
@@ -9,11 +7,12 @@ use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, Permutation};
-use crate::wire_values::WireValues;
+use crate::MonomialPermutation;
 
 /// The MiMC block cipher.
 pub struct MiMCBlockCipher<F: Field> {
-    round_constants: Vec<Element<F>>
+    round_constants: Vec<Element<F>>,
+    round_permutation: MonomialPermutation<F>,
 }
 
 impl<F: Field> MiMCBlockCipher<F> {
@@ -23,9 +22,9 @@ impl<F: Field> MiMCBlockCipher<F> {
     /// The number of rounds will be `round_constants.len() + 1`, since the first round has no
     /// random constant.
     fn new(round_constants: &[Element<F>]) -> Self {
-        assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
-                "MiMC requires a field with gcd(3, p − 1) = 1");
-        MiMCBlockCipher { round_constants: round_constants.to_vec() }
+        let round_permutation = MonomialPermutation::new(Element::from(3u8));
+        let round_constants = round_constants.to_vec();
+        MiMCBlockCipher { round_permutation, round_constants }
     }
 }
 
@@ -51,14 +50,14 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
         current += key;
 
         // Cube the current value.
-        current = builder.exp(&current, &Element::from(3u8));
+        current = self.round_permutation.permute(builder, &current);
 
         for round_constant in self.round_constants.iter() {
             // Add the key and the random round constant.
             current += key + Expression::from(round_constant);
 
             // Cube the current value.
-            current = builder.exp(&current, &Element::from(3u8));
+            current = self.round_permutation.permute(builder, &current);
         }
 
         // Final key addition, as per the spec.
@@ -74,41 +73,16 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
 
         for round_constant in self.round_constants.iter().rev() {
             // Undo the cubing permutation.
-            current = cube_root(builder, &current);
+            current = self.round_permutation.inverse(builder, &current);
 
             // Undo the key and random round constant additions.
             current -= key + Expression::from(round_constant);
         }
 
         // Undo the first round cubing and key addition. (There is no constant in the first round.)
-        current = cube_root(builder, &current);
+        current = self.round_permutation.inverse(builder, &current);
         current - key
     }
-}
-
-// TODO: Generalize to exp_inverse -- x^{-n} for arbitrary n -- and make public.
-fn cube_root<F: Field>(builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
-    assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
-            "x^-3 not well-defined over this field");
-
-    let root_wire = builder.wire();
-    let root = Expression::from(root_wire);
-    let root_squared = builder.product(&root, &root);
-    builder.assert_product(&root, &root_squared, x);
-
-    // By Fermat's little theorem, x^((2p - 1) / 3)^3 = x.
-    let exponent = Element::from(
-        (F::order() * BigUint::from(2u64) - BigUint::one()) / BigUint::from(3u64));
-
-    let x = x.clone();
-    builder.generator(
-        x.dependencies(),
-        move |values: &mut WireValues<F>| {
-            let root_value = x.evaluate(values).exp(&exponent);
-            values.set(root_wire, root_value);
-        });
-
-    root
 }
 
 /// The MiMC permutation, which is equivalent to MiMC encryption with a key of zero.
@@ -120,6 +94,10 @@ impl<F: Field> Permutation<F> for MiMCPermutation<F> {
     fn permute(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
         // As per the paper, we just use a key of zero.
         self.cipher.encrypt(builder, &Expression::zero(), x)
+    }
+
+    fn inverse(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
+        self.cipher.decrypt(builder, &Expression::zero(), x)
     }
 }
 
@@ -135,24 +113,8 @@ mod tests {
     use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
     use crate::gadget_traits::BlockCipher;
-    use crate::mimc::{cube_root, MiMCBlockCipher};
+    use crate::mimc::MiMCBlockCipher;
     use crate::test_util::{F11, F7};
-
-    #[test]
-    fn cube_and_cube_root() {
-        let mut builder = GadgetBuilder::<F11>::new();
-        let x_wire = builder.wire();
-        let x = Expression::from(x_wire);
-        let x_cubed = builder.exp(&x, &Element::from(3u8));
-        let cube_root = cube_root(&mut builder, &x_cubed);
-        let gadget = builder.build();
-
-        for i in 0u8..11 {
-            let mut values = values!(x_wire => i.into());
-            assert!(gadget.execute(&mut values));
-            assert_eq!(Element::from(i), cube_root.evaluate(&values));
-        }
-    }
 
     #[test]
     fn mimc_encrypt_and_decrypt() {

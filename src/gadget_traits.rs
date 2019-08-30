@@ -66,6 +66,19 @@ pub trait Permutation<F: Field> {
         builder.build().execute(&mut values);
         permuted.evaluate(&values)
     }
+
+    /// Apply the inverse of this permutation to the given field element.
+    fn inverse(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F>;
+
+    /// Like `inverse`, but actually evaluates the inverse permutation rather than just adding it to
+    /// a `GadgetBuilder`.
+    fn inverse_evaluate(&self, x: &Element<F>) -> Element<F> {
+        let mut builder = GadgetBuilder::new();
+        let inverse = self.inverse(&mut builder, &Expression::from(x));
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        inverse.evaluate(&values)
+    }
 }
 
 /// A permutation whose inputs and outputs consist of multiple field elements.

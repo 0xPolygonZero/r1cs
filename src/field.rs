@@ -112,6 +112,15 @@ impl<F: Field> Element<F> {
         Self::from(self.to_biguint() % rhs.to_biguint())
     }
 
+    pub fn gcd(&self, rhs: &Self) -> Self {
+        // This is just the Euclidean algorithm.
+        if rhs.is_zero() {
+            self.clone()
+        } else {
+            rhs.gcd(&self.integer_modulus(rhs))
+        }
+    }
+
     /// The number of bits needed to encode every element of `F`.
     pub fn max_bits() -> usize {
         Self::largest_element().bits()
