@@ -41,11 +41,11 @@ mod gadget_traits;
 mod merkle_damgard;
 mod merkle_trees;
 mod mimc;
-mod permutations;
 mod random_access;
 mod sorting;
 mod splitting;
 mod sponge;
+mod verify_permutation;
 mod wire;
 mod witness_generator;
 
