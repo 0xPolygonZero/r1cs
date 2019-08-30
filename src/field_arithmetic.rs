@@ -76,6 +76,24 @@ impl<F: Field> GadgetBuilder<F> {
         x_inv.into()
     }
 
+    /// Like `inverse`, except that zero is mapped to itself rather than being prohibited.
+    pub fn inverse_or_zero(&mut self, x: &Expression<F>) -> Expression<F> {
+        let x_inv_or_zero = self.wire();
+        let nonzero = self.nonzero(x);
+        self.assert_product(x, &Expression::from(x_inv_or_zero), nonzero.expression());
+
+        let x = x.clone();
+        self.generator(
+            x.dependencies(),
+            move |values: &mut WireValues<F>| {
+                let x_value = x.evaluate(values);
+                values.set(x_inv_or_zero, x_value.multiplicative_inverse_or_zero());
+            },
+        );
+
+        x_inv_or_zero.into()
+    }
+
     /// Returns `x / y`, assuming `y` is non-zero. If `y` is zero, the gadget will not be
     /// satisfiable.
     pub fn quotient(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {

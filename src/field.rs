@@ -90,6 +90,16 @@ impl<F: Field> Element<F> {
         self.exp(&-Self::from(2u8))
     }
 
+    /// Like `multiplicative_inverse`, except that zero is mapped to itself rather than causing a
+    /// panic.
+    pub fn multiplicative_inverse_or_zero(&self) -> Self {
+        if self.is_zero() {
+            Self::zero()
+        } else {
+            self.multiplicative_inverse()
+        }
+    }
+
     pub fn exp(&self, power: &Self) -> Self {
         Self::from(self.to_biguint().modpow(power.to_biguint(), &F::order()))
     }
