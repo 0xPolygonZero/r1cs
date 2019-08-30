@@ -83,7 +83,7 @@ mod tests {
     use crate::test_util::F7;
 
     #[test]
-    fn sponge_1_1_1_F7() {
+    fn sponge_1_1_1_f7() {
         // We will use a trivial compression function to keep the test simple.
         // It transforms (x, y) into (y + 1, x + 2).
         struct TestPermutation;

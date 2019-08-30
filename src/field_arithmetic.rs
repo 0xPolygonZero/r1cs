@@ -60,12 +60,10 @@ impl<F: Field> GadgetBuilder<F> {
     /// Returns `1 / x`, assuming `x` is non-zero. If `x` is zero, the gadget will not be
     /// satisfiable.
     pub fn inverse(&mut self, x: &Expression<F>) -> Expression<F> {
-        // TODO: Remove?
-        let x = x.clone();
-
         let x_inv = self.wire();
-        self.assert_product(&x, &Expression::from(x_inv), &Expression::one());
+        self.assert_product(x, &Expression::from(x_inv), &Expression::one());
 
+        let x = x.clone();
         self.generator(
             x.dependencies(),
             move |values: &mut WireValues<F>| {
