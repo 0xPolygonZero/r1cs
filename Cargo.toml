@@ -6,7 +6,8 @@ authors = ["Daniel Lubarov <daniel@mirprotocol.org>", "Brendan Farmer <brendan@m
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/mir-protocol/r1cs"
-keywords = ["r1cs", "crypto", "snarks"]
+documentation = "https://docs.rs/r1cs"
+keywords = ["R1CS", "cryptography", "SNARK"]
 categories = ["cryptography"]
 maintenance = { status = "actively-developed" }
 edition = "2018"
