@@ -86,6 +86,7 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
     }
 }
 
+// TODO: Generalize to exp_inverse -- x^{-n} for arbitrary n -- and make public.
 fn cube_root<F: Field>(builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
     assert!(Element::<F>::largest_element().integer_modulus(&Element::from(3u8)).is_nonzero(),
             "x^-3 not well-defined over this field");
