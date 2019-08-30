@@ -16,17 +16,21 @@ impl<F: Field> Permutation<F> for InversePermutation {
     }
 }
 
+/// The permutation `x^n`.
 pub struct MonomialPermutation<F: Field> {
-    exponent: Element<F>,
+    n: Element<F>,
 }
 
 impl<F: Field> MonomialPermutation<F> {
-    pub fn new(exponent: Element<F>) -> Self {
+    /// Creates a new monomial permutation given the given exponent.
+    ///
+    /// This method will panic if `x^n` is not a permutation of `F`.
+    pub fn new(n: Element<F>) -> Self {
         // It is well-known that x^n is a permutation of F_q iff gcd(n, q - 1) = 1. See, for
         // example, Theorem 1.14 in "Permutation Polynomials of Finite Fields" [Shallue 12].
-        assert!(Element::largest_element().gcd(&exponent).is_one(),
-                "x^{} is not a permutation of F", exponent);
-        MonomialPermutation { exponent }
+        assert!(Element::largest_element().gcd(&n).is_one(),
+                "x^{} is not a permutation of F", n);
+        MonomialPermutation { n }
     }
 }
 
@@ -36,9 +40,9 @@ impl<F: Field> Permutation<F> for MonomialPermutation<F> {
     }
 
     fn inverse(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
-        let inv_wire = builder.wire();
-        let inv = Expression::from(inv_wire);
-        let exponentiation = builder.exp(&inv, &self.exponent);
+        let root_wire = builder.wire();
+        let root = Expression::from(root_wire);
+        let exponentiation = builder.exp(&root, &self.exponent);
         builder.assert_equal(&exponentiation, x);
 
         // By Fermat's little theorem, x^p = x, so if n divides e, then x^(p / n)^n = x.
@@ -57,18 +61,18 @@ impl<F: Field> Permutation<F> for MonomialPermutation<F> {
         builder.generator(
             x.dependencies(),
             move |values: &mut WireValues<F>| {
-                let inv_value = x.evaluate(values).exp(&exponent);
-                values.set(inv_wire, inv_value);
+                let root_value = x.evaluate(values).exp(&exponent);
+                values.set(root_wire, root_value);
             });
 
-        inv
+        root
     }
 }
 
 #[cfg(tests)]
 mod tests {
-    use crate::{Element, MonomialPermutation, GadgetBuilder, Permutation};
-    use crate::test_util::{F7, F11};
+    use crate::{Element, GadgetBuilder, MonomialPermutation, Permutation};
+    use crate::test_util::{F11, F7};
 
     #[test]
     fn cube_and_cube_root() {
