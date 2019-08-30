@@ -36,13 +36,13 @@ impl<F: Field> MonomialPermutation<F> {
 
 impl<F: Field> Permutation<F> for MonomialPermutation<F> {
     fn permute(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
-        builder.exp(x, &self.exponent)
+        builder.exp(x, &self.n)
     }
 
     fn inverse(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
         let root_wire = builder.wire();
         let root = Expression::from(root_wire);
-        let exponentiation = builder.exp(&root, &self.exponent);
+        let exponentiation = builder.exp(&root, &self.n);
         builder.assert_equal(&exponentiation, x);
 
         // By Fermat's little theorem, x^p = x, so if n divides e, then x^(p / n)^n = x.
@@ -52,8 +52,8 @@ impl<F: Field> Permutation<F> for MonomialPermutation<F> {
         let mut exponent_times_n = F::order();
         let exponent = loop {
             exponent_times_n += F::order() - BigUint::one();
-            if exponent_times_n.is_multiple_of(self.exponent.to_biguint()) {
-                break Element::from(exponent_times_n / self.exponent.to_biguint());
+            if exponent_times_n.is_multiple_of(self.n.to_biguint()) {
+                break Element::from(exponent_times_n / self.n.to_biguint());
             }
         };
 
