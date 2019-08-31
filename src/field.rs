@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
 use std::str::FromStr;
 
 use num::bigint::ParseBigIntError;
@@ -442,6 +442,40 @@ impl<F: Field> Div<&Element<F>> for &Element<F> {
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: &Element<F>) -> Element<F> {
         self * rhs.multiplicative_inverse()
+    }
+}
+
+impl<F: Field> Div<u128> for Element<F> {
+    type Output = Element<F>;
+
+    fn div(self, rhs: u128) -> Element<F> {
+        &self / rhs
+    }
+}
+
+impl<F: Field> Div<u128> for &Element<F> {
+    type Output = Element<F>;
+
+    fn div(self, rhs: u128) -> Element<F> {
+        self / Element::from(rhs)
+    }
+}
+
+impl<F: Field> DivAssign for Element<F> {
+    fn div_assign(&mut self, rhs: Element<F>) {
+        *self /= &rhs;
+    }
+}
+
+impl<F: Field> DivAssign<&Element<F>> for Element<F> {
+    fn div_assign(&mut self, rhs: &Element<F>) {
+        *self = self.clone() / rhs;
+    }
+}
+
+impl<F: Field> DivAssign<u128> for Element<F> {
+    fn div_assign(&mut self, rhs: u128) {
+        *self = self.clone() / rhs;
     }
 }
 
