@@ -41,7 +41,7 @@ impl<F: Field> Expression<F> {
     pub fn sum_of_expressions(expressions: &[Expression<F>]) -> Self {
         let mut merged_coefficients = HashMap::new();
         for exp in expressions {
-            for (wire, coefficient) in exp.coefficients.clone() {
+            for (&wire, coefficient) in &exp.coefficients {
                 *merged_coefficients.entry(wire).or_insert_with(Element::zero) += coefficient
             }
         }
@@ -223,6 +223,7 @@ impl<F: Field> AddAssign for Expression<F> {
 
 impl<F: Field> AddAssign<&Expression<F>> for Expression<F> {
     fn add_assign(&mut self, rhs: &Expression<F>) {
+        // TODO: Merge coefficients instead.
         *self = self.clone() + rhs;
     }
 }
@@ -405,14 +406,15 @@ impl<F: Field> DivAssign<Element<F>> for Expression<F> {
 
 impl<F: Field> DivAssign<&Element<F>> for Expression<F> {
     fn div_assign(&mut self, rhs: &Element<F>) {
-        // TODO: Remove these clone()s?
-        *self = self.clone() / rhs;
+        let self_immutable: &Expression<F> = self;
+        *self = self_immutable / rhs;
     }
 }
 
 impl<F: Field> DivAssign<u128> for Expression<F> {
     fn div_assign(&mut self, rhs: u128) {
-        *self = self.clone() / rhs;
+        let self_immutable: &Expression<F> = self;
+        *self = self_immutable / rhs;
     }
 }
 
