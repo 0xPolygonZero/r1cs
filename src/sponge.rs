@@ -103,7 +103,7 @@ mod tests {
             }
 
             fn inverse(
-                &self, _builder: &mut GadgetBuilder<F>, outputs: &[Expression<F>]
+                &self, _builder: &mut GadgetBuilder<F>, outputs: &[Expression<F>],
             ) -> Vec<Expression<F>> {
                 assert_eq!(outputs.len(), 2);
                 let x = &outputs[0];
