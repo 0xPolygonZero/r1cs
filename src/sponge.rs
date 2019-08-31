@@ -27,7 +27,7 @@ impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
     /// - `bitrate` - the size of the input section, in field elements
     /// - `capacity` - the size of the capacity section, in field elements
     pub fn new(permutation: MP, bitrate: usize, capacity: usize) -> Self {
-        assert_eq!(bitrate + capacity, permutation.size(),
+        assert_eq!(bitrate + capacity, permutation.width(),
                    "Sponge state memory size must match permutation size");
         Sponge { permutation, bitrate, capacity, phantom: PhantomData }
     }
@@ -85,21 +85,30 @@ mod tests {
     #[test]
     fn sponge_1_1_1_f7() {
         // We will use a trivial compression function to keep the test simple.
-        // It transforms (x, y) into (y + 1, x + 2).
+        // It transforms (x, y) into (2y, 3x).
         struct TestPermutation;
 
         impl<F: Field> MultiPermutation<F> for TestPermutation {
-            fn permute(
-                &self, _builder: &mut GadgetBuilder<F>, blocks: &[Expression<F>],
-            ) -> Vec<Expression<F>> {
-                assert_eq!(blocks.len(), 2);
-                let x = &blocks[0];
-                let y = &blocks[1];
-                vec![y + Expression::one(), x + Expression::from(2u8)]
+            fn width(&self) -> usize {
+                2
             }
 
-            fn size(&self) -> usize {
-                2
+            fn permute(
+                &self, _builder: &mut GadgetBuilder<F>, inputs: &[Expression<F>],
+            ) -> Vec<Expression<F>> {
+                assert_eq!(inputs.len(), 2);
+                let x = &inputs[0];
+                let y = &inputs[1];
+                vec![y * Element::from(2u8), x * Element::from(3u8)]
+            }
+
+            fn inverse(
+                &self, _builder: &mut GadgetBuilder<F>, outputs: &[Expression<F>]
+            ) -> Vec<Expression<F>> {
+                assert_eq!(outputs.len(), 2);
+                let x = &outputs[0];
+                let y = &outputs[1];
+                vec![y / Element::from(3u8), x / Element::from(2u8)]
             }
         }
 
@@ -117,13 +126,13 @@ mod tests {
 
         let mut values = values!(x_wire => 3u8.into(), y_wire => 4u8.into());
         assert!(gadget.execute(&mut values));
-        // It transforms (x, y) into (y + 1, x + 2).
+        // It transforms (x, y) into (2y, 3x).
         // Initial state: (0, 0)
         // After adding 3: (3, 0)
-        // After permuting: (1, 5)
-        // After adding 4: (5, 5)
-        // After permuting: (6, 0)
-        // Output: 6
-        assert_eq!(Element::from(6u8), hash.evaluate(&values));
+        // After permuting: (0, 2)
+        // After adding 4: (4, 2)
+        // After permuting: (4, 5)
+        // Output: 4
+        assert_eq!(Element::from(4u8), hash.evaluate(&values));
     }
 }

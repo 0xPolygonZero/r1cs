@@ -83,10 +83,15 @@ pub trait Permutation<F: Field> {
 
 /// A permutation whose inputs and outputs consist of multiple field elements.
 pub trait MultiPermutation<F: Field> {
+    /// The size of the permutation, in field elements.
+    fn width(&self) -> usize;
+
     /// Permute the given sequence of field elements.
     fn permute(&self, builder: &mut GadgetBuilder<F>, inputs: &[Expression<F>])
                -> Vec<Expression<F>>;
 
+    /// Like `permute`, but actually evaluates the permutation rather than just adding it to a
+    /// `GadgetBuilder`.
     fn permute_evaluate(&self, inputs: &[Element<F>]) -> Vec<Element<F>> {
         let mut builder = GadgetBuilder::new();
         let input_expressions = inputs.iter().map(Expression::from).collect_vec();
@@ -96,8 +101,20 @@ pub trait MultiPermutation<F: Field> {
         permuted.iter().map(|e| e.evaluate(&values)).collect()
     }
 
-    /// The size of the permutation, in field elements.
-    fn size(&self) -> usize;
+    /// Apply the inverse of this permutation to the given sequence of field elements.
+    fn inverse(&self, builder: &mut GadgetBuilder<F>, outputs: &[Expression<F>])
+               -> Vec<Expression<F>>;
+
+    /// Like `inverse`, but actually evaluates the inverse permutation rather than just adding it to
+    /// a `GadgetBuilder`.
+    fn inverse_evaluate(&self, outputs: &[Element<F>]) -> Vec<Element<F>> {
+        let mut builder = GadgetBuilder::new();
+        let output_expressions = outputs.iter().map(Expression::from).collect_vec();
+        let inversed = self.inverse(&mut builder, &output_expressions);
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        inversed.iter().map(|e| e.evaluate(&values)).collect()
+    }
 }
 
 /// A function which hashes a sequence of field elements, outputting a single field element.

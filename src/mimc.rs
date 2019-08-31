@@ -86,6 +86,8 @@ impl<F: Field> BlockCipher<F> for MiMCBlockCipher<F> {
 }
 
 /// The MiMC permutation, which is equivalent to MiMC encryption with a key of zero.
+// TODO: Consider merging the two structs.
+// TODO: Implement Default.
 pub struct MiMCPermutation<F: Field> {
     cipher: MiMCBlockCipher<F>
 }
