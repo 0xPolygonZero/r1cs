@@ -55,8 +55,8 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::Bn128;
 
     #[test]
     fn split_19_32() {

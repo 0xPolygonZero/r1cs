@@ -51,13 +51,13 @@ impl<F: Field> Gadget<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
     use crate::wire_values::WireValues;
 
     #[test]
     fn constraint_not_satisfied() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (x, y) = (builder.wire(), builder.wire());
         builder.assert_equal(&Expression::from(x), &Expression::from(y));
         let gadget = builder.build();
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn missing_generator() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (x, y, z) = (builder.wire(), builder.wire(), builder.wire());
         builder.assert_product(&Expression::from(x), &Expression::from(y), &Expression::from(z));
         let gadget = builder.build();
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn missing_input() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
         builder.inverse(&Expression::from(x));
         let gadget = builder.build();

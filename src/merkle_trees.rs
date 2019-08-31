@@ -76,14 +76,15 @@ mod tests {
     use num::BigUint;
 
     use crate::expression::{BinaryExpression, BooleanExpression, Expression};
-    use crate::field::{Bn128, Element, Field};
+    use crate::field::{Element, Field};
     use crate::gadget_builder::GadgetBuilder;
     use crate::gadget_traits::CompressionFunction;
     use crate::merkle_trees::MerklePath;
+    use crate::test_util::F257;
 
     #[test]
     fn merkle_step() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let node = builder.wire();
         let sibling = builder.wire();
         let is_right = builder.boolean_wire();
@@ -105,7 +106,7 @@ mod tests {
 
     #[test]
     fn merkle_root() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let prefix_wire = builder.binary_wire(3);
         let (sibling_1, sibling_2, sibling_3) = (builder.wire(), builder.wire(), builder.wire());
         let path = MerklePath::new(

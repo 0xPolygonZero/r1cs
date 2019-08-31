@@ -35,3 +35,12 @@ impl Field for F11 {
         BigUint::from(11u8)
     }
 }
+
+#[derive(Debug)]
+pub struct F257 {}
+
+impl Field for F257 {
+    fn order() -> BigUint {
+        BigUint::from(257u16)
+    }
+}

@@ -30,14 +30,15 @@ mod tests {
     use itertools::Itertools;
 
     use crate::expression::Expression;
-    use crate::field::{Bn128, Element};
+    use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
     use crate::wire_values::WireValues;
 
     #[test]
     fn random_access() {
         let n = 10;
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let item_wires = builder.wires(n);
         let item_exps = item_wires.iter().map(Expression::from).collect_vec();
         let index_wire = builder.wire();

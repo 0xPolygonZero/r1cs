@@ -238,14 +238,16 @@ fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use crate::expression::Expression;
-    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
     use crate::wire_values::WireValues;
 
     #[test]
     fn route_2x2() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         builder.assert_permutation(
             &[1u8.into(), 2u8.into()],
             &[2u8.into(), 1u8.into()]);
@@ -255,7 +257,7 @@ mod tests {
 
     #[test]
     fn route_3x3() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         builder.assert_permutation(
             &[1u8.into(), 2u8.into(), 3u8.into()],
             &[2u8.into(), 1u8.into(), 3u8.into()]);
@@ -265,12 +267,11 @@ mod tests {
 
     #[test]
     fn route_5x5() {
-        type F = Bn128;
-        let mut builder = GadgetBuilder::<F>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let a = builder.wires(5);
         let b = builder.wires(5);
-        let a_exp: Vec<Expression<F>> = a.iter().map(Expression::from).collect();
-        let b_exp: Vec<Expression<F>> = b.iter().map(Expression::from).collect();
+        let a_exp = a.iter().map(Expression::from).collect_vec();
+        let b_exp = b.iter().map(Expression::from).collect_vec();
         builder.assert_permutation(&a_exp, &b_exp);
         let gadget = builder.build();
 
@@ -288,7 +289,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn not_a_permutation() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         builder.assert_permutation(
             &[1u8.into(), 2u8.into(), 2u8.into()],
             &[1u8.into(), 2u8.into(), 1u8.into()]);
@@ -300,7 +301,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn lengths_differ() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         builder.assert_permutation(
             &[1u8.into(), 2u8.into(), 3u8.into()],
             &[1u8.into(), 2u8.into()]);
