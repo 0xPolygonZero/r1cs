@@ -135,6 +135,11 @@ fn inverse<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expres
 This is roughly equivalent to `GadgetBuilder`'s built-in `inverse` method, with slight modifications for readability.
 
 
+## Backends
+
+The [r1cs-bellman](https://crates.io/crates/r1cs-bellman) crate provides a backend for [bellman](https://crates.io/crates/bellman).
+
+
 ## Disclaimer
 
 This code has not been thoroughly reviewed or tested, and should not be used in any production systems.
