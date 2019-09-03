@@ -18,7 +18,7 @@ The goal of this library is to make SNARK programming easy. To that end, we supp
 - Methods for sorting lists of expressions, such as `GadgetBuilder::sort_ascending`
 - Methods for working with Merkle trees, such as `GadgetBuilder::merkle_tree_root`
 - Common cryptographic constructions such as Merkle–Damgård, Davies-Meyer, and Sponge functions.
-- MiMC (more primitives coming soon)
+- MiMC and Poseidon
 
 
 ## Core types
