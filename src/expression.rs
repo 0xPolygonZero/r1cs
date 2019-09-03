@@ -28,6 +28,10 @@ impl<F: Field> Expression<F> {
         Expression { coefficients: nonzero_coefficients }
     }
 
+    pub fn coefficients(&self) -> &HashMap<Wire, Element<F>> {
+        &self.coefficients
+    }
+
     /// The sum of zero or more wires, each with an implied coefficient of 1.
     pub fn sum_of_wires(wires: &[Wire]) -> Self {
         Expression {
