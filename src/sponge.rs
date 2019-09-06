@@ -9,9 +9,11 @@ use crate::{GadgetBuilder, MultiPermutation};
 use crate::Expression;
 use crate::Field;
 
-/// A sponge function. In a SNARK setting, efficiency demands that the two sections of sponge state
-/// memory (R and C) be stored in separate field elements, so that inputs can be efficiently added
-/// to R without affecting C.
+/// A sponge function.
+///
+/// In a SNARK setting, efficiency demands that the two sections of sponge state memory (R and C) be
+/// stored in separate field elements, so that inputs can be efficiently added to R without
+/// affecting C.
 pub struct Sponge<F: Field, MP: MultiPermutation<F>> {
     permutation: MP,
     bitrate: usize,
