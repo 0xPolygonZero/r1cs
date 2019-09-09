@@ -69,15 +69,15 @@ impl<F: Field> Permutation<F> for MonomialPermutation<F> {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
-    use crate::{Element, GadgetBuilder, MonomialPermutation, Permutation};
+    use crate::{Element, Expression, GadgetBuilder, MonomialPermutation, Permutation};
     use crate::test_util::{F11, F7};
 
     #[test]
     fn cube_and_cube_root() {
         let mut builder = GadgetBuilder::<F11>::new();
-        let permutation = MonomialPermutation::new(3);
+        let permutation = MonomialPermutation::new(Element::from(3u8));
         let x_wire = builder.wire();
         let x = Expression::from(x_wire);
         let x_cubed = permutation.permute(&mut builder, &x);
