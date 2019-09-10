@@ -1,6 +1,6 @@
 //! This module extends GadgetBuilder with a method for verifying permutations.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::bimap_util::bimap_from_lists;
 use crate::expression::{BooleanExpression, Expression};
@@ -118,8 +118,8 @@ impl<F: Field> GadgetBuilder<F> {
         self.generator(
             [a_deps, b_deps].concat(),
             move |values: &mut WireValues<F>| {
-                let a_values: Vec<Element<F>> = a.iter().map(|e| e.evaluate(values)).collect();
-                let b_values: Vec<Element<F>> = b.iter().map(|e| e.evaluate(values)).collect();
+                let a_values: Vec<Element<F>> = a.iter().map(|exp| exp.evaluate(values)).collect();
+                let b_values: Vec<Element<F>> = b.iter().map(|exp| exp.evaluate(values)).collect();
                 route(a_values, b_values, &a_switches, &b_switches, values);
             });
     }
@@ -146,11 +146,11 @@ fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
     // We maintain two maps for wires which have been routed to a particular subnetwork on one side
     // of the network (left or right) but not the other. The keys are wire indices, and the values
     // are subnetwork indices.
-    let mut partial_routes = [HashMap::new(), HashMap::new()];
+    let mut partial_routes = [BTreeMap::new(), BTreeMap::new()];
 
     // After we route a wire on one side, we find the corresponding wire on the other side and check
     // if it still needs to be routed. If so, we add it to partial_routes.
-    let enqueue_other_side = |partial_routes: &mut [HashMap<usize, bool>],
+    let enqueue_other_side = |partial_routes: &mut [BTreeMap<usize, bool>],
                               values: &mut WireValues<F>,
                               side: usize, this_i: usize, subnet: bool| {
         let other_side = 1 - side;
@@ -171,12 +171,12 @@ fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
         if let Some(&sibling_subnet) = partial_routes[other_side].get(&other_i_sibling) {
             // The other switch's sibling is already pending routing.
             assert_ne!(subnet, sibling_subnet);
-            return;
         }
-
-        let opt_old_subnet = partial_routes[other_side].insert(other_i, subnet);
-        if let Some(old_subnet) = opt_old_subnet {
-            assert_eq!(subnet, old_subnet, "Routing conflict (should never happen)");
+        else {
+            let opt_old_subnet = partial_routes[other_side].insert(other_i, subnet);
+            if let Some(old_subnet) = opt_old_subnet {
+                assert_eq!(subnet, old_subnet, "Routing conflict (should never happen)");
+            }
         }
     };
 
@@ -189,7 +189,7 @@ fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
         enqueue_other_side(&mut partial_routes, values, 1, n - 1, true);
     }
 
-    let route_switch = |partial_routes: &mut [HashMap<usize, bool>], values: &mut WireValues<F>,
+    let route_switch = |partial_routes: &mut [BTreeMap<usize, bool>], values: &mut WireValues<F>,
                         side: usize, switch_index: usize, swap: bool| {
         // First, we actually set the switch configuration.
         values.set_boolean(switches[side][switch_index], swap);
@@ -261,6 +261,16 @@ mod tests {
         builder.assert_permutation(
             &[1u8.into(), 2u8.into(), 3u8.into()],
             &[2u8.into(), 1u8.into(), 3u8.into()]);
+        let gadget = builder.build();
+        assert!(gadget.execute(&mut WireValues::new()));
+    }
+
+    #[test]
+    fn route_4x4() {
+        let mut builder = GadgetBuilder::<F257>::new();
+        builder.assert_permutation(
+            &[1u8.into(), 2u8.into(), 3u8.into(), 4u8.into()],
+            &[2u8.into(), 1u8.into(), 4u8.into(), 3u8.into()]);
         let gadget = builder.build();
         assert!(gadget.execute(&mut WireValues::new()));
     }

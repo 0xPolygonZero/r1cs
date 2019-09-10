@@ -30,7 +30,7 @@ impl<F: Field> GadgetBuilder<F> {
         self.binary_summation_asserting_no_overflow(&[x.clone(), y.clone()])
     }
 
-    /// Add an arbitrary number of binary expressions. The result will be one bit longer than the
+    /// Add an arbitrary number of binary expressions. The result will be at least one bit longer than the
     /// longest input.
     pub fn binary_summation(&mut self, terms: &[BinaryExpression<F>]) -> BinaryExpression<F> {
         // We will non-deterministically generate the sum bits, join the binary expressions, and
@@ -44,7 +44,7 @@ impl<F: Field> GadgetBuilder<F> {
         let sum_bits = max_sum.bits();
 
         // TODO: Generalize this addition function to support larger operands.
-        // We can split the bits into chunks and perform grade school addition on joined chunks.
+        // We can split the bits into chunks and perform addition on joined chunks.
         assert!(sum_bits < Element::<F>::max_bits(),
                 "Binary operands are too large to fit an a field element.");
 

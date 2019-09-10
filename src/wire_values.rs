@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use num::BigUint;
 use num_traits::One;
@@ -10,12 +10,12 @@ use crate::wire::{BinaryWire, BooleanWire, Wire};
 /// An assignment of wire values, where each value is an element of the field `F`.
 #[derive(Default, Debug)]
 pub struct WireValues<F: Field> {
-    values: HashMap<Wire, Element<F>>,
+    values: BTreeMap<Wire, Element<F>>,
 }
 
 impl<F: Field> WireValues<F> {
     pub fn new() -> Self {
-        let mut values = HashMap::new();
+        let mut values = BTreeMap::new();
         values.insert(Wire::ONE, Element::one());
         WireValues { values }
     }

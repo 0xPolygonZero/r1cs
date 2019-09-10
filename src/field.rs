@@ -50,7 +50,7 @@ pub struct Element<F: Field> {
     /// F needs to be present in a struct field, otherwise the compiler will complain that it is
     /// unused. In reality it is used, but only at compile time. For example, some functions take an
     /// `Element<F>` and call `F::order()`.
-    phantom: PhantomData<F>,
+    phantom: PhantomData<*const F>,
 }
 
 impl<F: Field> Element<F> {
@@ -87,7 +87,7 @@ impl<F: Field> Element<F> {
         // From Fermat's little theorem.
         // TODO: Use a faster method, like the one described in "Fast Modular Reciprocals".
         // Or just wait for https://github.com/rust-num/num-bigint/issues/60
-        self.exp(&-Self::from(2u8))
+        self.exponentiation(&-Self::from(2u8))
     }
 
     /// Like `multiplicative_inverse`, except that zero is mapped to itself rather than causing a
@@ -100,7 +100,7 @@ impl<F: Field> Element<F> {
         }
     }
 
-    pub fn exp(&self, power: &Self) -> Self {
+    pub fn exponentiation(&self, power: &Self) -> Self {
         Self::from(self.to_biguint().modpow(power.to_biguint(), &F::order()))
     }
 
@@ -132,12 +132,13 @@ impl<F: Field> Element<F> {
     }
 
     /// Return the i'th least significant bit. So, for example, x.bit(0) returns the least
-    /// significant bit of x.
+    /// significant bit of x. Return false for outside of range.
     pub fn bit(&self, i: usize) -> bool {
         ((self.to_biguint() >> i) & BigUint::one()).is_one()
     }
 
     /// Return a random field element, uniformly distributed in [0, size()).
+    /// This is the fastest implementation since max_bits() is always GSB bounded.
     pub fn random(rng: &mut impl Rng) -> Self {
         let bits = Self::max_bits();
         loop {
@@ -490,6 +491,7 @@ impl<F: Field> Shl<usize> for Element<F> {
 impl<F: Field> Shl<usize> for &Element<F> {
     type Output = Element<F>;
 
+    //TODO: INTERNAL: check to see if left-shifting can violate order bounds since there’s no bounds check here
     fn shl(self, rhs: usize) -> Element<F> {
         Element::from(self.to_biguint() << rhs)
     }
@@ -498,6 +500,7 @@ impl<F: Field> Shl<usize> for &Element<F> {
 impl<F: Field> fmt::Display for Element<F> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         // As a UX optimization, display "-1" for the largest field element.
+        //TODO: INTERNAL: check to see if there would be any parsing of the -1 value that could error
         let s = if self.is_one() {
             "-1".to_string()
         } else {

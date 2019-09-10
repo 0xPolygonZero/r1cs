@@ -35,10 +35,10 @@ impl<F: Field> GadgetBuilder<F> {
     }
 
     /// `x^p` for a constant `p`.
-    pub fn exp(&mut self, x: &Expression<F>, p: &Element<F>) -> Expression<F> {
+    pub fn exponentiation(&mut self, x: &Expression<F>, p: &Element<F>) -> Expression<F> {
         // This is exponentiation by squaring. For each 1 bit of p, multiply by the associated
         // square power.
-        let mut product = Expression::one();
+        let mut product_exp = Expression::one();
         let mut last_square = Expression::zero();
 
         for i in 0..p.bits() {
@@ -49,12 +49,12 @@ impl<F: Field> GadgetBuilder<F> {
             };
 
             if p.bit(i) {
-                product = self.product(&product, &square);
+                product_exp = self.product(&product_exp, &square);
             }
 
             last_square = square;
         }
-        product
+        product_exp
     }
 
     /// Returns `1 / x`, assuming `x` is non-zero. If `x` is zero, the gadget will not be
@@ -148,10 +148,10 @@ mod tests {
     fn exp() {
         let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
-        let x_exp_0 = builder.exp(&Expression::from(x), &Element::from(0u8));
-        let x_exp_1 = builder.exp(&Expression::from(x), &Element::from(1u8));
-        let x_exp_2 = builder.exp(&Expression::from(x), &Element::from(2u8));
-        let x_exp_3 = builder.exp(&Expression::from(x), &Element::from(3u8));
+        let x_exp_0 = builder.exponentiation(&Expression::from(x), &Element::from(0u8));
+        let x_exp_1 = builder.exponentiation(&Expression::from(x), &Element::from(1u8));
+        let x_exp_2 = builder.exponentiation(&Expression::from(x), &Element::from(2u8));
+        let x_exp_3 = builder.exponentiation(&Expression::from(x), &Element::from(3u8));
         let gadget = builder.build();
 
         let mut values = values!(x => 3u8.into());

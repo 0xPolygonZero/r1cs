@@ -28,7 +28,7 @@ impl<F: Field, SB: Permutation<F>> MultiPermutation<F> for Poseidon<F, SB> {
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
             if full {
                 current = current.into_iter()
-                    .map(|e| self.sbox.permute(builder, &e))
+                    .map(|exp| self.sbox.permute(builder, &exp))
                     .collect();
             } else {
                 current[0] = self.sbox.permute(builder, &current[0]);
@@ -58,7 +58,7 @@ impl<F: Field, SB: Permutation<F>> MultiPermutation<F> for Poseidon<F, SB> {
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
             if full {
                 current = current.into_iter()
-                    .map(|e| self.sbox.inverse(builder, &e))
+                    .map(|exp| self.sbox.inverse(builder, &exp))
                     .collect();
             } else {
                 current[0] = self.sbox.inverse(builder, &current[0]);

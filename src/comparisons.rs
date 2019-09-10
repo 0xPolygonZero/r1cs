@@ -169,11 +169,8 @@ impl<F: Field> GadgetBuilder<F> {
         }
 
         // Compute the dot product of the mask vector with (x_chunks - y_chunks).
-        let mut diff_chunk = Expression::zero();
-        for i in 0..chunks {
-            let diff = &x_chunks[i] - &y_chunks[i];
-            diff_chunk += self.product(&Expression::from(mask[i]), &diff);
-        }
+        let diff_chunk = (0..chunks).fold(Expression::zero(),
+            |sum, i| { let diff = &x_chunks[i] - &y_chunks[i]; sum + self.product(&Expression::from(mask[i]), &diff) });
 
         // Verify that any more significant pairs of chunks are equal.
         // diff_seen tracks whether a mask bit of 1 has been observed for a less significant bit.
@@ -184,15 +181,15 @@ impl<F: Field> GadgetBuilder<F> {
             self.assert_product(&diff_seen,
                                 &(&x_chunks[i] - &y_chunks[i]),
                                 &Expression::zero());
-            diff_seen += Expression::from(mask[i]);
+            diff_seen += Expression::from(mask[i]);//TODO: Alter loop format to remove extraneous add op
         }
 
         // If the mask has a 1 bit, then the corresponding pair of chunks must differ. We only need
         // this check for non-strict comparisons though, since for strict comparisons, the
         // comparison operation applied to the selected chunks will enforce that they differ.
         if !strict {
-            // The mask is 0, so just assert that 42 (arbitrary) is non-zero.
-            let nonzero = self.selection(&diff_exists, &diff_chunk, &Expression::from(42u8));
+            // The mask is 0, so just assert that 1 (arbitrary) is non-zero.
+            let nonzero = self.selection(&diff_exists, &diff_chunk, &Expression::from(Element::one()));
             self.assert_nonzero(&nonzero);
         }
 

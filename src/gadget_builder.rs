@@ -88,7 +88,7 @@ impl<F: Field> GadgetBuilder<F> {
                     &y_value / x_value
                 } else {
                     // The value of m doesn't matter if x = 0.
-                    Element::from(42u8)
+                    Element::from(Element::one())
                 };
                 values.set(m, m_value);
                 values.set(y, y_value);
