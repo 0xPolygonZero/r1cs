@@ -491,7 +491,6 @@ impl<F: Field> Shl<usize> for Element<F> {
 impl<F: Field> Shl<usize> for &Element<F> {
     type Output = Element<F>;
 
-    //TODO: INTERNAL: check to see if left-shifting can violate order bounds since there’s no bounds check here
     fn shl(self, rhs: usize) -> Element<F> {
         Element::from(self.to_biguint() << rhs)
     }

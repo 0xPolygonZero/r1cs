@@ -547,7 +547,7 @@ impl<F: Field> BinaryExpression<F> {
     /// Pad this bit vector, adding 0 bits on the more significant side.
     pub fn pad(&mut self, l: usize) {
         assert!(l >= self.len());
-        for _ in self.bits.len()..l {
+        while self.bits.len() < l {
             self.bits.push(BooleanExpression::_false());
         }
     }

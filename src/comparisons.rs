@@ -189,7 +189,7 @@ impl<F: Field> GadgetBuilder<F> {
         // comparison operation applied to the selected chunks will enforce that they differ.
         if !strict {
             // The mask is 0, so just assert that 1 (arbitrary) is non-zero.
-            let nonzero = self.selection(&diff_exists, &diff_chunk, &Expression::from(Element::one()));
+            let nonzero = self.selection(&diff_exists, &diff_chunk, &Expression::one());
             self.assert_nonzero(&nonzero);
         }
 
