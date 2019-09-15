@@ -1,4 +1,11 @@
-use std::collections::HashMap;
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
+#[cfg(not(feature = "no-std"))]
+use std::collections::BTreeMap;
+#[cfg(feature = "no-std")]
+use alloc::collections::btree_map::BTreeMap;
+
 use std::hash::Hash;
 
 use bimap::BiMap;
@@ -12,7 +19,7 @@ use itertools::enumerate;
 pub fn bimap_from_lists<T: Eq + Hash>(a: Vec<T>, b: Vec<T>) -> BiMap<usize, usize> {
     assert_eq!(a.len(), b.len(), "Vectors differ in length");
 
-    let mut b_values_to_indices = HashMap::new();
+    let mut b_values_to_indices = BTreeMap::new();
     for (i, value) in enumerate(b) {
         b_values_to_indices.entry(value).or_insert_with(Vec::new).push(i);
     }

@@ -1,5 +1,8 @@
 //! This module extends GadgetBuilder with an implementation of the Merkle-Damgard construction.
 
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use core::iter;
 use std::marker::PhantomData;
 

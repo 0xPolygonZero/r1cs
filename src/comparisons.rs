@@ -1,5 +1,8 @@
 //! This module extends GadgetBuilder with methods for comparing native field elements.
 
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use itertools::enumerate;
 
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};

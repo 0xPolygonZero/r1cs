@@ -5,6 +5,21 @@
 //!
 //! See the [readme](https://github.com/mir-protocol/r1cs) for more information and examples.
 
+#![cfg(feature = "no-std")]
+#![no_std]
+
+#[cfg(not(feature = "no-std"))]
+#[macro_use]
+extern crate std;
+
+#[cfg(feature = "no-std")]
+#[macro_use]
+extern crate core as std;
+
+#[cfg(feature = "no-std")]
+#[macro_use]
+extern crate alloc;
+
 pub use num;
 
 pub use constraint::*;

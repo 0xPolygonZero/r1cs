@@ -1,5 +1,8 @@
 //! This module extends GadgetBuilder with an implementation of MiMC.
 
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 

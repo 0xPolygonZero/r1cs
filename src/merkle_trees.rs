@@ -1,3 +1,6 @@
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;

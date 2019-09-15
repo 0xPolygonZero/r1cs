@@ -1,3 +1,6 @@
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use crate::{Expression, Field, GadgetBuilder, MdsMatrix, MultiPermutation, Permutation};
 
 /// The Poseidon permutation.

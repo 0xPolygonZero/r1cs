@@ -1,4 +1,11 @@
-use std::collections::{BTreeMap, HashSet};
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
+#[cfg(not(feature = "no-std"))]
+use std::collections::BTreeMap;
+#[cfg(feature = "no-std")]
+use alloc::collections::btree_map::BTreeMap;
+
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};

@@ -1,4 +1,7 @@
+#[cfg(not(feature = "no-std"))]
 use std::collections::BTreeMap;
+#[cfg(feature = "no-std")]
+use alloc::collections::btree_map::BTreeMap;
 
 use num::BigUint;
 use num_traits::One;

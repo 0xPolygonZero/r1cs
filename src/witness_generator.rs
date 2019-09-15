@@ -1,3 +1,6 @@
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use crate::field::Field;
 use crate::wire::Wire;
 use crate::wire_values::WireValues;

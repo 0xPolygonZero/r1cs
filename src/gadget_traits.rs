@@ -1,3 +1,6 @@
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use itertools::Itertools;
 
 use crate::{Element, Expression, Field, GadgetBuilder, WireValues};

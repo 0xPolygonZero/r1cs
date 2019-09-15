@@ -1,3 +1,6 @@
+#[cfg(feature = "no-std")]
+use alloc::vec::Vec;
+
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
