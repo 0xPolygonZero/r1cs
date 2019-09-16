@@ -166,13 +166,13 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::{BooleanExpression, Expression};
-    use crate::field::{Bn128, Element};
+    use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::test_util::{assert_eq_false, assert_eq_true};
+    use crate::test_util::{assert_eq_false, assert_eq_true, F257};
 
     #[test]
     fn assert_binary_0_1() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
         builder.assert_boolean(&Expression::from(x));
         let gadget = builder.build();
@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn assert_binary_2() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
         builder.assert_boolean(&Expression::from(x));
         let gadget = builder.build();
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn selection() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (c, x, y) = (builder.boolean_wire(), builder.wire(), builder.wire());
         let selection = builder.selection(
             &BooleanExpression::from(c), &Expression::from(x), &Expression::from(y));
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn equal() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (x, y) = (builder.wire(), builder.wire());
         let equal = builder.equal(&Expression::from(x), &Expression::from(y));
         let gadget = builder.build();

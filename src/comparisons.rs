@@ -238,8 +238,9 @@ impl<F: Field> GadgetBuilder<F> {
 
 #[cfg(test)]
 mod tests {
+    use crate::Bn128;
     use crate::expression::Expression;
-    use crate::field::{Bn128, Element};
+    use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
     use crate::test_util::assert_eq_false;
     use crate::test_util::assert_eq_true;

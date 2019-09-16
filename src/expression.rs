@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fmt::Formatter;
-use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use itertools::Itertools;
 use num::BigUint;
@@ -28,6 +28,10 @@ impl<F: Field> Expression<F> {
         Expression { coefficients: nonzero_coefficients }
     }
 
+    pub fn coefficients(&self) -> &HashMap<Wire, Element<F>> {
+        &self.coefficients
+    }
+
     /// The sum of zero or more wires, each with an implied coefficient of 1.
     pub fn sum_of_wires(wires: &[Wire]) -> Self {
         Expression {
@@ -41,7 +45,7 @@ impl<F: Field> Expression<F> {
     pub fn sum_of_expressions(expressions: &[Expression<F>]) -> Self {
         let mut merged_coefficients = HashMap::new();
         for exp in expressions {
-            for (wire, coefficient) in exp.coefficients.clone() {
+            for (&wire, coefficient) in &exp.coefficients {
                 *merged_coefficients.entry(wire).or_insert_with(Element::zero) += coefficient
             }
         }
@@ -223,6 +227,7 @@ impl<F: Field> AddAssign for Expression<F> {
 
 impl<F: Field> AddAssign<&Expression<F>> for Expression<F> {
     fn add_assign(&mut self, rhs: &Expression<F>) {
+        // TODO: Merge coefficients instead.
         *self = self.clone() + rhs;
     }
 }
@@ -340,6 +345,80 @@ impl<F: Field> MulAssign<&Element<F>> for Expression<F> {
 impl<F: Field> MulAssign<u128> for Expression<F> {
     fn mul_assign(&mut self, rhs: u128) {
         *self = self.clone() * rhs;
+    }
+}
+
+impl<F: Field> Div<Element<F>> for Expression<F> {
+    type Output = Expression<F>;
+
+    fn div(self, rhs: Element<F>) -> Expression<F> {
+        &self / &rhs
+    }
+}
+
+impl<F: Field> Div<&Element<F>> for Expression<F> {
+    type Output = Expression<F>;
+
+    fn div(self, rhs: &Element<F>) -> Expression<F> {
+        &self / rhs
+    }
+}
+
+impl<F: Field> Div<Element<F>> for &Expression<F> {
+    type Output = Expression<F>;
+
+    fn div(self, rhs: Element<F>) -> Expression<F> {
+        self / &rhs
+    }
+}
+
+impl<F: Field> Div<&Element<F>> for &Expression<F> {
+    type Output = Expression<F>;
+
+    fn div(self, rhs: &Element<F>) -> Expression<F> {
+        Expression::new(
+            self.coefficients.iter()
+                .map(|(k, v)| (*k, v / rhs))
+                .collect())
+    }
+}
+
+impl<F: Field> Div<u128> for Expression<F> {
+    type Output = Expression<F>;
+
+    fn div(self, rhs: u128) -> Expression<F> {
+        &self / rhs
+    }
+}
+
+impl<F: Field> Div<u128> for &Expression<F> {
+    type Output = Expression<F>;
+
+    fn div(self, rhs: u128) -> Expression<F> {
+        Expression::new(
+            self.coefficients.iter()
+                .map(|(k, v)| (*k, v / rhs))
+                .collect())
+    }
+}
+
+impl<F: Field> DivAssign<Element<F>> for Expression<F> {
+    fn div_assign(&mut self, rhs: Element<F>) {
+        *self /= &rhs;
+    }
+}
+
+impl<F: Field> DivAssign<&Element<F>> for Expression<F> {
+    fn div_assign(&mut self, rhs: &Element<F>) {
+        let self_immutable: &Expression<F> = self;
+        *self = self_immutable / rhs;
+    }
+}
+
+impl<F: Field> DivAssign<u128> for Expression<F> {
+    fn div_assign(&mut self, rhs: u128) {
+        let self_immutable: &Expression<F> = self;
+        *self = self_immutable / rhs;
     }
 }
 
@@ -483,7 +562,9 @@ impl<F: Field> BinaryExpression<F> {
     }
 
     pub fn chunks(&self, chunk_bits: usize) -> Vec<BinaryExpression<F>> {
-        self.bits.chunks(chunk_bits).map(|chunk| BinaryExpression { bits: chunk.to_vec() }).collect()
+        self.bits.chunks(chunk_bits)
+            .map(|chunk| BinaryExpression { bits: chunk.to_vec() })
+            .collect()
     }
 
     pub fn add_most_significant(&mut self, bit: BooleanExpression<F>) {

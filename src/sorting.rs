@@ -66,12 +66,13 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::field::{Bn128, Element};
+    use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
 
     #[test]
     fn sort_4_ascending() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (a, b, c, d) = (builder.wire(), builder.wire(), builder.wire(), builder.wire());
         let outputs = builder.sort_ascending(&vec![
             Expression::from(a), Expression::from(b), Expression::from(c), Expression::from(d)]);
@@ -88,7 +89,7 @@ mod tests {
 
     #[test]
     fn sort_4_descending() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (a, b, c, d) = (builder.wire(), builder.wire(), builder.wire(), builder.wire());
         let outputs = builder.sort_descending(&vec![
             Expression::from(a), Expression::from(b), Expression::from(c), Expression::from(d)]);

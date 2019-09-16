@@ -99,12 +99,12 @@ mod tests {
     use num::BigUint;
 
     use crate::expression::BinaryExpression;
-    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
 
     #[test]
     fn binary_sum() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(4);
         let y = builder.binary_wire(4);
         let sum = builder.binary_sum(&BinaryExpression::from(&x), &BinaryExpression::from(&y));
@@ -125,7 +125,7 @@ mod tests {
 
     #[test]
     fn binary_sum_ignoring_overflow() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(4);
         let y = builder.binary_wire(4);
         let sum = builder.binary_sum_ignoring_overflow(
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn binary_sum_asserting_no_overflow() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(4);
         let y = builder.binary_wire(4);
         let sum = builder.binary_sum_asserting_no_overflow(

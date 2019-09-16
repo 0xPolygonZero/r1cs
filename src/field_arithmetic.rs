@@ -60,12 +60,10 @@ impl<F: Field> GadgetBuilder<F> {
     /// Returns `1 / x`, assuming `x` is non-zero. If `x` is zero, the gadget will not be
     /// satisfiable.
     pub fn inverse(&mut self, x: &Expression<F>) -> Expression<F> {
-        // TODO: Remove?
-        let x = x.clone();
-
         let x_inv = self.wire();
-        self.assert_product(&x, &Expression::from(x_inv), &Expression::one());
+        self.assert_product(x, &Expression::from(x_inv), &Expression::one());
 
+        let x = x.clone();
         self.generator(
             x.dependencies(),
             move |values: &mut WireValues<F>| {
@@ -76,6 +74,24 @@ impl<F: Field> GadgetBuilder<F> {
         );
 
         x_inv.into()
+    }
+
+    /// Like `inverse`, except that zero is mapped to itself rather than being prohibited.
+    pub fn inverse_or_zero(&mut self, x: &Expression<F>) -> Expression<F> {
+        let x_inv_or_zero = self.wire();
+        let nonzero = self.nonzero(x);
+        self.assert_product(x, &Expression::from(x_inv_or_zero), nonzero.expression());
+
+        let x = x.clone();
+        self.generator(
+            x.dependencies(),
+            move |values: &mut WireValues<F>| {
+                let x_value = x.evaluate(values);
+                values.set(x_inv_or_zero, x_value.multiplicative_inverse_or_zero());
+            },
+        );
+
+        x_inv_or_zero.into()
     }
 
     /// Returns `x / y`, assuming `y` is non-zero. If `y` is zero, the gadget will not be
@@ -124,13 +140,13 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::Expression;
-    use crate::field::{Bn128, Element};
+    use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
-    use crate::test_util::{assert_eq_false, assert_eq_true};
+    use crate::test_util::{assert_eq_false, assert_eq_true, F257};
 
     #[test]
     fn exp() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
         let x_exp_0 = builder.exp(&Expression::from(x), &Element::from(0u8));
         let x_exp_1 = builder.exp(&Expression::from(x), &Element::from(1u8));
@@ -149,7 +165,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn invert_zero() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
         builder.inverse(&Expression::from(x));
         let gadget = builder.build();
@@ -160,7 +176,7 @@ mod tests {
 
     #[test]
     fn divides() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.wire();
         let y = builder.wire();
         let divides = builder.divides(&Expression::from(x), &Expression::from(y));

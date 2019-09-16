@@ -40,12 +40,12 @@ impl<F: Field> GadgetBuilder<F> {
 #[cfg(test)]
 mod tests {
     use crate::expression::BooleanExpression;
-    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
 
     #[test]
     fn and() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (x, y) = (builder.boolean_wire(), builder.boolean_wire());
         let and = builder.and(&BooleanExpression::from(x), &BooleanExpression::from(y));
         let gadget = builder.build();
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn or() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (x, y) = (builder.boolean_wire(), builder.boolean_wire());
         let or = builder.or(&BooleanExpression::from(x), &BooleanExpression::from(y));
         let gadget = builder.build();
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn xor() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let (x, y) = (builder.boolean_wire(), builder.boolean_wire());
         let xor = builder.xor(&BooleanExpression::from(x), &BooleanExpression::from(y));
         let gadget = builder.build();

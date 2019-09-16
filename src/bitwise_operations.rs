@@ -118,12 +118,12 @@ mod tests {
     use num::BigUint;
 
     use crate::expression::BinaryExpression;
-    use crate::field::Bn128;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::test_util::F257;
 
     #[test]
     fn bitwise_not() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(8);
         let not_x = builder.bitwise_not(&BinaryExpression::from(&x));
         let gadget = builder.build();
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn bitwise_and() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(8);
         let y = builder.binary_wire(8);
         let x_and_y = builder.bitwise_and(&BinaryExpression::from(&x), &BinaryExpression::from(&y));
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn bitwise_rotate_dec_significance() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(8);
         let x_rot = builder.bitwise_rotate_dec_significance(&BinaryExpression::from(&x), 3);
         let gadget = builder.build();
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn bitwise_rotate_dec_significance_multiple_wraps() {
-        let mut builder = GadgetBuilder::<Bn128>::new();
+        let mut builder = GadgetBuilder::<F257>::new();
         let x = builder.binary_wire(8);
         let x_rot = builder.bitwise_rotate_dec_significance(&BinaryExpression::from(&x), 19);
         let gadget = builder.build();

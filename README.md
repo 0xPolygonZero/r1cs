@@ -14,11 +14,11 @@ The goal of this library is to make SNARK programming easy. To that end, we supp
 - Basic operations on field elements, such as multiplication, division, and comparisons
 - Type-safe boolean operations, such as `GadgetBuilder::and` and `GadgetBuilder::bitwise_and`
 - Type-safe binary operations, such as `GadgetBuilder::binary_sum`
-- `GadgetBuilder::assert_permutation`, which efficiently verifies a permutation using AS-Waksman networks
+- `GadgetBuilder::assert_permutation`, which efficiently verifies a permutation using an AS-Waksman network
 - Methods for sorting lists of expressions, such as `GadgetBuilder::sort_ascending`
 - Methods for working with Merkle trees, such as `GadgetBuilder::merkle_tree_root`
-- Common cryptographic constructions such as Merkle–Damgård, Davies-Meyer, and Sponge functions.
-- MiMC (more primitives coming soon)
+- Common cryptographic constructions such as Merkle-Damgård, Davies-Meyer, and Sponge functions.
+- MiMC and Poseidon
 
 
 ## Core types
@@ -80,7 +80,7 @@ impl Field for Bn128 {
 
 ## Cryptographic tools
 
-Suppose we wanted to hash a vector of `Expression`s. One approach would be to take a bloc cipher like MiMC, transform it into a one-way compression function using the Davies-Meyer construction, and transform that into a hash function using the Merkle–Damgård construction. We could do that like so:
+Suppose we wanted to hash a vector of `Expression`s. One approach would be to take a block cipher like MiMC, transform it into a one-way compression function using the Davies-Meyer construction, and transform that into a hash function using the Merkle-Damgård construction. We could do that like so:
 
 ```rust
 fn hash<F: Field>(
@@ -97,7 +97,7 @@ fn hash<F: Field>(
 
 ## Permutation networks
 
-To verify that two lists are permutations of one another, you can use `assert_permutation`. This is implemented using AS-Waksman permutation networks, which permute `n` items using roughly `n log_2(n) - n` switches. `assert_permutation` uses two constraints per switch: one "is boolean" check and one constraint for routing.
+To verify that two lists are permutations of one another, you can use `assert_permutation`. This is implemented using AS-Waksman permutation networks, which permute `n` items using roughly `n log_2(n) - n` switches. Each switch involves two constraints: one "is boolean" check, and one constraint for routing.
 
 Permutation networks make it easy to implement sorting gadgets, which we provide in the form of `sort_ascending` and `sort_descending`.
 
@@ -132,7 +132,12 @@ fn inverse<F: Field>(builder: &mut GadgetBuilder<F>, x: Expression<F>) -> Expres
 }
 ```
 
-This is roughly equivalent to `GadgetBuilder`'s built-in `inverse` method, with slight modifications for readability.
+This is roughly equivalent to the built-in `GadgetBuilder::inverse` method, with slight modifications for readability.
+
+
+## Backends
+
+The [r1cs-bellman](https://crates.io/crates/r1cs-bellman) crate provides a backend for [bellman](https://crates.io/crates/bellman).
 
 
 ## Disclaimer
