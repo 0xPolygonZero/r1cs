@@ -80,7 +80,7 @@ mod tests {
     use crate::gadget_builder::GadgetBuilder;
     use crate::gadget_traits::CompressionFunction;
     use crate::merkle_trees::MerklePath;
-    use crate::test_util::{F7,F257};
+    use crate::test_util::{F257, F7};
 
     #[test]
     fn merkle_step() {

@@ -674,7 +674,7 @@ impl<F: Field> From<u8> for BinaryExpression<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{GadgetBuilder, BinaryExpression};
+    use crate::{BinaryExpression, GadgetBuilder};
     use crate::test_util::F257;
 
     #[test]

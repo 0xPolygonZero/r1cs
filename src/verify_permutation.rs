@@ -171,8 +171,7 @@ fn route<F: Field>(a_values: Vec<Element<F>>, b_values: Vec<Element<F>>,
         if let Some(&sibling_subnet) = partial_routes[other_side].get(&other_i_sibling) {
             // The other switch's sibling is already pending routing.
             assert_ne!(subnet, sibling_subnet);
-        }
-        else {
+        } else {
             let opt_old_subnet = partial_routes[other_side].insert(other_i, subnet);
             if let Some(old_subnet) = opt_old_subnet {
                 assert_eq!(subnet, old_subnet, "Routing conflict (should never happen)");
