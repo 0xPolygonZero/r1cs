@@ -1,6 +1,7 @@
 #[cfg(feature = "no-std")]
 use alloc::vec::Vec;
-
+#[cfg(feature = "no-std")]
+use alloc::string::String;
 #[cfg(not(feature = "no-std"))]
 use std::collections::BTreeMap;
 #[cfg(feature = "no-std")]
@@ -442,7 +443,7 @@ impl<F: Field> fmt::Display for Expression<F> {
             })
             .collect();
         let s = if term_strings.is_empty() {
-            "0".to_string()
+            String::from("0")
         } else {
             term_strings.join(" + ")
         };
@@ -592,11 +593,24 @@ impl<F: Field> BinaryExpression<F> {
     }
 
     pub fn dependencies(&self) -> Vec<Wire> {
-        let mut all = HashSet::new();
-        for bool_expression in self.bits.iter() {
-            all.extend(bool_expression.dependencies());
+        #[cfg(not(feature = "no-std"))]
+        {
+            let mut all = HashSet::new();
+            for bool_expression in self.bits.iter() {
+                all.extend(bool_expression.dependencies());
+            }
+            all.into_iter().collect()
         }
-        all.into_iter().collect()
+        #[cfg(feature = "no-std")]
+        {
+            let mut all = BTreeMap::new();
+            for bool_expressions in self.bits.iter() {
+                for bool_expression in bool_expressions.dependencies() {
+                    all.entry(bool_expression.index).or_insert(bool_expression);
+                }
+            }
+            all.values().cloned().collect()
+        }
     }
 
     pub fn evaluate(&self, values: &WireValues<F>) -> BigUint {

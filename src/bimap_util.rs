@@ -16,7 +16,7 @@ use itertools::enumerate;
 ///
 /// If the lists contain duplicates, then multiple permutations with this property exist, and an
 /// arbitrary one of them will be returned.
-pub fn bimap_from_lists<T: Eq + Hash>(a: Vec<T>, b: Vec<T>) -> BiMap<usize, usize> {
+pub fn bimap_from_lists<T: Eq + Ord + Hash>(a: Vec<T>, b: Vec<T>) -> BiMap<usize, usize> {
     assert_eq!(a.len(), b.len(), "Vectors differ in length");
 
     let mut b_values_to_indices = BTreeMap::new();
@@ -39,6 +39,8 @@ pub fn bimap_from_lists<T: Eq + Hash>(a: Vec<T>, b: Vec<T>) -> BiMap<usize, usiz
 #[cfg(test)]
 mod tests {
     use crate::bimap_util::bimap_from_lists;
+    #[cfg(feature = "no-std")]
+    use alloc::vec::Vec;
 
     #[test]
     fn empty_lists() {

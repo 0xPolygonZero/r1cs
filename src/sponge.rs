@@ -84,6 +84,8 @@ impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "no-std")]
+    use alloc::vec::Vec;
     use crate::{Element, Expression, Field, GadgetBuilder, MultiPermutation, Sponge};
     use crate::test_util::F7;
 

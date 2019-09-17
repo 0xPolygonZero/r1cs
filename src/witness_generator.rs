@@ -1,5 +1,7 @@
 #[cfg(feature = "no-std")]
 use alloc::vec::Vec;
+#[cfg(feature = "no-std")]
+use alloc::boxed::Box;
 
 use crate::field::Field;
 use crate::wire::Wire;

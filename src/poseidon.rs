@@ -25,7 +25,7 @@ impl<F: Field, SB: Permutation<F>> MultiPermutation<F> for Poseidon<F, SB> {
         assert!(self.full_rounds % 2 == 0, "asymmetric permutation configuration");
         let full_rounds_per_side = self.full_rounds / 2;
 
-        let mut current = inputs.to_owned();
+        let mut current = inputs.to_vec();//.to_owned();
         for round in 0..rounds {
             // Sub words layer.
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
@@ -41,7 +41,7 @@ impl<F: Field, SB: Permutation<F>> MultiPermutation<F> for Poseidon<F, SB> {
             current = &self.mds_matrix * current.as_slice();
         }
 
-        current
+        current.to_vec()
     }
 
     fn inverse(&self, builder: &mut GadgetBuilder<F>, outputs: &[Expression<F>])
@@ -52,7 +52,7 @@ impl<F: Field, SB: Permutation<F>> MultiPermutation<F> for Poseidon<F, SB> {
         assert!(self.full_rounds % 2 == 0, "asymmetric permutation configuration");
         let full_rounds_per_side = self.full_rounds / 2;
 
-        let mut current = outputs.to_owned();
+        let mut current = outputs.to_vec();//.to_owned();
         for round in 0..rounds {
             // Mix layer.
             current = &self.mds_matrix * current.as_slice();
