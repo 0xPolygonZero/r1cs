@@ -98,7 +98,7 @@ mod tests {
         let mut builder = GadgetBuilder::new();
         let input_wires = builder.wires(4);
         let input_exps = input_wires.iter().map(Expression::from).collect_vec();
-        let outputs = poseidon.permute(&mut builder, &input_exps);
+        let _outputs = poseidon.permute(&mut builder, &input_exps);
         let gadget = builder.build();
 
         let mut values = values!(
