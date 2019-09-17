@@ -498,9 +498,7 @@ impl<F: Field> Shl<usize> for &Element<F> {
 
 impl<F: Field> fmt::Display for Element<F> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // TODO: Decide if we should check if self==largest_element() and display "-1" for the largest field element,
-        //  assuming that the log already has the field order clearly stated
-        write!(f, "{}", self.to_biguint().to_string())
+        write!(f, "{}", self.to_biguint())
     }
 }
 
