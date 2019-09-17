@@ -510,6 +510,7 @@ mod tests {
     use itertools::assert_equal;
 
     use crate::field::{Bn128, Element};
+    use crate::test_util::F7;
 
     #[test]
     fn addition() {
@@ -548,6 +549,23 @@ mod tests {
         assert_eq!(
             Element::<F>::zero(),
             Element::from(123u8) + -Element::from(123u8));
+    }
+
+    #[test]
+    fn multiplicative_inverse() {
+        type F = F7;
+
+        // Verified with a bit of Python code:
+        // >>> f = 7
+        // >>> [[y for y in range(f) if x * y % f == 1] for x in range(f)]
+        // [[], [1], [4], [5], [2], [3], [6]]
+        assert_eq!(Element::<F>::from(0u8), Element::from(0u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(1u8), Element::from(1u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(4u8), Element::from(2u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(5u8), Element::from(3u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(2u8), Element::from(4u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(3u8), Element::from(5u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(6u8), Element::from(6u8).multiplicative_inverse_or_zero());
     }
 
     #[test]
