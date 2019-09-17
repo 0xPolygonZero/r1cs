@@ -18,7 +18,7 @@ pub struct Sponge<F: Field, MP: MultiPermutation<F>> {
     permutation: MP,
     bitrate: usize,
     capacity: usize,
-    phantom: PhantomData<F>,
+    phantom: PhantomData<*const F>,
 }
 
 impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {

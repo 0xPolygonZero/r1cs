@@ -75,5 +75,30 @@ mod tests {
         assert_eq!(true, bit_wires.bits[4].evaluate(&wire_values));
         assert_eq!(false, bit_wires.bits[5].evaluate(&wire_values));
         assert_eq!(false, bit_wires.bits[6].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[7].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[8].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[9].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[10].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[11].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[12].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[13].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[14].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[15].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[16].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[17].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[18].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[19].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[20].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[21].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[22].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[23].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[24].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[25].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[26].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[27].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[28].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[29].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[30].evaluate(&wire_values));
+        assert_eq!(false, bit_wires.bits[31].evaluate(&wire_values));
     }
 }

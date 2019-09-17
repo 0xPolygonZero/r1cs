@@ -45,7 +45,7 @@ impl<F: Field> GadgetBuilder<F> {
             move |values: &mut WireValues<F>| {
                 // Evaluate all the inputs, sort that list of field elements, and output that.
                 let mut items: Vec<Element<F>> =
-                    inputs.iter().map(|e| e.evaluate(values)).collect();
+                    inputs.iter().map(|exp| exp.evaluate(values)).collect();
                 items.sort();
                 for (i, item) in enumerate(items) {
                     values.set(output_wires[i], item);
