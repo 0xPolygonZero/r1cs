@@ -498,24 +498,22 @@ impl<F: Field> Shl<usize> for &Element<F> {
 
 impl<F: Field> fmt::Display for Element<F> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // TODO: Decide if we should check if self==largest_element() and display "-1" for the largest field element,
-        //  assuming that the log already has the field order clearly stated
-        write!(f, "{}", self.to_biguint().to_string())
+        write!(f, "{}", self.to_biguint())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::iter;
-    use std::str::FromStr;
 
     use itertools::assert_equal;
 
-    use crate::field::{Bn128, Element};
+    use crate::field::Element;
+    use crate::test_util::{F257, F7};
 
     #[test]
     fn addition() {
-        type F = Bn128;
+        type F = F257;
 
         assert_eq!(
             Element::<F>::from(2u8),
@@ -528,46 +526,56 @@ mod tests {
 
     #[test]
     fn addition_overflow() {
-        type F = Bn128;
+        type F = F7;
 
         assert_eq!(
             Element::<F>::from(3u8),
-            Element::from_str(
-                "21888242871839275222246405745257275088548364400416034343698204186575808495615"
-            ).unwrap() + Element::from(5u8));
+            Element::from(5u8) + Element::from(5u8));
     }
 
     #[test]
     fn additive_inverse() {
-        type F = Bn128;
+        type F = F7;
 
         assert_eq!(
-            Element::<F>::from_str(
-                "21888242871839275222246405745257275088548364400416034343698204186575808495616"
-            ).unwrap(),
+            Element::<F>::from(6u8),
             -Element::one());
 
         assert_eq!(
             Element::<F>::zero(),
-            Element::from(123u8) + -Element::from(123u8));
+            Element::from(5u8) + -Element::from(5u8));
+    }
+
+    #[test]
+    fn multiplicative_inverse() {
+        type F = F7;
+
+        // Verified with a bit of Python code:
+        // >>> f = 7
+        // >>> [[y for y in range(f) if x * y % f == 1] for x in range(f)]
+        // [[], [1], [4], [5], [2], [3], [6]]
+        assert_eq!(Element::<F>::from(0u8), Element::from(0u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(1u8), Element::from(1u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(4u8), Element::from(2u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(5u8), Element::from(3u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(2u8), Element::from(4u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(3u8), Element::from(5u8).multiplicative_inverse_or_zero());
+        assert_eq!(Element::<F>::from(6u8), Element::from(6u8).multiplicative_inverse_or_zero());
     }
 
     #[test]
     fn multiplication_overflow() {
-        type F = Bn128;
+        type F = F7;
 
         assert_eq!(
-            Element::<F>::from_str(
-                "13869117166973684714533159833916213390696312133829829072325816326144232854527"
-            ).unwrap(),
-            Element::from_str("1234567890123456789012345678901234567890").unwrap()
-                * Element::from_str("1234567890123456789012345678901234567890").unwrap());
+            Element::<F>::from(2u8),
+            Element::from(3u8) * Element::from(3u8));
     }
 
     #[test]
     fn bits_0() {
-        let x = Element::<Bn128>::zero();
-        let n: usize = 300;
+        let x = Element::<F257>::zero();
+        let n: usize = 20;
         assert_equal(
             iter::repeat(false).take(n),
             (0..n).map(|i| x.bit(i)));
@@ -575,7 +583,7 @@ mod tests {
 
     #[test]
     fn bits_19() {
-        let x = Element::<Bn128>::from(19u8);
+        let x = Element::<F257>::from(19u8);
         assert_eq!(true, x.bit(0));
         assert_eq!(true, x.bit(1));
         assert_eq!(false, x.bit(2));
@@ -583,11 +591,14 @@ mod tests {
         assert_eq!(true, x.bit(4));
         assert_eq!(false, x.bit(5));
         assert_eq!(false, x.bit(6));
+        assert_eq!(false, x.bit(7));
+        assert_eq!(false, x.bit(8));
+        assert_eq!(false, x.bit(9));
     }
 
     #[test]
-    fn order() {
-        type F = Bn128;
+    fn order_of_elements() {
+        type F = F257;
         for i in 0u8..50 {
             assert!(Element::<F>::from(i) < Element::<F>::from(i + 1));
         }

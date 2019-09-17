@@ -578,11 +578,9 @@ impl<F: Field> BinaryExpression<F> {
 
     /// Join these bits into the field element they encode. This method requires that
     /// `2^self.len() < |F|`, otherwise the result might not fit in a single field element.
-    //TODO: Is it possible for the field F to be of order 2^n + 1 (Fermat prime) for some n, and if so can we then conclude that all elements can be fully encoded by a n-binary string? If so then self.len() < Element::<F>::max_bits() needs to be checked for LEQ for this specific case. Note that fields of order order 2^n + 1 make the corresponding modular operations very inefficient so this is likely not going to be the case.
     pub fn join(&self) -> Expression<F> {
-        assert!(self.len() < Element::<F>::max_bits(),
-                "Cannot fit {}-bit binary expression in a single {}-bit field element",
-                self.len(), Element::<F>::max_bits());
+        assert!(BigUint::one() << self.len() <= F::order(),
+                "Binary expression is too large to fit in a single field element");
         self.join_allowing_overflow()
     }
 
@@ -678,5 +676,32 @@ impl<F: Field> From<u16> for BinaryExpression<F> {
 impl<F: Field> From<u8> for BinaryExpression<F> {
     fn from(value: u8) -> Self {
         Self::from(BigUint::from(value))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{BinaryExpression, GadgetBuilder};
+    use crate::test_util::F257;
+
+    #[test]
+    fn join_fermat_prime_field() {
+        // Test joining a binary expression into a field element, where the (Fermat prime) field is
+        // just large enough to fit the expression.
+        let mut builder = GadgetBuilder::<F257>::new();
+        let wire = builder.binary_wire(8);
+        let exp = BinaryExpression::<F257>::from(&wire);
+        exp.join();
+    }
+
+    #[test]
+    #[should_panic]
+    fn join_fermat_prime_field_overflow() {
+        // Test joining a binary expression into a field element, where the (Fermat prime) field is
+        // too small to fit the expression.
+        let mut builder = GadgetBuilder::<F257>::new();
+        let wire = builder.binary_wire(9);
+        let exp = BinaryExpression::<F257>::from(&wire);
+        exp.join();
     }
 }
