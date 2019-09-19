@@ -4,7 +4,7 @@ use num_traits::One;
 use crate::{Element, Expression, Field, GadgetBuilder, Permutation, WireValues};
 
 /// The permutation `1 / x`, with zero being mapped to itself.
-pub struct InversePermutation {}
+pub struct InversePermutation;
 
 impl<F: Field> Permutation<F> for InversePermutation {
     fn permute(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>) -> Expression<F> {
