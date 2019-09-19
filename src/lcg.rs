@@ -17,7 +17,7 @@ impl LCG {
     }
 
     pub fn next_u32(&mut self) -> u32 {
-        self.state = self.state * 1664525 + 1013904223;
+        self.state = self.state.wrapping_mul(1664525).wrapping_add(1013904223);
         self.state
     }
 
@@ -48,5 +48,19 @@ impl LCG {
             chunk_data.push(self.next_u32() % (1 << remaining_bits))
         }
         BigUint::new(chunk_data)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::lcg::LCG;
+
+    #[test]
+    fn next_u32() {
+        let mut lcg = LCG::new();
+        assert_eq!(lcg.next_u32(), 1013904223);
+        assert_eq!(lcg.next_u32(), 1196435762);
+        assert_eq!(lcg.next_u32(), 3519870697);
+        assert_eq!(lcg.next_u32(), 2868466484);
     }
 }
