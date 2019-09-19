@@ -7,11 +7,9 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Shl, Sub, Su
 use std::str::FromStr;
 
 use num::bigint::ParseBigIntError;
-use num::bigint::RandBigInt;
 use num::BigUint;
 use num_traits::One;
 use num_traits::Zero;
-use rand::Rng;
 
 /// A prime order field.
 pub trait Field: 'static {
@@ -135,18 +133,6 @@ impl<F: Field> Element<F> {
     /// significant bit of x. Return false for outside of range.
     pub fn bit(&self, i: usize) -> bool {
         ((self.to_biguint() >> i) & BigUint::one()).is_one()
-    }
-
-    /// Return a random field element, uniformly distributed in [0, size()).
-    /// This is the fastest implementation since max_bits() is always GSB bounded.
-    pub fn random(rng: &mut impl Rng) -> Self {
-        let bits = Self::max_bits();
-        loop {
-            let r = rng.gen_biguint(bits);
-            if r < F::order() {
-                return Self::from(r);
-            }
-        }
     }
 }
 
