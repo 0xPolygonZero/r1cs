@@ -29,6 +29,7 @@ pub use field::*;
 pub use gadget::*;
 pub use gadget_builder::*;
 pub use gadget_traits::*;
+pub use lcg::*;
 pub use matrices::*;
 pub use merkle_damgard::*;
 pub use merkle_trees::*;
