@@ -12,8 +12,15 @@ categories = ["cryptography"]
 maintenance = { status = "actively-developed" }
 edition = "2018"
 
+[dev-dependencies]
+criterion = "0.2"
+
 [dependencies]
 bimap = "0.4.0"
 itertools = "0.8.0"
 num = "0.2.0"
 num-traits = "0.2.8"
+
+[[bench]]
+name = "nth_roots"
+harness = false
