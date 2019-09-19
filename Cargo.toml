@@ -13,13 +13,11 @@ maintenance = { status = "actively-developed" }
 edition = "2018"
 
 [features]
-default = ["bimap", "itertools", "num", "num-traits", "rand", "rand_chacha"]
-no-std = ["bimap"]
+default = ["bimap", "itertools", "num", "num-traits"]
+no-std = []
 
 [dependencies]
 bimap = { version = "0.4.0", optional = true }
 itertools = { version = "0.8.0", optional = true }
 num = { version = "0.2.0", features = ["rand"], optional = true }
 num-traits = { version = "0.2.8", optional = true }
-rand = { version = "0.5", optional = true }
-rand_chacha = { version = "0.1.1", optional = true }
