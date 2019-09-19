@@ -22,5 +22,9 @@ num = "0.2.0"
 num-traits = "0.2.8"
 
 [[bench]]
-name = "nth_roots"
+name = "nth_root"
+harness = false
+
+[[bench]]
+name = "multiplicative_inverse"
 harness = false
