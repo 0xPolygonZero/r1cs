@@ -15,6 +15,7 @@ edition = "2018"
 [features]
 default = ["bimap", "itertools", "num", "num-traits"]
 no-std = []
+
 [dev-dependencies]
 criterion = "0.2"
 

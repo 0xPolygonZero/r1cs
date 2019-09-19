@@ -4,6 +4,8 @@ use alloc::vec::Vec;
 use alloc::string::String;
 #[cfg(not(feature = "no-std"))]
 use std::collections::BTreeMap;
+#[cfg(not(feature = "no-std"))]
+use std::collections::BTreeSet;
 #[cfg(feature = "no-std")]
 use alloc::collections::btree_map::BTreeMap;
 #[cfg(feature = "no-std")]
