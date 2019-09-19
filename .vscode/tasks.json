@@ -4,9 +4,25 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "cargo check no-std",
+            "type": "shell",
+            "command": "cargo check --features no-std",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
             "label": "cargo build no-std",
             "type": "shell",
             "command": "cargo build --features no-std",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "cargo test no-std",
+            "type": "shell",
+            "command": "cargo test --features no-std",
             "problemMatcher": [
                 "$rustc"
             ]
