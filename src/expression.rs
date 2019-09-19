@@ -592,25 +592,25 @@ impl<F: Field> BinaryExpression<F> {
             |sum, (i, bit)| sum + (&bit.expression * (Element::one() << i)))
     }
 
+    #[cfg(not(feature = "no-std"))]
     pub fn dependencies(&self) -> Vec<Wire> {
-        #[cfg(not(feature = "no-std"))]
-        {
-            let mut all = HashSet::new();
-            for bool_expression in self.bits.iter() {
-                all.extend(bool_expression.dependencies());
-            }
-            all.into_iter().collect()
+        let mut all = HashSet::new();
+        for bool_expression in self.bits.iter() {
+            all.extend(bool_expression.dependencies());
         }
-        #[cfg(feature = "no-std")]
-        {
-            let mut all = BTreeMap::new();
-            for bool_expressions in self.bits.iter() {
-                for bool_expression in bool_expressions.dependencies() {
-                    all.entry(bool_expression.index).or_insert(bool_expression);
-                }
+        all.into_iter().collect()
+    }
+
+    #[cfg(feature = "no-std")]
+    pub fn dependencies(&self) -> Vec<Wire> {
+        //TODO: Optimize this aggregation
+        let mut all = BTreeMap::new();
+        for bool_expressions in self.bits.iter() {
+            for bool_expression in bool_expressions.dependencies() {
+                all.entry(bool_expression.index).or_insert(bool_expression);
             }
-            all.values().cloned().collect()
         }
+        all.values().cloned().collect()
     }
 
     pub fn evaluate(&self, values: &WireValues<F>) -> BigUint {
