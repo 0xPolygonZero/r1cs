@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use crate::constraint::Constraint;
 use crate::expression::{BooleanExpression, Expression};
 use crate::field::{Element, Field};

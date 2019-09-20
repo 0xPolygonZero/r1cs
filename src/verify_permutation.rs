@@ -1,6 +1,12 @@
 //! This module extends GadgetBuilder with a method for verifying permutations.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
 use std::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::collections::btree_map::BTreeMap;
 
 use crate::bimap_util::bimap_from_lists;
 use crate::expression::{BooleanExpression, Expression};
@@ -8,6 +14,7 @@ use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire::{BooleanWire, Wire};
 use crate::wire_values::WireValues;
+use crate::util::concat;
 
 impl<F: Field> GadgetBuilder<F> {
     /// Assert that two lists of expressions evaluate to permutations of one another.
@@ -42,7 +49,7 @@ impl<F: Field> GadgetBuilder<F> {
         let c = c.clone();
         let d = d.clone();
         self.generator(
-            [a.dependencies(), b.dependencies(), c.dependencies(), d.dependencies()].concat(),
+            concat(&[a.dependencies(), b.dependencies(), c.dependencies(), d.dependencies()]),
             move |values: &mut WireValues<F>| {
                 let a_value = a.evaluate(values);
                 let b_value = b.evaluate(values);
@@ -116,7 +123,7 @@ impl<F: Field> GadgetBuilder<F> {
         let a = a.to_vec();
         let b = b.to_vec();
         self.generator(
-            [a_deps, b_deps].concat(),
+            concat(&[a_deps, b_deps]),
             move |values: &mut WireValues<F>| {
                 let a_values: Vec<Element<F>> = a.iter().map(|exp| exp.evaluate(values)).collect();
                 let b_values: Vec<Element<F>> = b.iter().map(|exp| exp.evaluate(values)).collect();

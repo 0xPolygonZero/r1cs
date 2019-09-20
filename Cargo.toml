@@ -8,18 +8,22 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/mir-protocol/r1cs"
 documentation = "https://docs.rs/r1cs"
 keywords = ["R1CS", "cryptography", "SNARK"]
-categories = ["cryptography"]
+categories = ["cryptography", "no-std"]
 maintenance = { status = "actively-developed" }
 edition = "2018"
+
+[features]
+default = ["std"]
+std = ["num/std", "num-traits/std", "itertools/use_std", "bimap/std"]
 
 [dev-dependencies]
 criterion = "0.2"
 
 [dependencies]
-bimap = "0.4.0"
-itertools = "0.8.0"
-num = "0.2.0"
-num-traits = "0.2.8"
+bimap = { version = "0.4.0" }
+itertools = { version = "0.8.0" }
+num = { version = "0.2.0", features = ["rand"] }
+num-traits = { version = "0.2.8" }
 
 [[bench]]
 name = "nth_root"

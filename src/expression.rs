@@ -1,4 +1,16 @@
-use std::collections::{BTreeMap, HashSet};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+#[cfg(feature = "std")]
+use std::collections::BTreeMap;
+#[cfg(feature = "std")]
+use std::collections::BTreeSet;
+#[cfg(not(feature = "std"))]
+use alloc::collections::btree_map::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::collections::btree_set::BTreeSet;
+
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -11,6 +23,7 @@ use num_traits::Zero;
 use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
+use crate::util::join;
 
 /// A linear combination of wires.
 #[derive(Debug, Eq, PartialEq)]
@@ -435,9 +448,9 @@ impl<F: Field> fmt::Display for Expression<F> {
             })
             .collect();
         let s = if term_strings.is_empty() {
-            "0".to_string()
+            String::from("0")
         } else {
-            term_strings.join(" + ")
+            join(" + ", &term_strings)
         };
         write!(f, "{}", s)
     }
@@ -585,7 +598,7 @@ impl<F: Field> BinaryExpression<F> {
     }
 
     pub fn dependencies(&self) -> Vec<Wire> {
-        let mut all = HashSet::new();
+        let mut all = BTreeSet::new();
         for bool_expression in self.bits.iter() {
             all.extend(bool_expression.dependencies());
         }

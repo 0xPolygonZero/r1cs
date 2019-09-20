@@ -1,6 +1,9 @@
 /// This module provides a linear congruential generator for (not cryptographically secure) random
 /// data.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use num::BigUint;
 use num_traits::One;
 

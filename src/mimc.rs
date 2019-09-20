@@ -1,5 +1,8 @@
 //! This module extends GadgetBuilder with an implementation of MiMC.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use crate::expression::Expression;
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;

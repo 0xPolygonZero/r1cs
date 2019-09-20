@@ -1,3 +1,8 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
+
 use crate::{Element, Expression, Field, GadgetBuilder, InversePermutation, MdsMatrix, MonomialPermutation, MultiPermutation, Permutation};
 
 const DEFAULT_SECURITY_LEVEL: usize = 128;
@@ -75,7 +80,7 @@ impl<F: Field> MultiPermutation<F> for Poseidon<F> {
         assert!(self.num_rounds.full % 2 == 0, "asymmetric permutation configuration");
         let full_rounds_per_side = self.num_rounds.full / 2;
 
-        let mut current = inputs.to_owned();
+        let mut current = inputs.to_vec();
         for round in 0..rounds {
             // Sub words layer.
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
@@ -102,7 +107,7 @@ impl<F: Field> MultiPermutation<F> for Poseidon<F> {
         assert!(self.num_rounds.full % 2 == 0, "asymmetric permutation configuration");
         let full_rounds_per_side = self.num_rounds.full / 2;
 
-        let mut current = outputs.to_owned();
+        let mut current = outputs.to_vec();//.to_owned();
         for round in 0..rounds {
             // Mix layer.
             current = &self.mds_matrix * current.as_slice();
