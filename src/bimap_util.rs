@@ -1,9 +1,9 @@
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
-#[cfg(not(feature = "no-std"))]
+#[cfg(feature = "std")]
 use std::collections::BTreeMap;
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::collections::btree_map::BTreeMap;
 
 use std::hash::Hash;
@@ -39,7 +39,7 @@ pub fn bimap_from_lists<T: Eq + Ord + Hash>(a: Vec<T>, b: Vec<T>) -> BiMap<usize
 #[cfg(test)]
 mod tests {
     use crate::bimap_util::bimap_from_lists;
-    #[cfg(feature = "no-std")]
+    #[cfg(not(feature = "std"))]
     use alloc::vec::Vec;
 
     #[test]

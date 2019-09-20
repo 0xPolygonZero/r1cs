@@ -1,7 +1,7 @@
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::string::String;
 
 use core::borrow::Borrow;

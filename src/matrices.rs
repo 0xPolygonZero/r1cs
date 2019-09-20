@@ -1,4 +1,4 @@
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
 use std::ops::Mul;

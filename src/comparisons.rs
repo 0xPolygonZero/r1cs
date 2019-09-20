@@ -1,6 +1,6 @@
 //! This module extends GadgetBuilder with methods for comparing native field elements.
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
 use itertools::enumerate;

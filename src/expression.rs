@@ -1,14 +1,14 @@
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::string::String;
-#[cfg(not(feature = "no-std"))]
+#[cfg(feature = "std")]
 use std::collections::BTreeMap;
-#[cfg(not(feature = "no-std"))]
+#[cfg(feature = "std")]
 use std::collections::BTreeSet;
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::collections::btree_map::BTreeMap;
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::collections::btree_set::BTreeSet;
 
 use std::fmt;

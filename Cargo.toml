@@ -13,17 +13,17 @@ maintenance = { status = "actively-developed" }
 edition = "2018"
 
 [features]
-default = ["bimap", "itertools", "num", "num-traits"]
-no-std = []
+default = ["std"]
+std = ["num/std", "num-traits/std", "itertools/use_std", "bimap/std"]
 
 [dev-dependencies]
 criterion = "0.2"
 
 [dependencies]
-bimap = { version = "0.4.0", optional = true }
-itertools = { version = "0.8.0", optional = true }
-num = { version = "0.2.0", features = ["rand"], optional = true }
-num-traits = { version = "0.2.8", optional = true }
+bimap = { version = "0.4.0" }
+itertools = { version = "0.8.0" }
+num = { version = "0.2.0", features = ["rand"] }
+num-traits = { version = "0.2.8" }
 
 [[bench]]
 name = "nth_root"

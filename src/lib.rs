@@ -5,17 +5,17 @@
 //!
 //! See the [readme](https://github.com/mir-protocol/r1cs) for more information and examples.
 
-#![cfg_attr(feature = "no-std", no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "no-std"))]
+#[cfg(feature = "std")]
 #[macro_use]
 extern crate std;
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 #[macro_use]
 extern crate core as std;
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 #[macro_use]
 extern crate alloc;
 
@@ -74,4 +74,3 @@ mod witness_generator;
 
 #[cfg(test)]
 mod test_util;
-

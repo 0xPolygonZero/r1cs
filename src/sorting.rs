@@ -1,6 +1,6 @@
 //! This module extends GadgetBuilder with a method for sorting lists of field elements.
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
 use itertools::enumerate;

@@ -1,6 +1,6 @@
 //! This module extends GadgetBuilder with an implementation of the Merkle-Damgard construction.
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
 use core::iter;
@@ -85,7 +85,7 @@ impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "no-std")]
+    #[cfg(not(feature = "std"))]
     use alloc::vec::Vec;
     use crate::{Element, Expression, Field, GadgetBuilder, MultiPermutation, Sponge};
     use crate::test_util::F7;

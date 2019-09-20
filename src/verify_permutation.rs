@@ -1,11 +1,11 @@
 //! This module extends GadgetBuilder with a method for verifying permutations.
 
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
-#[cfg(not(feature = "no-std"))]
+#[cfg(feature = "std")]
 use std::collections::BTreeMap;
-#[cfg(feature = "no-std")]
+#[cfg(not(feature = "std"))]
 use alloc::collections::btree_map::BTreeMap;
 
 use crate::bimap_util::bimap_from_lists;
