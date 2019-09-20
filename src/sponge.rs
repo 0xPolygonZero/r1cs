@@ -11,6 +11,7 @@ use itertools::{enumerate, Itertools};
 use crate::{GadgetBuilder, MultiPermutation};
 use crate::Expression;
 use crate::Field;
+use crate::util::concat;
 
 /// A sponge function.
 ///
@@ -53,7 +54,7 @@ impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
             }
 
             // Apply the permutation.
-            let old_state = [input_section, capacity_section].concat();
+            let old_state = concat(&[input_section, capacity_section]);
             let new_state = self.permutation.permute(builder, &old_state);
             assert_eq!(old_state.len(), new_state.len());
             let (new_input, new_capacity) = new_state.split_at(self.bitrate);
@@ -64,7 +65,7 @@ impl<F: Field, MP: MultiPermutation<F>> Sponge<F, MP> {
         let mut outputs = input_section.clone();
         while outputs.len() < output_len {
             // Apply the permutation.
-            let old_state = [input_section, capacity_section].concat();
+            let old_state = concat(&[input_section, capacity_section]);
             let new_state = self.permutation.permute(builder, &old_state);
             assert_eq!(old_state.len(), new_state.len());
             let (new_input, new_capacity) = new_state.split_at(self.bitrate);

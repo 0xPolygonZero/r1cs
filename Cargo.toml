@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/mir-protocol/r1cs"
 documentation = "https://docs.rs/r1cs"
 keywords = ["R1CS", "cryptography", "SNARK"]
-categories = ["cryptography"]
+categories = ["cryptography", "no-std"]
 maintenance = { status = "actively-developed" }
 edition = "2018"
 

@@ -67,6 +67,7 @@ mod random_access;
 mod sorting;
 mod splitting;
 mod sponge;
+mod util;
 mod verify_permutation;
 mod wire;
 mod witness_generator;

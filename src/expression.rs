@@ -23,6 +23,7 @@ use num_traits::Zero;
 use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
+use crate::util::join;
 
 /// A linear combination of wires.
 #[derive(Debug, Eq, PartialEq)]
@@ -449,7 +450,7 @@ impl<F: Field> fmt::Display for Expression<F> {
         let s = if term_strings.is_empty() {
             String::from("0")
         } else {
-            term_strings.join(" + ")
+            join(" + ", &term_strings)
         };
         write!(f, "{}", s)
     }

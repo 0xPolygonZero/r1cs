@@ -4,6 +4,7 @@ use crate::expression::{BooleanExpression, Expression};
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
+use crate::util::concat;
 
 impl<F: Field> GadgetBuilder<F> {
     /// The product of two `Expression`s `x` and `y`, i.e. `x * y`.
@@ -23,7 +24,7 @@ impl<F: Field> GadgetBuilder<F> {
             let x = x.clone();
             let y = y.clone();
             self.generator(
-                [x.dependencies(), y.dependencies()].concat(),
+                concat(&[x.dependencies(), y.dependencies()]),
                 move |values: &mut WireValues<F>| {
                     let product_value = x.evaluate(values) * y.evaluate(values);
                     values.set(product, product_value);
@@ -117,7 +118,7 @@ impl<F: Field> GadgetBuilder<F> {
             let x = x.clone();
             let y = y.clone();
             self.generator(
-                [x.dependencies(), y.dependencies()].concat(),
+                concat(&[x.dependencies(), y.dependencies()]),
                 move |values: &mut WireValues<F>| {
                     let x_value = x.evaluate(values);
                     let y_value = y.evaluate(values);

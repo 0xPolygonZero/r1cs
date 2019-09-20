@@ -9,6 +9,7 @@ use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field::{Element, Field};
 use crate::gadget_builder::GadgetBuilder;
 use crate::wire_values::WireValues;
+use crate::util::concat;
 
 impl<F: Field> GadgetBuilder<F> {
     /// Assert that `x < y`.
@@ -156,7 +157,7 @@ impl<F: Field> GadgetBuilder<F> {
             let y_chunks = y_chunks.clone();
             let mask = mask.clone();
             self.generator(
-                [x_bits.dependencies(), y_bits.dependencies()].concat(),
+                concat(&[x_bits.dependencies(), y_bits.dependencies()]),
                 move |values: &mut WireValues<F>| {
                     let mut seen_diff: bool = false;
                     for (i, &mask_bit) in enumerate(&mask).rev() {
