@@ -8,12 +8,22 @@ on:
 jobs:
   test-std:
     name: Test with std
-    uses: icepuma/rust-action
-    args: cargo test
+    steps:
+      - name: Test
+        uses: icepuma/rust-action
+        args: cargo test
   test-no-std:
     name: Test without std
-    uses: icepuma/rust-action
-    args: cargo test --no-default-features
-  # TODO: Also run this to make sure the project compiles with a wasm target:
-  # rustup target add wasm32-unknown-unknown
-  # cargo check --target wasm32-unknown-unknown
+    steps:
+      - name: Test
+        uses: icepuma/rust-action
+        args: cargo test --no-default-features
+  build-wasm:
+    name: Build with a WASM target
+    steps:
+      - name: Add target
+        uses: icepuma/rust-action
+        args: rustup target add wasm32-unknown-unknown
+      - name: Check
+        uses: icepuma/rust-action
+        args: cargo check --target wasm32-unknown-unknown
