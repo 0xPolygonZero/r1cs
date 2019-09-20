@@ -1,0 +1,16 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [master]
+  pull_request: ~
+
+jobs:
+  test-std:
+    name: Test with std
+    uses: icepuma/rust-action
+    args: cargo test
+  test-no-std:
+    name: Test without std
+    uses: icepuma/rust-action
+    args: cargo test --no-default-features
