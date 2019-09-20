@@ -10,6 +10,7 @@ use num_traits::One;
 use crate::field::{Element, Field};
 
 /// A simple linear congruential generator, with parameters taken from Numerical Recipes.
+#[derive(Default)]
 pub struct LCG {
     state: u32
 }
@@ -20,7 +21,7 @@ impl LCG {
     }
 
     pub fn next_u32(&mut self) -> u32 {
-        self.state = self.state.wrapping_mul(1664525).wrapping_add(1013904223);
+        self.state = self.state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
         self.state
     }
 
