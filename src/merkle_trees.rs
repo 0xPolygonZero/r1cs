@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use crate::expression::{BinaryExpression, BooleanExpression, Expression};
 use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
@@ -80,7 +83,7 @@ mod tests {
     use crate::gadget_builder::GadgetBuilder;
     use crate::gadget_traits::CompressionFunction;
     use crate::merkle_trees::MerklePath;
-    use crate::test_util::F257;
+    use crate::test_util::{F257, F7};
 
     #[test]
     fn merkle_step() {
@@ -124,6 +127,38 @@ mod tests {
         // The leaf is 1; the first parent hash is 2*1 + 3 = 5; the next parent hash is
         // 2*3 + 5 = 11; the root is 2*11 + 9 = 31.
         assert_eq!(Element::from(31u8), root_hash.evaluate(&values));
+    }
+
+    // Tests whether large path Sparse Merkle Trees are possible
+    #[test]
+    fn large_merkle_root() {
+        let mut builder = GadgetBuilder::<F7>::new();
+        let prefix_wire = builder.binary_wire(8);
+        let (sibling_1, sibling_2, sibling_3, sibling_4, sibling_5, sibling_6, sibling_7, sibling_8)
+            = (builder.wire(), builder.wire(), builder.wire(), builder.wire(), builder.wire(), builder.wire(), builder.wire(), builder.wire());
+        let path = MerklePath::new(
+            BinaryExpression::from(&prefix_wire),
+            vec![sibling_1.into(), sibling_2.into(), sibling_3.into(), sibling_4.into(), sibling_5.into(), sibling_6.into(), sibling_7.into(), sibling_8.into()]);
+        let root_hash = builder.merkle_tree_root(&Expression::one(), &path, &TestCompress);
+        let gadget = builder.build();
+
+        let mut values = values!(
+            sibling_1 => 1u8.into(),
+            sibling_2 => 1u8.into(),
+            sibling_3 => 1u8.into(),
+            sibling_4 => 1u8.into(),
+            sibling_5 => 1u8.into(),
+            sibling_6 => 1u8.into(),
+            sibling_7 => 1u8.into(),
+            sibling_8 => 1u8.into()
+            );
+        values.set_binary_unsigned(&prefix_wire, &BigUint::from(0b00000000u8));
+        assert!(gadget.execute(&mut values));
+        // The leaf is 1; the first parent hash is 2*1 + 1 = 3; 2*3 + 1 == 0; 2*0 + 1 = 1; 2*1 + 1 = 3; 2*3 + 1 == 0; 2*0 + 1 = 1; 2*1 + 1 = 3;
+        // the root is 2*3 + 1 == 0.
+        assert_eq!(
+            Element::from(0u8),
+            root_hash.evaluate(&values));
     }
 
     // A dummy compression function which returns 2x + y.

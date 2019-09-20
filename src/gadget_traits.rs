@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use itertools::Itertools;
 
 use crate::{Element, Expression, Field, GadgetBuilder, WireValues};
@@ -98,7 +101,7 @@ pub trait MultiPermutation<F: Field> {
         let permuted = self.permute(&mut builder, &input_expressions);
         let mut values = WireValues::new();
         builder.build().execute(&mut values);
-        permuted.iter().map(|e| e.evaluate(&values)).collect()
+        permuted.iter().map(|exp| exp.evaluate(&values)).collect()
     }
 
     /// Apply the inverse of this permutation to the given sequence of field elements.
@@ -113,7 +116,7 @@ pub trait MultiPermutation<F: Field> {
         let inversed = self.inverse(&mut builder, &output_expressions);
         let mut values = WireValues::new();
         builder.build().execute(&mut values);
-        inversed.iter().map(|e| e.evaluate(&values)).collect()
+        inversed.iter().map(|exp| exp.evaluate(&values)).collect()
     }
 }
 

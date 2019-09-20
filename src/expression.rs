@@ -1,4 +1,16 @@
-use std::collections::{HashMap, HashSet};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+#[cfg(feature = "std")]
+use std::collections::BTreeMap;
+#[cfg(feature = "std")]
+use std::collections::BTreeSet;
+#[cfg(not(feature = "std"))]
+use alloc::collections::btree_map::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::collections::btree_set::BTreeSet;
+
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -11,24 +23,25 @@ use num_traits::Zero;
 use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 use crate::wire_values::WireValues;
+use crate::util::join;
 
 /// A linear combination of wires.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Expression<F: Field> {
     /// The coefficient of each wire. Wires with a coefficient of zero are omitted.
-    coefficients: HashMap<Wire, Element<F>>,
+    coefficients: BTreeMap<Wire, Element<F>>,
 }
 
 impl<F: Field> Expression<F> {
     /// Creates a new expression with the given wire coefficients.
-    pub fn new(coefficients: HashMap<Wire, Element<F>>) -> Self {
+    pub fn new(coefficients: BTreeMap<Wire, Element<F>>) -> Self {
         let nonzero_coefficients = coefficients.into_iter()
             .filter(|(_k, v)| v.is_nonzero())
             .collect();
         Expression { coefficients: nonzero_coefficients }
     }
 
-    pub fn coefficients(&self) -> &HashMap<Wire, Element<F>> {
+    pub fn coefficients(&self) -> &BTreeMap<Wire, Element<F>> {
         &self.coefficients
     }
 
@@ -41,9 +54,10 @@ impl<F: Field> Expression<F> {
         }
     }
 
-    /// The sum of zero or more wires, each with an implied coefficient of 1.
+    /// The collectivization of all existing Expression’s Wires with each destination Wire’s
+    /// coefficient the sum of each source’s coefficients.
     pub fn sum_of_expressions(expressions: &[Expression<F>]) -> Self {
-        let mut merged_coefficients = HashMap::new();
+        let mut merged_coefficients = BTreeMap::new();
         for exp in expressions {
             for (&wire, coefficient) in &exp.coefficients {
                 *merged_coefficients.entry(wire).or_insert_with(Element::zero) += coefficient
@@ -53,7 +67,7 @@ impl<F: Field> Expression<F> {
     }
 
     pub fn zero() -> Self {
-        Expression { coefficients: HashMap::new() }
+        Expression { coefficients: BTreeMap::new() }
     }
 
     pub fn one() -> Self {
@@ -84,11 +98,8 @@ impl<F: Field> Expression<F> {
     }
 
     pub fn evaluate(&self, wire_values: &WireValues<F>) -> Element<F> {
-        let mut sum = Element::zero();
-        for (&wire, coefficient) in &self.coefficients {
-            sum += wire_values.get(wire) * coefficient;
-        }
-        sum
+        self.coefficients.iter().fold(Element::zero(),
+            |sum, (wire, coefficient)| sum + (wire_values.get(*wire) * coefficient))
     }
 }
 
@@ -437,9 +448,9 @@ impl<F: Field> fmt::Display for Expression<F> {
             })
             .collect();
         let s = if term_strings.is_empty() {
-            "0".to_string()
+            String::from("0")
         } else {
-            term_strings.join(" + ")
+            join(" + ", &term_strings)
         };
         write!(f, "{}", s)
     }
@@ -574,25 +585,20 @@ impl<F: Field> BinaryExpression<F> {
     /// Join these bits into the field element they encode. This method requires that
     /// `2^self.len() < |F|`, otherwise the result might not fit in a single field element.
     pub fn join(&self) -> Expression<F> {
-        assert!(self.len() < Element::<F>::max_bits(),
-                "Cannot fit {}-bit binary expression in a single {}-bit field element",
-                self.len(), Element::<F>::max_bits());
+        assert!(BigUint::one() << self.len() <= F::order(),
+                "Binary expression is too large to fit in a single field element");
         self.join_allowing_overflow()
     }
 
     /// Join these bits into the field element they encode. This method allows binary expressions of
     /// any size, so overflow is possible.
     pub fn join_allowing_overflow(&self) -> Expression<F> {
-        let mut sum = Expression::zero();
-        for (i, bit) in self.bits.iter().enumerate() {
-            let weight = Element::one() << i;
-            sum += &bit.expression * weight;
-        }
-        sum
+        self.bits.iter().enumerate().fold(Expression::zero(),
+            |sum, (i, bit)| sum + (&bit.expression * (Element::one() << i)))
     }
 
     pub fn dependencies(&self) -> Vec<Wire> {
-        let mut all = HashSet::new();
+        let mut all = BTreeSet::new();
         for bool_expression in self.bits.iter() {
             all.extend(bool_expression.dependencies());
         }
@@ -600,17 +606,12 @@ impl<F: Field> BinaryExpression<F> {
     }
 
     pub fn evaluate(&self, values: &WireValues<F>) -> BigUint {
-        let mut sum = BigUint::zero();
-        for (i, bit) in self.bits.iter().enumerate() {
-            if bit.evaluate(values) {
-                sum += BigUint::one() << i;
-            }
-        }
-        sum
+        self.bits.iter().enumerate().fold(BigUint::zero(),
+            |sum, (i, bit)| if bit.evaluate(values) { sum + (BigUint::one() << i) } else { sum } )
     }
 
     pub fn concat(expressions: &[BinaryExpression<F>]) -> Self {
-        let bits = expressions.iter().map(|e| e.bits.clone()).concat();
+        let bits = expressions.iter().map(|exp| exp.bits.clone()).concat();
         BinaryExpression { bits }
     }
 }
@@ -681,5 +682,32 @@ impl<F: Field> From<u16> for BinaryExpression<F> {
 impl<F: Field> From<u8> for BinaryExpression<F> {
     fn from(value: u8) -> Self {
         Self::from(BigUint::from(value))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{BinaryExpression, GadgetBuilder};
+    use crate::test_util::F257;
+
+    #[test]
+    fn join_fermat_prime_field() {
+        // Test joining a binary expression into a field element, where the (Fermat prime) field is
+        // just large enough to fit the expression.
+        let mut builder = GadgetBuilder::<F257>::new();
+        let wire = builder.binary_wire(8);
+        let exp = BinaryExpression::<F257>::from(&wire);
+        exp.join();
+    }
+
+    #[test]
+    #[should_panic]
+    fn join_fermat_prime_field_overflow() {
+        // Test joining a binary expression into a field element, where the (Fermat prime) field is
+        // too small to fit the expression.
+        let mut builder = GadgetBuilder::<F257>::new();
+        let wire = builder.binary_wire(9);
+        let exp = BinaryExpression::<F257>::from(&wire);
+        exp.join();
     }
 }

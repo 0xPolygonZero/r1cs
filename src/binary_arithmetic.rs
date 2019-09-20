@@ -30,7 +30,7 @@ impl<F: Field> GadgetBuilder<F> {
         self.binary_summation_asserting_no_overflow(&[x.clone(), y.clone()])
     }
 
-    /// Add an arbitrary number of binary expressions. The result will be one bit longer than the
+    /// Add an arbitrary number of binary expressions. The result will be at least one bit longer than the
     /// longest input.
     pub fn binary_summation(&mut self, terms: &[BinaryExpression<F>]) -> BinaryExpression<F> {
         // We will non-deterministically generate the sum bits, join the binary expressions, and
@@ -44,7 +44,7 @@ impl<F: Field> GadgetBuilder<F> {
         let sum_bits = max_sum.bits();
 
         // TODO: Generalize this addition function to support larger operands.
-        // We can split the bits into chunks and perform grade school addition on joined chunks.
+        // We can split the bits into chunks and perform addition on joined chunks.
         assert!(sum_bits < Element::<F>::max_bits(),
                 "Binary operands are too large to fit an a field element.");
 
@@ -89,14 +89,20 @@ impl<F: Field> GadgetBuilder<F> {
 
     /// Assert that a binary expression is zero.
     pub fn binary_assert_zero(&mut self, x: &BinaryExpression<F>) {
-        // TODO: Generalize to work with binary expressions larger than |F|.
-        self.assert_zero(&x.join())
+        // The expression may be too large to fit in a single field element, so we will join chunks
+        // and assert that each chunk is zero. The chunk size is chosen such that overflow is
+        // impossible, even if all bits are 1.
+        let bits = Element::<F>::max_bits() - 1;
+        for chunk in x.chunks(bits) {
+            self.assert_zero(&chunk.join());
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use num::BigUint;
+    use num_traits::Zero;
 
     use crate::expression::BinaryExpression;
     use crate::gadget_builder::GadgetBuilder;
@@ -167,5 +173,19 @@ mod tests {
     }
 
     // TODO: Test inputs with differing lengths.
+
     // TODO: Test summations with more than two terms.
+
+    #[test]
+    fn assert_zero_f257() {
+        let mut builder = GadgetBuilder::<F257>::new();
+        let x_bits = 10;
+        let x_wire = builder.binary_wire(x_bits);
+        let x_exp = BinaryExpression::from(&x_wire);
+        builder.binary_assert_zero(&x_exp);
+        let gadget = builder.build();
+
+        let mut values_0 = binary_unsigned_values!(&x_wire => &BigUint::zero());
+        assert!(gadget.execute(&mut values_0));
+    }
 }

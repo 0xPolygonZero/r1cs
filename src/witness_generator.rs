@@ -1,3 +1,8 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
+
 use crate::field::Field;
 use crate::wire::Wire;
 use crate::wire_values::WireValues;

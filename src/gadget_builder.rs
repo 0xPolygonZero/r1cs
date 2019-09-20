@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use crate::constraint::Constraint;
 use crate::expression::{BooleanExpression, Expression};
 use crate::field::{Element, Field};
@@ -88,7 +91,7 @@ impl<F: Field> GadgetBuilder<F> {
                     &y_value / x_value
                 } else {
                     // The value of m doesn't matter if x = 0.
-                    Element::from(42u8)
+                    Element::one()
                 };
                 values.set(m, m_value);
                 values.set(y, y_value);

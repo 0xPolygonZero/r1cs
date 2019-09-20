@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use std::ops::Mul;
 
 use crate::{Element, Expression, Field};
