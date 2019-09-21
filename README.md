@@ -137,7 +137,9 @@ This is roughly equivalent to the built-in `GadgetBuilder::inverse` method, with
 
 ## Backends
 
-The [r1cs-bellman](https://crates.io/crates/r1cs-bellman) crate provides a backend for [bellman](https://crates.io/crates/bellman).
+The [r1cs-zkinterface](https://crates.io/crates/r1cs-zkinterface) crate can be used to export these gadgets to the standard zkinterface format.
+
+There is also a direct backend for [bellman](https://crates.io/crates/bellman) via the [r1cs-bellman](https://crates.io/crates/r1cs-bellman) crate.
 
 
 ## Disclaimer
