@@ -127,44 +127,6 @@ impl<F: Field> MultiPermutation<F> for Poseidon<F> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use itertools::Itertools;
-
-    use crate::{Expression, GadgetBuilder, MdsMatrix, MultiPermutation, Poseidon};
-    use crate::poseidon::NumberOfRounds;
-    use crate::PoseidonSbox::Exponentiation3;
-    use crate::test_util::F11;
-
-    #[test]
-    fn poseidon_x3_f11() {
-        let mds_matrix = MdsMatrix::<F11>::new(vec![
-            vec![2u8.into(), 3u8.into(), 1u8.into(), 1u8.into()],
-            vec![1u8.into(), 2u8.into(), 3u8.into(), 1u8.into()],
-            vec![1u8.into(), 1u8.into(), 2u8.into(), 3u8.into()],
-            vec![3u8.into(), 1u8.into(), 1u8.into(), 2u8.into()],
-        ]);
-
-        let poseidon = Poseidon {
-            width: 4,
-            num_rounds: NumberOfRounds { full: 4, partial: 6 },
-            sbox: Exponentiation3,
-            mds_matrix,
-        };
-
-        let mut builder = GadgetBuilder::new();
-        let input_wires = builder.wires(4);
-        let input_exps = input_wires.iter().map(Expression::from).collect_vec();
-        let _outputs = poseidon.permute(&mut builder, &input_exps);
-        let gadget = builder.build();
-
-        let mut values = values!(
-            input_wires[0] => 0u8.into(), input_wires[1] => 1u8.into(),
-            input_wires[2] => 2u8.into(), input_wires[3] => 3u8.into());
-        assert!(gadget.execute(&mut values));
-    }
-}
-
 /// Selects a number of full and partial rounds so as to provide plausible security, including a
 /// reasonable security margin as suggested by the Poseidon authors.
 fn secure_num_rounds_padded<F: Field>(sbox: PoseidonSbox, width: usize) -> NumberOfRounds {
@@ -261,4 +223,42 @@ fn min_n_m<F: Field>() -> f64 {
 
 fn num_sboxes(width: usize, num_rounds: NumberOfRounds) -> usize {
     num_rounds.full * width + num_rounds.partial
+}
+
+#[cfg(test)]
+mod tests {
+    use itertools::Itertools;
+
+    use crate::{Expression, GadgetBuilder, MdsMatrix, MultiPermutation, Poseidon};
+    use crate::poseidon::NumberOfRounds;
+    use crate::PoseidonSbox::Exponentiation3;
+    use crate::test_util::F11;
+
+    #[test]
+    fn poseidon_x3_f11() {
+        let mds_matrix = MdsMatrix::<F11>::new(vec![
+            vec![2u8.into(), 3u8.into(), 1u8.into(), 1u8.into()],
+            vec![1u8.into(), 2u8.into(), 3u8.into(), 1u8.into()],
+            vec![1u8.into(), 1u8.into(), 2u8.into(), 3u8.into()],
+            vec![3u8.into(), 1u8.into(), 1u8.into(), 2u8.into()],
+        ]);
+
+        let poseidon = Poseidon {
+            width: 4,
+            num_rounds: NumberOfRounds { full: 4, partial: 6 },
+            sbox: Exponentiation3,
+            mds_matrix,
+        };
+
+        let mut builder = GadgetBuilder::new();
+        let input_wires = builder.wires(4);
+        let input_exps = input_wires.iter().map(Expression::from).collect_vec();
+        let _outputs = poseidon.permute(&mut builder, &input_exps);
+        let gadget = builder.build();
+
+        let mut values = values!(
+            input_wires[0] => 0u8.into(), input_wires[1] => 1u8.into(),
+            input_wires[2] => 2u8.into(), input_wires[3] => 3u8.into());
+        assert!(gadget.execute(&mut values));
+    }
 }
