@@ -15,6 +15,7 @@ pub struct Rescue<F: Field> {
     alpha: Element<F>,
     /// The number of rounds to use.
     num_rounds: usize,
+    /// The MDS matrix to apply after each permutation layer.
     mds_matrix: MdsMatrix<F>,
 }
 
@@ -51,6 +52,7 @@ impl<F: Field> MultiPermutation<F> for Rescue<F> {
     }
 }
 
+/// Builds a `Rescue` instance.
 pub struct RescueBuilder<F: Field> {
     /// The size of the permutation, in field elements.
     width: usize,
@@ -80,8 +82,8 @@ impl<F: Field> RescueBuilder<F> {
         self
     }
 
-    pub fn mds_matrix(&mut self, mds_matrix: MdsMatrix<F>) -> &mut Self {
-        self.mds_matrix = Some(mds_matrix);
+    pub fn num_rounds(&mut self, num_rounds: usize) -> &mut Self {
+        self.num_rounds = Some(num_rounds);
         self
     }
 
@@ -90,8 +92,8 @@ impl<F: Field> RescueBuilder<F> {
         self
     }
 
-    pub fn num_rounds(&mut self, num_rounds: usize) -> &mut Self {
-        self.num_rounds = Some(num_rounds);
+    pub fn mds_matrix(&mut self, mds_matrix: MdsMatrix<F>) -> &mut Self {
+        self.mds_matrix = Some(mds_matrix);
         self
     }
 
@@ -110,12 +112,7 @@ impl<F: Field> RescueBuilder<F> {
                 self.security_bits.unwrap_or(DEFAULT_SECURITY_BITS),
                 width));
 
-        Rescue {
-            width,
-            alpha,
-            num_rounds,
-            mds_matrix,
-        }
+        Rescue { width, alpha, num_rounds, mds_matrix }
     }
 
     /// Find the smallest prime `a` such that `x^a` is a permutation in `F`, or equivalently,
