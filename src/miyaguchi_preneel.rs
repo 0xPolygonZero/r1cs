@@ -1,5 +1,3 @@
-//! This module extends GadgetBuilder with an implementation of the Davies-Meyer construction.
-
 use std::marker::PhantomData;
 
 use crate::expression::Expression;
@@ -7,38 +5,38 @@ use crate::field::Field;
 use crate::gadget_builder::GadgetBuilder;
 use crate::gadget_traits::{BlockCipher, CompressionFunction};
 
-/// The additive variant of Davies-Meyer, which creates a one-way compression function from a block
-/// cipher.
-pub struct DaviesMeyer<F: Field, BC: BlockCipher<F>> {
+/// The additive variant of Miyaguchi-Preneel, which creates a one-way compression function from a
+/// block cipher.
+pub struct MiyaguchiPreneel<F: Field, BC: BlockCipher<F>> {
     cipher: BC,
     phantom: PhantomData<*const F>,
 }
 
-impl<F: Field, BC: BlockCipher<F>> DaviesMeyer<F, BC> {
-    /// Create a new Davies-Meyer compression function from the given block cipher.
+impl<F: Field, BC: BlockCipher<F>> MiyaguchiPreneel<F, BC> {
+    /// Create a new Miyaguchi-Preneel compression function from the given block cipher.
     pub fn new(cipher: BC) -> Self {
-        DaviesMeyer { cipher, phantom: PhantomData }
+        MiyaguchiPreneel { cipher, phantom: PhantomData }
     }
 }
 
-impl<F: Field, BC: BlockCipher<F>> CompressionFunction<F> for DaviesMeyer<F, BC> {
+impl<F: Field, BC: BlockCipher<F>> CompressionFunction<F> for MiyaguchiPreneel<F, BC> {
     fn compress(&self, builder: &mut GadgetBuilder<F>, x: &Expression<F>, y: &Expression<F>)
                 -> Expression<F> {
-        self.cipher.encrypt(builder, y, x) + x
+        self.cipher.encrypt(builder, x, y) + x + y
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::davies_meyer::DaviesMeyer;
     use crate::expression::Expression;
     use crate::field::{Element, Field};
     use crate::gadget_builder::GadgetBuilder;
     use crate::gadget_traits::{BlockCipher, CompressionFunction};
+    use crate::miyaguchi_preneel::MiyaguchiPreneel;
     use crate::test_util::F7;
 
     #[test]
-    fn davies_meyer() {
+    fn miyaguchi_preneel() {
         // We will use a trivial cipher to keep the test simple.
         // The cipher is: (k, i) -> 2k + 4i + 3ki
         struct TestCipher;
@@ -61,13 +59,13 @@ mod tests {
         let y_wire = builder.wire();
         let x = Expression::from(x_wire);
         let y = Expression::from(y_wire);
-        let dm = DaviesMeyer::new(TestCipher);
-        let dm_output = dm.compress(&mut builder, &x, &y);
+        let mp = MiyaguchiPreneel::new(TestCipher);
+        let mp_output = mp.compress(&mut builder, &x, &y);
         let gadget = builder.build();
 
         let mut values = values!(x_wire => 2u8.into(), y_wire => 3u8.into());
         assert!(gadget.execute(&mut values));
-        // The result should be: (2y + 4x + 3yx) + x = 6 + 8 + 18 + 2 = 34 = 6.
-        assert_eq!(Element::from(6u8), dm_output.evaluate(&values));
+        // The result should be: (2x + 4y + 3xy) + x + y = 4 + 12 + 18 + 2 + 3 = 39 = 4.
+        assert_eq!(Element::from(4u8), mp_output.evaluate(&values));
     }
 }
