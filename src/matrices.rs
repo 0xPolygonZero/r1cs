@@ -20,6 +20,12 @@ impl<F: Field> ElementMatrix<F> {
     }
 }
 
+impl<F: Field> Clone for ElementMatrix<F> {
+    fn clone(&self) -> Self {
+        ElementMatrix { rows: self.rows.clone() }
+    }
+}
+
 impl<F: Field> Mul<&[Element<F>]> for &ElementMatrix<F> {
     type Output = Vec<Element<F>>;
 
@@ -67,6 +73,12 @@ impl<F: Field> MdsMatrix<F> {
     pub fn new(rows: Vec<Vec<Element<F>>>) -> Self {
         // TODO: Verify the MDS diffusion property.
         MdsMatrix { matrix: ElementMatrix::new(rows) }
+    }
+}
+
+impl<F: Field> Clone for MdsMatrix<F> {
+    fn clone(&self) -> Self {
+        MdsMatrix { matrix: self.matrix.clone() }
     }
 }
 

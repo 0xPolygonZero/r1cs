@@ -17,6 +17,7 @@ pub enum PoseidonSbox {
 
 /// The Poseidon permutation.
 pub struct Poseidon<F: Field> {
+    /// The size of the permutation, in field elements.
     width: usize,
     num_rounds: NumberOfRounds,
     sbox: PoseidonSbox,
@@ -85,8 +86,8 @@ impl<F: Field> MultiPermutation<F> for Poseidon<F> {
             // Sub words layer.
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
             if full {
-                current = current.into_iter()
-                    .map(|exp| self.sbox_permute(builder, &exp))
+                current = current.iter()
+                    .map(|exp| self.sbox_permute(builder, exp))
                     .collect();
             } else {
                 current[0] = self.sbox_permute(builder, &current[0]);
@@ -110,13 +111,14 @@ impl<F: Field> MultiPermutation<F> for Poseidon<F> {
         let mut current = outputs.to_vec();//.to_owned();
         for round in 0..rounds {
             // Mix layer.
+            // TODO: This is wrong. Need to invert the MDS matrix.
             current = &self.mds_matrix * current.as_slice();
 
             // Sub words layer.
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
             if full {
-                current = current.into_iter()
-                    .map(|exp| self.sbox_inverse(builder, &exp))
+                current = current.iter()
+                    .map(|exp| self.sbox_inverse(builder, exp))
                     .collect();
             } else {
                 current[0] = self.sbox_inverse(builder, &current[0]);

@@ -17,8 +17,8 @@ The goal of this library is to make SNARK programming easy. To that end, we supp
 - `GadgetBuilder::assert_permutation`, which efficiently verifies a permutation using an AS-Waksman network
 - Methods for sorting lists of expressions, such as `GadgetBuilder::sort_ascending`
 - Methods for working with Merkle trees, such as `GadgetBuilder::merkle_tree_root`
-- Common cryptographic constructions such as Merkle-Damgård, Davies-Meyer, and Sponge functions.
-- MiMC and Poseidon
+- Common cryptographic constructions such as Merkle-Damgård, Davies-Meyer, and Sponge functions
+- R1CS-friendly primitives like MiMC, Poseidon and Rescue
 
 
 ## Core types
