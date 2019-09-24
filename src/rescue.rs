@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use crate::{Element, Expression, Field, GadgetBuilder, MdsMatrix, MonomialPermutation, MultiPermutation, Permutation};
 
 const DEFAULT_SECURITY_BITS: usize = 128;
