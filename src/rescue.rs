@@ -99,7 +99,7 @@ impl<F: Field> RescueBuilder<F> {
 
     pub fn build(&self) -> Rescue<F> {
         let width = self.width;
-        let alpha = self.alpha.clone().unwrap_or_else(|| Self::smallest_alpha());
+        let alpha = self.alpha.clone().unwrap_or_else(Self::smallest_alpha);
 
         // TODO: Generate a default MDS matrix instead of making the caller supply one.
         let mds_matrix = self.mds_matrix.clone().expect("MDS matrix required for now");
