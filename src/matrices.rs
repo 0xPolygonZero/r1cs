@@ -74,6 +74,10 @@ impl<F: Field> MdsMatrix<F> {
         // TODO: Verify the MDS diffusion property.
         MdsMatrix { matrix: ElementMatrix::new(rows) }
     }
+
+    pub fn inverse(&self) -> Self {
+        unimplemented!("TODO: Implement inverse")
+    }
 }
 
 impl<F: Field> Clone for MdsMatrix<F> {

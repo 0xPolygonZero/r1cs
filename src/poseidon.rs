@@ -165,11 +165,12 @@ impl<F: Field> MultiPermutation<F> for Poseidon<F> {
         assert!(self.num_rounds.full % 2 == 0, "asymmetric permutation configuration");
         let full_rounds_per_side = self.num_rounds.full / 2;
 
+        let inverse_mds_matrix = self.mds_matrix.inverse();
+
         let mut current = outputs.to_vec();//.to_owned();
         for round in 0..rounds {
             // Mix layer.
-            // TODO: This is wrong. Need to invert the MDS matrix.
-            current = &self.mds_matrix * current.as_slice();
+            current = &inverse_mds_matrix * current.as_slice();
 
             // Sub words layer.
             let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
