@@ -8,7 +8,7 @@ use num::bigint::ParseBigIntError;
 use num::BigUint;
 use num::pow;
 
-use crate::{Expression, GadgetBuilder};
+use crate::{Expression, GadgetBuilder, BooleanExpression};
 use crate::embedded_curve::EmbeddedCurve;
 use crate::field::{Element, Field};
 
@@ -16,7 +16,7 @@ pub trait Curve<F: Field> {}
 
 pub trait CurvePoint<F: Field, C: Curve<F>> {}
 
-/// An embedded Edwards curve defined over the same base field
+/// An embedded twisted Edwards curve defined over the same base field
 /// as the field used in the constraint system
 pub trait EdwardsCurve<F: Field> {
     fn a() -> Element<F>;
@@ -58,30 +58,95 @@ pub struct ProjWeierstrassPointExpression<F: Field> {
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     /// EdwardsPointExpression::add(builder, e1, e2)
+    // TODO: improve the constraint count by using an improved addition algorithm
     pub fn add(
         builder: &mut GadgetBuilder<F>,
         point_1: &EdwardsPointExpression<F, C>,
         point_2: &EdwardsPointExpression<F, C>,
     ) -> EdwardsPointExpression<F, C> {
         let d = C::d();
+        let a = C::a();
+        // TODO: better method for specifying variables
         let EdwardsPointExpression { x: x1, y: y1, phantom } = point_1;
         let EdwardsPointExpression { x: x2, y: y2, phantom } = point_2;
         let x1y2 = builder.product(&x1, &y2);
         let x2y1 = builder.product(&y1, &x2);
-        let x1y2x2y1 = builder.product(&x1y2, &x2y1);
         let x1x2 = builder.product(&x1, &x2);
+        let x1x2y1y2 = builder.product(&x1y2, &x2y1);
         let y1y2 = builder.product(&y1, &y2);
-        let x3 = builder.quotient(&(x1y2 + x2y1), &(&x1y2x2y1 * &d + Expression::one()));
-        let y3 = builder.quotient(&(y1y2 - x1x2), &(&x1y2x2y1 * -&d + Expression::one()));
+        println!("y numerator: {}", &y1y2 - &x1x2);
+        println!("y denominator: {}", &x1x2y1y2 * -&d + Expression::one());
+        let x3 = builder.quotient(&(x1y2 + x2y1), &(&x1x2y1y2 * &d + Expression::one()));
+        let y3 = builder.quotient(&(y1y2 - &x1x2 * &a), &(&x1x2y1y2 * -&d + Expression::one()));
         EdwardsPointExpression::new_unsafe(x3, y3)
     }
 
+    // TODO: improve constraint count
+    /// Naive implementation of the doubling algorithm for twisted Edwards curves.
+    pub fn double(
+        builder: &mut GadgetBuilder<F>,
+        point: &EdwardsPointExpression<F, C>,
+    ) -> EdwardsPointExpression<F, C> {
+        let EdwardsPointExpression { x, y, phantom } = point;
+        let a = C::a();
+
+        let xy = builder.product(&x, &y);
+        let xx = builder.product(&x, &x);
+        let yy = builder.product(&y, &y);
+        let x_2 = builder.quotient(&(&xy * Element::from(2u8)), &(&xx * &a + &yy));
+        let y_2 = builder.quotient(&(&yy - &xx * &a),
+                                   &(-&xx * &a - &yy + Expression::from(2u8)));
+
+        EdwardsPointExpression::new_unsafe(x_2, y_2)
+    }
+
+    /// Multiplies an EdwardsPointExpression by a scalar using a naive approach consisting of
+    /// multiplication by doubling.
+    // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
+    pub fn scalar_mult(
+        builder: &mut GadgetBuilder<F>,
+        point: EdwardsPointExpression<F, C>,
+        scalar: Expression<F>
+    ) -> EdwardsPointExpression<F, C> {
+        let scalar_binary = builder.split_allowing_ambiguity(&scalar);
+
+        let mut sum = Self::identity();
+        let mut current = point;
+        for bit in scalar_binary.bits {
+            let boolean_product= &Self::boolean_mult(builder, &current, &bit);
+            sum = Self::add(builder, &sum,boolean_product);
+            current = Self::double(builder, &current);
+        }
+        sum
+    }
+
+    /// Given a boolean element, return the given element if element is on, otherwise
+    /// return the identity.
+    fn boolean_mult(
+        builder: &mut GadgetBuilder<F>,
+        point: &EdwardsPointExpression<F, C>,
+        boolean: &BooleanExpression<F>,
+    ) -> EdwardsPointExpression<F, C> {
+        let x = builder.selection(boolean, &point.x, &Expression::zero());
+        let y = builder.selection(boolean, &point.y, &Expression::one());
+        EdwardsPointExpression::new_unsafe(x, y)
+    }
+
+    /// Identity element for twisted Edwards Curve
+    pub fn identity() -> EdwardsPointExpression<F, C> {
+        EdwardsPointExpression::new_unsafe(Expression::zero(), Expression::one())
+    }
+
+    /// Takes two elements as coordinates, checks that they're on the curve without adding
+    /// constraints, and then returns an EdwardsPointExpression
     pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPointExpression<F, C> {
         assert!(C::a() * &x * &x + &y * &y == Element::one() + C::d() * &x * &x * &y * &y,
                 "Point must be contained on the curve.");
         EdwardsPointExpression::new_unsafe(Expression::from(x), Expression::from(y))
     }
 
+    /// Takes two expressions as coordinates, adds constraints verifying that the coordinates
+    /// are contained on the specified curve, and then returns an EdwardsPointExpression
     pub fn from_expressions(builder: &mut GadgetBuilder<F>, x: Expression<F>, y: Expression<F>) -> EdwardsPointExpression<F, C> {
         let x_squared = builder.product(&x, &x);
         let y_squared = builder.product(&y, &y);
@@ -91,149 +156,13 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         EdwardsPointExpression::new_unsafe(x, y)
     }
 
+    /// Takes two expressions as coordinates, does not perform a check or add constraints
+    /// to check that the coordinates are on the specified curve, and then returns an
+    /// EdwardsPointExpression
     pub fn new_unsafe(x: Expression<F>, y: Expression<F>) -> EdwardsPointExpression<F, C> {
         EdwardsPointExpression { x, y, phantom: PhantomData }
     }
 }
-
-/*
-impl<F: Field> EdwardsCurve<F> {
-    fn contains_point(self, p: &EdwardsPoint<F>) -> bool {
-        let ref x_squared = &p.x * &p.x;
-        let ref y_squared = &p.y * &p.y;
-        self.a * x_squared + y_squared == Element::<F>::one() + self.d * x_squared * y_squared
-    }
-}
-
-impl<F: Field> From<(Element<F>, Element<F>)> for EdwardsCurve<F> {
-    fn from(params: (Element<F>, Element<F>)) -> EdwardsCurve<F> {
-        EdwardsCurve {
-            a: params.0,
-            d: params.1,
-        }
-    }
-}
-
-/// A point on an embedded Edwards curve in affine coordinates
-pub struct EdwardsPoint<F: Field> {
-    x: Element<F>,
-    y: Element<F>,
-}
-
-impl<F: Field> From<(Element<F>, Element<F>)> for EdwardsPoint<F>
-    where EdwardsCurve<F>: EmbeddedCurve<F> {
-    fn from(coordinates: (Element<F>, Element<F>)) -> EdwardsPoint<F> {
-        let c = EdwardsCurve::<F>::from(EdwardsCurve::<F>::parameters());
-        let p = EdwardsPoint {
-            x: coordinates.0,
-            y: coordinates.1,
-        };
-        assert!(c.contains_point(&p), "Point is not on the curve.");
-        p
-    }
-}
-
-impl<F: Field> EdwardsPoint<F> {
-    fn is_identity(&self) -> bool {
-        self.x == Element::<F>::zero() && self.y == Element::<F>::one()
-    }
-
-    fn identity() -> Self {
-        EdwardsPoint {
-            x: Element::<F>::zero(),
-            y: Element::<F>::one(),
-        }
-    }
-}
-
-impl<F: Field> Neg for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
-    type Output = EdwardsPoint<F>;
-
-    fn neg(self) -> EdwardsPoint<F> {
-        -&self
-    }
-}
-
-/// Negates an edwards curve point by negating the x coordinate
-impl<F: Field> Neg for &EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
-    type Output = EdwardsPoint<F>;
-
-    fn neg(self) -> EdwardsPoint<F> {
-        if self.is_identity() {
-            EdwardsPoint::identity()
-        } else {
-            EdwardsPoint::from((-self.x.clone(), self.y.clone()))
-        }
-    }
-}
-
-impl<F: Field> Add<EdwardsPoint<F>> for EdwardsPoint<F>
-    where EdwardsCurve<F>: EmbeddedCurve<F> {
-    type Output = EdwardsPoint<F>;
-
-    fn add(self, rhs: EdwardsPoint<F>) -> EdwardsPoint<F> {
-        &self + &rhs
-    }
-}
-
-impl<F: Field> Add<&EdwardsPoint<F>> for EdwardsPoint<F>
-    where EdwardsCurve<F>: EmbeddedCurve<F> {
-    type Output = EdwardsPoint<F>;
-
-    fn add(self, rhs: &EdwardsPoint<F>) -> EdwardsPoint<F> {
-        &self + rhs
-    }
-}
-
-impl<F: Field> Add<EdwardsPoint<F>> for &EdwardsPoint<F>
-    where EdwardsCurve<F>: EmbeddedCurve<F> {
-    type Output = EdwardsPoint<F>;
-
-    fn add(self, rhs: EdwardsPoint<F>) -> EdwardsPoint<F> {
-        self + &rhs
-    }
-}
-
-/// Uses the non-optimized algorithm for Edwards curve addition in affine coordinates.
-impl<F: Field> Add<&EdwardsPoint<F>> for &EdwardsPoint<F>
-    where EdwardsCurve<F>: EmbeddedCurve<F> {
-    type Output = EdwardsPoint<F>;
-
-    fn add(self, rhs: &EdwardsPoint<F>) -> EdwardsPoint<F> {
-        let x1y1 = &self.x * &self.y;
-        let x2y2 = &rhs.x * &rhs.y;
-        let x1x2 = &self.x * &rhs.x;
-        let y1y2 = &self.y * &rhs.y;
-        let x1y2 = &self.x * &rhs.y;
-        let y1x2 = &self.y * &rhs.x;
-
-        let x = (&x1y1 + &x2y2) / (x1x2 + y1y2);
-        let y = (&x1y1 - &x2y2) / (x1y2 - y1x2);
-
-        EdwardsPoint::from((x, y))
-    }
-}
-
-impl<F: Field> AddAssign for EdwardsPoint<F> where EdwardsCurve<F>: EmbeddedCurve<F> {
-    fn add_assign(&mut self, rhs: EdwardsPoint<F>) {
-        *self += &rhs;
-    }
-}
-
-impl<F: Field> AddAssign<&EdwardsPoint<F>> for EdwardsPoint<F>
-    where EdwardsCurve<F>: EmbeddedCurve<F> {
-    fn add_assign(&mut self, rhs: &EdwardsPoint<F>) {
-        *self = &*self + rhs;
-    }
-}
-
-impl<F: Field> PartialEq for EdwardsPoint<F> {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y
-    }
-}
-
-impl<F: Field> Eq for EdwardsPoint<F> {}
 
 #[cfg(test)]
 mod tests {
@@ -243,62 +172,104 @@ mod tests {
     use itertools::assert_equal;
     use num::BigUint;
 
-    use crate::curve::{EdwardsCurve, EdwardsPoint};
-    use crate::embedded_curve::EmbeddedCurve;
+    use crate::curve::{EdwardsCurve};
     use crate::field::{Bls12_381, Bn128, Element, Field};
+    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues};
+
+    struct JubJub {}
+
+    impl EdwardsCurve<Bls12_381> for JubJub {
+        fn a() -> Element<Bls12_381> {
+            -Element::one()
+        }
+
+        fn d() -> Element<Bls12_381> {
+            Element::from_str(
+                "19257038036680949359750312669786877991949435402254120286184196891950884077233"
+            ).unwrap()
+        }
+    }
 
     #[test]
     fn check_point_on_curve() {
-        type F = Bls12_381;
 
-        let curve = EdwardsCurve {
-            a: EdwardsCurve::<F>::parameters().0,
-            d: EdwardsCurve::<F>::parameters().1,
-        };
-        let x = Element::from(BigUint::from_str(
+        let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
-        ).unwrap());
-        let y = Element::from(BigUint::from_str(
+        ).unwrap();
+        let y = Element::from_str(
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
-        ).unwrap());
-        let point = EdwardsPoint::from((x, y));
-        assert!(curve.contains_point(&point))
+        ).unwrap();
+
+        let x_exp = Expression::from(x);
+        let y_exp = Expression::from(y);
+
+        let mut builder = GadgetBuilder::<Bls12_381>::new();
+        let p = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions(
+            &mut builder, x_exp, y_exp);
+
+        let gadget = builder.build();
+        assert!(gadget.execute(&mut WireValues::new()));
     }
 
+    #[test]
+    fn check_point__not_on_curve_with_expressions() {
+
+        let x = Element::from_str(
+            "11076627216317271660298050606127911965867021807910416450833192264015104452986"
+        ).unwrap();
+        let y = Element::from_str(
+            "44412834903739585386157632289020980010620626017712148233229312325549216099226"
+        ).unwrap();
+
+        let x_exp = Expression::from(x);
+        let y_exp = Expression::from(y);
+
+        let mut builder = GadgetBuilder::<Bls12_381>::new();
+        let p = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions(
+            &mut builder, x_exp, y_exp);
+
+        let gadget = builder.build();
+        assert!(!gadget.execute(&mut WireValues::new()));
+    }
+
+    #[test]
+    #[should_panic]
     fn check_point_not_on_curve() {
-        type F = Bls12_381;
-
-        let curve = EdwardsCurve {
-            a: EdwardsCurve::<F>::parameters().0,
-            d: EdwardsCurve::<F>::parameters().1,
-        };
-        let x = Element::from(BigUint::from_str(
+        let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452985"
-        ).unwrap());
-        let y = Element::from(BigUint::from_str(
+        ).unwrap();
+
+        let y = Element::from_str(
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
-        ).unwrap());
-        let point = EdwardsPoint::from((x, y));
-        assert!(!curve.contains_point(&point))
+        ).unwrap();
+
+        EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x, y);
     }
 
+    #[test]
     fn check_add_and_negate() {
-        type F = Bls12_381;
-
-        let curve = EdwardsCurve {
-            a: EdwardsCurve::<F>::parameters().0,
-            d: EdwardsCurve::<F>::parameters().1,
-        };
-        let x = Element::<F>::from(BigUint::from_str(
-            "11076627216317271660298050606127911965867021807910416450833192264015104452985"
-        ).unwrap());
-        let y = Element::<F>::from(BigUint::from_str(
+        let x1 = Element::<Bls12_381>::from_str(
+            "11076627216317271660298050606127911965867021807910416450833192264015104452986"
+        ).unwrap();
+        let y1 = Element::<Bls12_381>::from_str(
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
-        ).unwrap());
-        let point = EdwardsPoint::from((x, y));
-        let inverse = -&point;
-        assert!(point + inverse == EdwardsPoint::identity())
+        ).unwrap();
+
+        let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
+
+        let p2= EdwardsPointExpression::<Bls12_381, JubJub>::new_unsafe(-p1.x.clone(), p1.y.clone());
+
+        let mut builder = GadgetBuilder::<Bls12_381>::new();
+        let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::add(&mut builder, &p1, &p2);
+        let gadget = builder.build();
+        let mut values = WireValues::new();
+        gadget.execute(&mut values);
+        assert_eq!(p3.x.evaluate(&values), Element::zero());
+        assert_eq!(p3.y.evaluate(&values), Element::one());
+    }
+
+    #[test]
+    fn check_double() {
+        // TODO: add a test for doubling
     }
 }
-
-*/
