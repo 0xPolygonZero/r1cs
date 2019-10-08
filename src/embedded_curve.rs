@@ -4,9 +4,9 @@ use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
 use std::str::FromStr;
 use num::bigint::ParseBigIntError;
-use crate::field::{Element, Field};
-use crate::field::{Bn128, Bls12_381};
-use crate::curve::{EdwardsCurve, Curve, EdwardsPoint};
+use crate::{Element, Field};
+use crate::{Bn128, Bls12_381};
+use crate::{EdwardsCurve, Curve};
 
 /// Families of "embedded" curves, defined over
 /// the same base field as the constraint system.
@@ -14,6 +14,7 @@ pub trait EmbeddedCurve<F: Field> {
     fn parameters() -> (Element<F>, Element<F>);
 }
 
+/*
 /// Specification of the babyjubjub curve from
 /// https://github.com/barryWhiteHat/baby_jubjub_ecc
 impl EmbeddedCurve<Bn128> for EdwardsCurve<Bn128> {
@@ -50,3 +51,4 @@ mod tests {
         type F = Bls12_381;
     }
 }
+*/
