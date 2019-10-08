@@ -17,8 +17,8 @@ The goal of this library is to make SNARK programming easy. To that end, we supp
 - `GadgetBuilder::assert_permutation`, which efficiently verifies a permutation using an AS-Waksman network
 - Methods for sorting lists of expressions, such as `GadgetBuilder::sort_ascending`
 - Methods for working with Merkle trees, such as `GadgetBuilder::merkle_tree_root`
-- Common cryptographic constructions such as Merkle-Damgård, Davies-Meyer, and Sponge functions.
-- MiMC and Poseidon
+- Common cryptographic constructions such as Merkle-Damgård, Davies-Meyer, and Sponge functions
+- R1CS-friendly primitives like MiMC, Poseidon and Rescue
 
 
 ## Core types
@@ -137,7 +137,9 @@ This is roughly equivalent to the built-in `GadgetBuilder::inverse` method, with
 
 ## Backends
 
-The [r1cs-bellman](https://crates.io/crates/r1cs-bellman) crate provides a backend for [bellman](https://crates.io/crates/bellman).
+The [r1cs-zkinterface](https://crates.io/crates/r1cs-zkinterface) crate can be used to export these gadgets to the standard zkinterface format.
+
+There is also a direct backend for [bellman](https://crates.io/crates/bellman) via the [r1cs-bellman](https://crates.io/crates/r1cs-bellman) crate.
 
 
 ## Disclaimer

@@ -12,7 +12,7 @@ use alloc::collections::btree_map::BTreeMap;
 use alloc::collections::btree_set::BTreeSet;
 
 use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{Formatter, Debug};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use itertools::Itertools;
@@ -458,7 +458,6 @@ impl<F: Field> fmt::Display for Expression<F> {
 
 
 /// An `Expression` whose value is known to be binary.
-#[derive(Debug)]
 pub struct BooleanExpression<F: Field> {
     expression: Expression<F>,
 }
@@ -517,6 +516,12 @@ impl<F: Field> From<BooleanWire> for BooleanExpression<F> {
 impl<F: Field> From<bool> for BooleanExpression<F> {
     fn from(b: bool) -> Self {
         BooleanExpression::new_unsafe(b.into())
+    }
+}
+
+impl<F: Field> Debug for BooleanExpression<F> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "BooleanExpression[{}]", self.expression)
     }
 }
 

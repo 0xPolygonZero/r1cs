@@ -125,6 +125,18 @@ impl<F: Field> Element<F> {
         }
     }
 
+    pub fn is_prime(&self) -> bool {
+        let mut divisor = Self::from(2u8);
+        while &divisor * &divisor <= self.clone() {
+            let divides = self.integer_modulus(&divisor).is_zero();
+            if divides {
+                return false;
+            }
+            divisor += Element::one();
+        }
+        true
+    }
+
     /// The number of bits needed to encode every element of `F`.
     pub fn max_bits() -> usize {
         Self::largest_element().bits()

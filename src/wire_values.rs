@@ -23,6 +23,10 @@ impl<F: Field> WireValues<F> {
         WireValues { values }
     }
 
+    pub fn as_map(&self) -> &BTreeMap<Wire, Element<F>> {
+        &self.values
+    }
+
     pub fn get(&self, wire: Wire) -> &Element<F> {
         assert!(self.values.contains_key(&wire), "No value for {}", wire);
         &self.values[&wire]
