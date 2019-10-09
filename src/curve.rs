@@ -21,6 +21,7 @@ pub trait CurvePoint<F: Field, C: Curve<F>> {}
 pub trait EdwardsCurve<F: Field> {
     fn a() -> Element<F>;
     fn d() -> Element<F>;
+    fn subgroup_generator() -> (Element<F>, Element<F>);
 }
 
 /// An embedded Edwards curve point defined over the same base field
@@ -58,6 +59,9 @@ pub struct ProjWeierstrassPointExpression<F: Field> {
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     /// EdwardsPointExpression::add(builder, e1, e2)
+    ///
+    /// Assumes that the EdwardsPointExpressions are known to be contained on the curve
+    /// (and omits a membership check), so the non-deterministic inversion method is valid.
     // TODO: improve the constraint count by using an improved addition algorithm
     pub fn add(
         builder: &mut GadgetBuilder<F>,
@@ -83,6 +87,9 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
 
     // TODO: improve constraint count
     /// Naive implementation of the doubling algorithm for twisted Edwards curves.
+    ///
+    /// Assuming that EdwardsPointExpressions are on the curve, so the non-deterministic
+    /// division method is acceptable, as the denominator is non-zero.
     pub fn double(
         builder: &mut GadgetBuilder<F>,
         point: &EdwardsPointExpression<F, C>,
@@ -187,6 +194,17 @@ mod tests {
             Element::from_str(
                 "19257038036680949359750312669786877991949435402254120286184196891950884077233"
             ).unwrap()
+        }
+
+        fn subgroup_generator() -> (Element<Bls12_381>, Element<Bls12_381>) {
+            let x = Element::from_str(
+                "16540640123574156134436876038791482806971768689494387082833631921987005038935"
+            ).unwrap();
+            let y = Element::from_str(
+                "20819045374670962167435360035096875258406992893633759881276124905556507972311"
+            ).unwrap();
+
+            (x ,y)
         }
     }
 

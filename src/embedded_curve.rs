@@ -8,7 +8,7 @@ use crate::{Element, Field};
 use crate::{Bn128, Bls12_381};
 use crate::{EdwardsCurve, Curve};
 
-/// Families of "embedded" curves, defined over
+/// Families of embedded curves, defined over
 /// the same base field as the constraint system.
 pub trait EmbeddedCurve<F: Field> {
     fn parameters() -> (Element<F>, Element<F>);
