@@ -72,6 +72,7 @@ mod permutations;
 mod poseidon;
 mod random_access;
 mod rescue;
+mod signature;
 mod sorting;
 mod splitting;
 mod sponge;

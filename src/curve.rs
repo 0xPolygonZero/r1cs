@@ -112,8 +112,8 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
     pub fn scalar_mult(
         builder: &mut GadgetBuilder<F>,
-        point: EdwardsPointExpression<F, C>,
-        scalar: Expression<F>
+        point: &EdwardsPointExpression<F, C>,
+        scalar: &Expression<F>
     ) -> EdwardsPointExpression<F, C> {
         let scalar_binary = builder.split_allowing_ambiguity(&scalar);
 
@@ -122,7 +122,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         for bit in scalar_binary.bits {
             let boolean_product= &Self::boolean_mult(builder, &current, &bit);
             sum = Self::add(builder, &sum,boolean_product);
-            current = Self::double(builder, &current);
+            current = &Self::double(builder, current);
         }
         sum
     }
