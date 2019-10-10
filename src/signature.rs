@@ -51,8 +51,7 @@ impl<F: Field, C: EdwardsCurve<F>, CF> SignatureExpression<F, C, CF> for Schnorr
         let ye = EdwardsPointExpression::scalar_mult(builder, public_key, &self.e);
         let gs_ye = EdwardsPointExpression::add(builder, &gs, &ye);
 
-        // TODO: verify that compressing the Edwards Curve point to the Y-coordinate satisfies
-        // TODO: the security requirements of the signature scheme
+        // TODO: verify that compressing the Edwards Curve point to the Y-coordinate is valid
         let hash_check = compress.compress(builder, gs_ye.compressed(), &message);
         builder.assert_equal(&hash_check, &self.e);
     }
