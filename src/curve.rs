@@ -85,8 +85,6 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         let x1x2 = builder.product(&x1, &x2);
         let x1x2y1y2 = builder.product(&x1y2, &x2y1);
         let y1y2 = builder.product(&y1, &y2);
-        println!("y numerator: {}", &y1y2 - &x1x2);
-        println!("y denominator: {}", &x1x2y1y2 * -&d + Expression::one());
         let x3 = builder.quotient(&(x1y2 + x2y1), &(&x1x2y1y2 * &d + Expression::one()));
         let y3 = builder.quotient(&(y1y2 - &x1x2 * &a), &(&x1x2y1y2 * -&d + Expression::one()));
         EdwardsPointExpression::new_unsafe(x3, y3)
@@ -97,6 +95,9 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     ///
     /// Assuming that EdwardsPointExpressions are on the curve, so the non-deterministic
     /// division method is acceptable, as the denominator is non-zero.
+    ///
+    /// Note that this algorithm requires the point to be of odd order, which, in the case
+    /// of prime-order subgroups of Edwards curves, is satisfied.
     pub fn double(
         builder: &mut GadgetBuilder<F>,
         point: &EdwardsPointExpression<F, C>,
@@ -237,7 +238,7 @@ mod tests {
     }
 
     #[test]
-    fn check_point__not_on_curve_with_expressions() {
+    fn check_point_not_on_curve_with_expressions() {
 
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
@@ -295,6 +296,31 @@ mod tests {
 
     #[test]
     fn check_double() {
-        // TODO: add a test for doubling
+        let x1 = Element::<Bls12_381>::from_str(
+            "11076627216317271660298050606127911965867021807910416450833192264015104452986"
+        ).unwrap();
+        let y1 = Element::<Bls12_381>::from_str(
+            "44412834903739585386157632289020980010620626017712148233229312325549216099227"
+        ).unwrap();
+
+        let scalar = Expression::<Bls12_381>::from(
+            Element::<Bls12_381>::from_str(
+                "444128349033229312325549216099227444128349033229312325549216099220000000"
+            ).unwrap()
+        );
+
+        let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
+
+        let mut builder = GadgetBuilder::<Bls12_381>::new();
+        let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::scalar_mult(
+            &mut builder,
+            &p1,
+            &scalar,
+        );
+        let gadget = builder.build();
+        let mut values = WireValues::new();
+        gadget.execute(&mut values);
+
+        // TODO: include assertion
     }
 }
