@@ -58,6 +58,13 @@ pub struct ProjWeierstrassPointExpression<F: Field> {
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
+    /// edwards_point.compressed()
+    ///
+    /// Returns the Y coordinate of an Edwards Point Expression
+    pub fn compressed(&self) -> &Expression<F> {
+        &self.y
+    }
+
     /// EdwardsPointExpression::add(builder, e1, e2)
     ///
     /// Assumes that the EdwardsPointExpressions are known to be contained on the curve
@@ -120,9 +127,9 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         let mut sum = Self::identity();
         let mut current = point;
         for bit in scalar_binary.bits {
-            let boolean_product= &Self::boolean_mult(builder, &current, &bit);
+            let boolean_product= &Self::boolean_mult(builder, current, &bit);
             sum = Self::add(builder, &sum,boolean_product);
-            current = &Self::double(builder, current);
+            let current = &Self::double(builder, current);
         }
         sum
     }
