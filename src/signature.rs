@@ -136,19 +136,23 @@ mod tests {
 
         let mut values = WireValues::<Bls12_381>::new();
 
-        private_key.evaluate(&values);
-        r.compressed().evaluate(&values);
-        //e.evaluate(&values);
+        let gadget = builder.build();
+        let mut values = WireValues::new();
+        gadget.execute(&mut values);
 
-        /*
         let s = Expression::<Bls12_381>::from(
             nonce.evaluate(&values) - private_key.evaluate(&values) * e.evaluate(&values)
         );
 
         let signature = SchnorrSignatureExpression{s, e};
 
-        signature.verify(&mut builder, &message, &public_key, &compress);
-        */
+        let mut sig_builder = GadgetBuilder::<Bls12_381>::new();
+
+        signature.verify(&mut sig_builder, &message, &public_key, &compress);
+
+        let sig_gadget = sig_builder.build();
+        let mut sig_values = WireValues::new();
+        sig_gadget.execute(&mut sig_values);
     }
 
     // A dummy compression function which returns 2x + y.
