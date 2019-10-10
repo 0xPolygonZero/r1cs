@@ -12,7 +12,7 @@ use crate::{Expression, GadgetBuilder, BooleanExpression, EdwardsCurve, Curve, C
 use crate::field::{Element, Field};
 
 pub trait SignatureExpression<F: Field, C: EdwardsCurve<F>> {
-    fn verify(&self, builder: &mut GadgetBuilder<F>) -> Expression<F>;
+    fn verify(&self, builder: &mut GadgetBuilder<F>);
 }
 
 
@@ -30,10 +30,13 @@ pub struct SchnorrSignatureExpression<F: Field, C: EdwardsCurve<F>> {
 }
 
 impl<F: Field, C: EdwardsCurve<F>> SignatureExpression<F, C> for SchnorrSignatureExpression<F, C> {
+
+    /// Generates constraints to verify that a signature is valid. A naive implementation that
+    /// has not been optimized or audited.
     fn verify(
         &self,
         builder: &mut GadgetBuilder<F>,
-    ) -> Expression<F> {
+    ) {
         let generator = EdwardsPointExpression::from_elements(
             C::subgroup_generator().0, C::subgroup_generator().1
         );
@@ -41,8 +44,9 @@ impl<F: Field, C: EdwardsCurve<F>> SignatureExpression<F, C> for SchnorrSignatur
         let ye = EdwardsPointExpression::scalar_mult(builder, &generator, &self.e);
         let gs_ye = EdwardsPointExpression::add(builder, &gs, &ye);
 
-        
-
+        // let hash_check = Hash(gs_ye || M);
+        let hash_check = e;
+        builder.assert_equal(hash_check, e);
     }
 }
 
