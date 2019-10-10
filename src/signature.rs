@@ -41,7 +41,7 @@ impl<F: Field, C: EdwardsCurve<F>> SignatureExpression<F, C> for SchnorrSignatur
             C::subgroup_generator().0, C::subgroup_generator().1
         );
         let gs = EdwardsPointExpression::scalar_mult(builder, &generator, &self.s);
-        let ye = EdwardsPointExpression::scalar_mult(builder, &generator, &self.e);
+        let ye = EdwardsPointExpression::scalar_mult(builder, &self.public_key, &self.e);
         let gs_ye = EdwardsPointExpression::add(builder, &gs, &ye);
 
         // let hash_check = Hash(gs_ye || M);
