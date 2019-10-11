@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use crate::{Bls12_381, EdwardsCurve, Element};
 
-/// Families of embedded curves, defined over
-/// the same base field as the constraint system.
+// Families of embedded curves, defined over
+// the same base field as the constraint system.
 
 pub struct JubJub {}
 
