@@ -1,9 +1,6 @@
-use std::borrow::Borrow;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
 use std::str::FromStr;
-use crate::{Element, Field};
-use crate::{Bn128, Bls12_381};
-use crate::{EdwardsCurve, Curve};
+
+use crate::{Bls12_381, EdwardsCurve, Element};
 
 /// Families of embedded curves, defined over
 /// the same base field as the constraint system.
@@ -30,7 +27,7 @@ impl EdwardsCurve<Bls12_381> for JubJub {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        (x ,y)
+        (x, y)
     }
 }
 

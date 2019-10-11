@@ -1,11 +1,6 @@
-use std::borrow::Borrow;
-use std::fmt::Formatter;
 use std::marker::PhantomData;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
-use std::str::FromStr;
 
-use crate::{Expression, GadgetBuilder, BooleanExpression};
-use crate::field::{Element, Field};
+use crate::{BooleanExpression, Element, Expression, Field, GadgetBuilder};
 
 pub trait Curve<F: Field> {}
 
@@ -64,7 +59,6 @@ pub struct ProjWeierstrassPointExpression<F: Field> {
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
-
     /// Returns the Y coordinate of an Edwards Point Expression
     pub fn compressed(&self) -> &Expression<F> {
         &self.y
@@ -81,8 +75,8 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         let d = C::d();
         let a = C::a();
         // TODO: better method for specifying variables
-        let EdwardsPointExpression { x: x1, y: y1, phantom } = point_1;
-        let EdwardsPointExpression { x: x2, y: y2, phantom } = point_2;
+        let EdwardsPointExpression { x: x1, y: y1, phantom: _ } = point_1;
+        let EdwardsPointExpression { x: x2, y: y2, phantom: _ } = point_2;
         let x1y2 = builder.product(&x1, &y2);
         let x2y1 = builder.product(&y1, &x2);
         let x1x2 = builder.product(&x1, &x2);
@@ -105,7 +99,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         builder: &mut GadgetBuilder<F>,
         point: &EdwardsPointExpression<F, C>,
     ) -> EdwardsPointExpression<F, C> {
-        let EdwardsPointExpression { x, y, phantom } = point;
+        let EdwardsPointExpression { x, y, phantom: _ } = point;
         let a = C::a();
 
         let xy = builder.product(&x, &y);
@@ -124,7 +118,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     pub fn scalar_mult(
         builder: &mut GadgetBuilder<F>,
         point: &EdwardsPointExpression<F, C>,
-        scalar: &Expression<F>
+        scalar: &Expression<F>,
     ) -> EdwardsPointExpression<F, C> {
         let scalar_binary = builder.split_allowing_ambiguity(&scalar);
 
@@ -184,20 +178,14 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
 
 #[cfg(test)]
 mod tests {
-    use std::iter;
     use std::str::FromStr;
 
-    use itertools::assert_equal;
-    use num::BigUint;
-
-    use crate::curve::{EdwardsCurve};
-    use crate::field::{Bls12_381, Bn128, Element, Field};
     use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues};
-    use crate::embedded_curve::{JubJub};
+    use crate::embedded_curve::JubJub;
+    use crate::field::{Bls12_381, Element};
 
     #[test]
     fn point_on_curve() {
-
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
@@ -218,7 +206,6 @@ mod tests {
 
     #[test]
     fn point_not_on_curve_with_expressions() {
-
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
@@ -262,7 +249,7 @@ mod tests {
 
         let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
 
-        let p2= EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions_unsafe(-p1.x.clone(), p1.y.clone());
+        let p2 = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions_unsafe(-p1.x.clone(), p1.y.clone());
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
         let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::add(&mut builder, &p1, &p2);
