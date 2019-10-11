@@ -33,12 +33,11 @@ pub struct SchnorrSignatureExpression<F: Field> {
 
 impl<F: Field, C: EdwardsCurve<F>, CF> SignatureExpression<F, C, CF> for SchnorrSignatureExpression<F> {
 
-    /// signature.verify(builder, message, public_key, compression_function)
-    ///
     /// Generates constraints to verify that a Schnorr signature for a message is valid,
     /// given a public key and a secure compression function.
     ///
     /// Requires a preimage-resistant hash function for full security.
+    ///
     /// A naive implementation that has not been optimized or audited.
     // TODO: optimize scalar multiplication for a fixed generator
     fn verify(
@@ -74,35 +73,10 @@ mod tests {
     use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues};
     use crate::CompressionFunction;
     use crate::signature::{SchnorrSignatureExpression, SignatureExpression};
-
-    struct JubJub {}
-
-    impl EdwardsCurve<Bls12_381> for JubJub {
-        fn a() -> Element<Bls12_381> {
-            -Element::one()
-        }
-
-        fn d() -> Element<Bls12_381> {
-            Element::from_str(
-                "19257038036680949359750312669786877991949435402254120286184196891950884077233"
-            ).unwrap()
-        }
-
-        fn subgroup_generator() -> (Element<Bls12_381>, Element<Bls12_381>) {
-            let x = Element::from_str(
-                "11076627216317271660298050606127911965867021807910416450833192264015104452986"
-            ).unwrap();
-            let y = Element::from_str(
-                "44412834903739585386157632289020980010620626017712148233229312325549216099227"
-            ).unwrap();
-
-            (x ,y)
-        }
-    }
+    use crate::embedded_curve::{JubJub};
 
     #[test]
     fn check_verify() {
-
         // Generate signature
         let generator = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(
             JubJub::subgroup_generator().0, JubJub::subgroup_generator().1
