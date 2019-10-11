@@ -30,3 +30,18 @@ impl EdwardsCurve<Bls12_381> for JubJub {
         (x, y)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::iter;
+    use std::str::FromStr;
+
+    use itertools::assert_equal;
+
+    use crate::field::{Bn128, Bls12_381, Element};
+
+    #[test]
+    fn subgroup_check() {
+        //TODO: verify that generator is valid and generates a subgroup of prime order with appropriate cofactor
+    }
+}
