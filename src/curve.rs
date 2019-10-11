@@ -28,6 +28,16 @@ pub struct EdwardsPointExpression<F: Field, C: EdwardsCurve<F>> {
     phantom: PhantomData<*const C>,
 }
 
+impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPointExpression<F, C> {
+    fn clone(&self) -> Self {
+        EdwardsPointExpression {
+            x: self.x.clone(),
+            y: self.y.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
+
 /// An embedded Montgomery curve point defined over the same base field
 /// as the field used in the constraint system, with affine coordinates as
 /// expressions.
@@ -119,11 +129,11 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         let scalar_binary = builder.split_allowing_ambiguity(&scalar);
 
         let mut sum = Self::identity();
-        let mut current = point;
+        let mut current = point.clone();
         for bit in scalar_binary.bits {
-            let boolean_product= &Self::boolean_mult(builder, current, &bit);
-            sum = Self::add(builder, &sum,boolean_product);
-            let current = &Self::double(builder, current);
+            let boolean_product = &Self::boolean_mult(builder, &current, &bit);
+            sum = Self::add(builder, &sum, boolean_product);
+            current = Self::double(builder, &current);
         }
         sum
     }
