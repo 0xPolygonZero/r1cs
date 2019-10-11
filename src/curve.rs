@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{BooleanExpression, Element, Expression, Field, GadgetBuilder};
+use crate::{BooleanExpression, Element, Expression, Field, GadgetBuilder, WireValues};
 
 pub trait Curve<F: Field> {}
 
@@ -33,6 +33,26 @@ impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPointExpression<F, C> {
     }
 }
 
+/// An embedded Edwards curve point defined over the same base field as
+/// the constraint system, with affine coordinates as elements.
+pub struct EdwardsPoint<F: Field, C: EdwardsCurve<F>> {
+    x: Element<F>,
+    y: Element<F>,
+    phantom: PhantomData<*const C>,
+}
+
+impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPoint<F, C> {
+    fn clone(&self) -> Self {
+        EdwardsPoint {
+            x: self.x.clone(),
+            y: self.y.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
+
+
+
 /// An embedded Montgomery curve point defined over the same base field
 /// as the field used in the constraint system, with affine coordinates as
 /// expressions.
@@ -58,8 +78,38 @@ pub struct ProjWeierstrassPointExpression<F: Field> {
     z: Expression<F>,
 }
 
+impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
+    /// Like `scalar_mult`, but actually evaluates the compression function rather than just adding it
+    /// to a `GadgetBuilder`.
+    pub fn scalar_mult_evaluate(&self, scalar: &Element<F>) -> EdwardsPoint<F, C> {
+        let mut builder = GadgetBuilder::new();
+        let new_point = EdwardsPointExpression::scalar_mult(
+            &mut builder,
+            &EdwardsPointExpression::from_edwards_point(self.clone()),
+            &Expression::from(scalar),
+        );
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        new_point.evaluate(&values)
+    }
+
+    /// Given an `x` and `y` coordinate, checks that they constitute a point on the curve
+    /// and returns an `EdwardsPoint`
+    pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPoint<F, C> {
+        assert!(C::a() * &x * &x + &y * &y == Element::one() + C::d() * &x * &x * &y * &y,
+                "Point must be contained on the curve.");
+        EdwardsPoint{x, y, phantom: PhantomData }
+    }
+
+    /// Returns the Y coordinate of an `EdwardsPoint`
+    pub fn compressed(&self) -> &Element<F> {
+        &self.y
+    }
+}
+
+
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
-    /// Returns the Y coordinate of an Edwards Point Expression
+    /// Returns the Y coordinate of an `EdwardsPointExpression`
     pub fn compressed(&self) -> &Expression<F> {
         &self.y
     }
@@ -152,9 +202,14 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     /// Takes two elements as coordinates, checks that they're on the curve without adding
     /// constraints, and then returns an EdwardsPointExpression
     pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPointExpression<F, C> {
-        assert!(C::a() * &x * &x + &y * &y == Element::one() + C::d() * &x * &x * &y * &y,
-                "Point must be contained on the curve.");
-        EdwardsPointExpression::from_expressions_unsafe(Expression::from(x), Expression::from(y))
+        let p = EdwardsPoint::<F,C>::from_elements(x, y);
+        EdwardsPointExpression::from_expressions_unsafe(Expression::from(p.x), Expression::from(p.y))
+    }
+
+    /// Converts an EdwardsPoint into an EdwardsPointExpression. Assumes that the coordinates
+    /// of the EdwardsPoint have already been verified on the curve
+    pub fn from_edwards_point(p: EdwardsPoint<F, C>) -> EdwardsPointExpression<F, C> {
+        EdwardsPointExpression::from_expressions_unsafe(Expression::from(p.x), Expression::from(p.y))
     }
 
     /// Takes two expressions as coordinates, adds constraints verifying that the coordinates
@@ -173,6 +228,13 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     /// EdwardsPointExpression
     pub fn from_expressions_unsafe(x: Expression<F>, y: Expression<F>) -> EdwardsPointExpression<F, C> {
         EdwardsPointExpression { x, y, phantom: PhantomData }
+    }
+
+    /// Evaluates the EdwardsPointExpression by evaluating the expression in each coordinate
+    pub fn evaluate(&self, values: &WireValues<F>) -> EdwardsPoint<F, C> {
+        let x = self.x.evaluate(values);
+        let y = self.y.evaluate(values);
+        EdwardsPoint::from_elements(x, y)
     }
 }
 

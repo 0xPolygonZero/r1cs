@@ -53,7 +53,7 @@ impl<F: Field, C: EdwardsCurve<F>, CF> SignatureExpression<F, C, CF> for Schnorr
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues};
+    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues, EdwardsPoint};
     use crate::CompressionFunction;
     use crate::curve::EdwardsCurve;
     use crate::embedded_curve::JubJub;
@@ -63,53 +63,42 @@ mod tests {
     #[test]
     fn verify() {
         // Generate signature
-        let generator = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(
+        let generator = EdwardsPoint::<Bls12_381, JubJub>::from_elements(
             JubJub::subgroup_generator().0, JubJub::subgroup_generator().1,
         );
 
-        let private_key = Expression::<Bls12_381>::from(Element::from_str(
-            "4372820819045374670962167435360035096875258"
-        ).unwrap());
+        let private_key = Element::from_str("4372820819045374670962167435360035096875258").unwrap();
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
-        let public_key = EdwardsPointExpression::<Bls12_381, JubJub>::scalar_mult(
-            &mut builder, &generator, &private_key,
-        );
+        let public_key = generator.scalar_mult_evaluate(&private_key);
 
-        let nonce = Expression::<Bls12_381>::from(Element::from_str(
-            "5434290453746709621674353600312312"
-        ).unwrap());
+        let nonce = Element::from_str("5434290453746709621674353600312312").unwrap();
 
-        let r = EdwardsPointExpression::<Bls12_381, JubJub>::scalar_mult(
-            &mut builder, &generator, &nonce,
-        );
+        let r = generator.scalar_mult_evaluate(&nonce);
 
         let compress = TestCompress {};
 
-        let message = Expression::<Bls12_381>::from(Element::from_str(
-            "12345"
-        ).unwrap());
+        let message = Element::from_str("12345").unwrap();
 
-        let e = compress.compress(&mut builder, &r.compressed(), &message);
+        let e = compress.compress_evaluate(&r.compressed(), &message);
+
+        let s = &nonce - &private_key * &e;
+
+        let signature = SchnorrSignatureExpression { s: Expression::from(s), e: Expression::from(e) };
+
+        let mut builder = GadgetBuilder::<Bls12_381>::new();
+
+        signature.verify(
+            &mut builder,
+            &Expression::from(message),
+            &EdwardsPointExpression::from_edwards_point(public_key),
+            &compress
+        );
 
         let gadget = builder.build();
         let mut values = WireValues::new();
         gadget.execute(&mut values);
-
-        let s = Expression::<Bls12_381>::from(
-            nonce.evaluate(&values) - private_key.evaluate(&values) * e.evaluate(&values)
-        );
-
-        let signature = SchnorrSignatureExpression { s, e };
-
-        let mut sig_builder = GadgetBuilder::<Bls12_381>::new();
-
-        signature.verify(&mut sig_builder, &message, &public_key, &compress);
-
-        let sig_gadget = sig_builder.build();
-        let mut sig_values = WireValues::new();
-        sig_gadget.execute(&mut sig_values);
     }
 
     // A dummy compression function which returns 2x + y.
