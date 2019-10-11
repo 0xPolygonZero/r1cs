@@ -202,7 +202,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     /// constraints, and then returns an EdwardsPointExpression
     pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPointExpression<F, C> {
         let p = EdwardsPoint::<F, C>::from_elements(x, y);
-        EdwardsPointExpression::from_expressions_unsafe(Expression::from(p.x), Expression::from(p.y))
+        EdwardsPointExpression::from_edwards_point(p)
     }
 
     /// Converts an EdwardsPoint into an EdwardsPointExpression. Assumes that the coordinates
