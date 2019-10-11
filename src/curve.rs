@@ -186,7 +186,7 @@ mod tests {
     use crate::embedded_curve::{JubJub};
 
     #[test]
-    fn check_point_on_curve() {
+    fn point_on_curve() {
 
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn check_point_not_on_curve_with_expressions() {
+    fn point_not_on_curve_with_expressions() {
 
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn check_point_not_on_curve() {
+    fn point_not_on_curve() {
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452985"
         ).unwrap();
@@ -242,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn check_add_and_negate() {
+    fn add_and_negate() {
         let x1 = Element::<Bls12_381>::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
@@ -264,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn check_scalar_mult() {
+    fn scalar_mult() {
         let x1 = Element::<Bls12_381>::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();

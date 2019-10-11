@@ -76,7 +76,7 @@ mod tests {
     use crate::embedded_curve::{JubJub};
 
     #[test]
-    fn check_verify() {
+    fn verify() {
         // Generate signature
         let generator = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(
             JubJub::subgroup_generator().0, JubJub::subgroup_generator().1
