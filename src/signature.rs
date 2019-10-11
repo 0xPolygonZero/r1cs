@@ -1,4 +1,3 @@
-
 use crate::{CompressionFunction, EdwardsCurve, EdwardsPointExpression, Expression, Field, GadgetBuilder};
 
 pub trait SignatureExpression<F: Field, C: EdwardsCurve<F>, CF> {
@@ -93,7 +92,7 @@ mod tests {
             &mut builder,
             &Expression::from(message),
             &EdwardsPointExpression::from_edwards_point(public_key),
-            &compress
+            &compress,
         );
 
         let gadget = builder.build();

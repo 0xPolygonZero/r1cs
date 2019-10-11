@@ -52,7 +52,6 @@ impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPoint<F, C> {
 }
 
 
-
 /// An embedded Montgomery curve point defined over the same base field
 /// as the field used in the constraint system, with affine coordinates as
 /// expressions.
@@ -98,7 +97,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
     pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPoint<F, C> {
         assert!(C::a() * &x * &x + &y * &y == Element::one() + C::d() * &x * &x * &y * &y,
                 "Point must be contained on the curve.");
-        EdwardsPoint{x, y, phantom: PhantomData }
+        EdwardsPoint { x, y, phantom: PhantomData }
     }
 
     /// Returns the Y coordinate of an `EdwardsPoint`
@@ -202,7 +201,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     /// Takes two elements as coordinates, checks that they're on the curve without adding
     /// constraints, and then returns an EdwardsPointExpression
     pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPointExpression<F, C> {
-        let p = EdwardsPoint::<F,C>::from_elements(x, y);
+        let p = EdwardsPoint::<F, C>::from_elements(x, y);
         EdwardsPointExpression::from_expressions_unsafe(Expression::from(p.x), Expression::from(p.y))
     }
 
