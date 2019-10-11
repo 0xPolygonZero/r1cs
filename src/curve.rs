@@ -4,10 +4,6 @@ use std::marker::PhantomData;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
 use std::str::FromStr;
 
-use num::bigint::ParseBigIntError;
-use num::BigUint;
-use num::pow;
-
 use crate::{Expression, GadgetBuilder, BooleanExpression};
 use crate::field::{Element, Field};
 

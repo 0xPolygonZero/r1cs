@@ -1,9 +1,6 @@
-use num::BigUint;
 use std::borrow::Borrow;
-use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Shl, Sub, SubAssign};
 use std::str::FromStr;
-use num::bigint::ParseBigIntError;
 use crate::{Element, Field};
 use crate::{Bn128, Bls12_381};
 use crate::{EdwardsCurve, Curve};
