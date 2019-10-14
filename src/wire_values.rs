@@ -74,6 +74,10 @@ impl<F: Field> Clone for WireValues<F> {
     }
 }
 
+pub trait Evaluable<F: Field, R> {
+    fn evaluate(&self, wire_values: &WireValues<F>) -> R;
+}
+
 /// Creates an instance of `WireValues` from the given wires and field element values.
 #[macro_export]
 macro_rules! values {

@@ -1,4 +1,4 @@
-use crate::{CompressionFunction, EdwardsCurve, EdwardsPointExpression, Expression, Field, GadgetBuilder};
+use crate::{CompressionFunction, Expression, Field, GadgetBuilder};
 
 pub trait SignatureExpression<F: Field, C: EdwardsCurve<F>, CF> {
     fn verify(
@@ -52,10 +52,8 @@ impl<F: Field, C: EdwardsCurve<F>, CF> SignatureExpression<F, C, CF> for Schnorr
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues, EdwardsPoint};
+    use crate::{Expression, GadgetBuilder, WireValues};
     use crate::CompressionFunction;
-    use crate::curve::EdwardsCurve;
-    use crate::embedded_curve::JubJub;
     use crate::field::{Bls12_381, Element, Field};
     use crate::signature::{SchnorrSignatureExpression, SignatureExpression};
 

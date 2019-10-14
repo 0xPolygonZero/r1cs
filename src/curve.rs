@@ -1,80 +1,79 @@
 use std::marker::PhantomData;
 
-use crate::{BooleanExpression, Element, Expression, Field, GadgetBuilder, WireValues};
-
-pub trait Curve<F: Field> {}
-
-pub trait CurvePoint<F: Field, C: Curve<F>> {}
+use crate::{BooleanExpression, Element, Expression, Field, GadgetBuilder, WireValues, Evaluable};
 
 /// An embedded twisted Edwards curve defined over the same base field
 /// as the field used in the constraint system
-pub trait EdwardsCurve<F: Field> {
-    fn a() -> Element<F>;
-    fn d() -> Element<F>;
-    fn subgroup_generator() -> (Element<F>, Element<F>);
+pub struct TwistedEdwardsCurve<F: Field> {
+    a: Element<F>,
+    d: Element<F>,
 }
 
-/// An embedded Edwards curve point defined over the same base field
-/// as the field used in the constraint system, with affine coordinates as
-/// expressions.
-pub struct EdwardsPointExpression<F: Field, C: EdwardsCurve<F>> {
-    x: Expression<F>,
-    y: Expression<F>,
-    phantom: PhantomData<*const C>,
-}
-
-impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPointExpression<F, C> {
-    fn clone(&self) -> Self {
-        EdwardsPointExpression {
-            x: self.x.clone(),
-            y: self.y.clone(),
-            phantom: PhantomData,
-        }
-    }
-}
-
-/// An embedded Edwards curve point defined over the same base field as
-/// the constraint system, with affine coordinates as elements.
-pub struct EdwardsPoint<F: Field, C: EdwardsCurve<F>> {
+pub struct AffineCurvePoint<F: Field> {
     x: Element<F>,
     y: Element<F>,
-    phantom: PhantomData<*const C>,
 }
 
-impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPoint<F, C> {
-    fn clone(&self) -> Self {
-        EdwardsPoint {
-            x: self.x.clone(),
-            y: self.y.clone(),
-            phantom: PhantomData,
+pub struct AffineCurveExpression<F: Field> {
+    x: Expression<F>,
+    y: Expression<F>,
+}
+
+impl<F: Field> Evaluable<F, AffineCurvePoint<F>> for AffineCurveExpression<F> {
+    fn evaluate(&self, wire_values: &WireValues<F>) -> AffineCurvePoint<F> {
+        AffineCurvePoint {
+            x: self.x.evaluate(wire_values),
+            y: self.y.evaluate(wire_values),
         }
     }
 }
 
-
-/// An embedded Montgomery curve point defined over the same base field
-/// as the field used in the constraint system, with affine coordinates as
-/// expressions.
-pub struct MontgomeryPointExpression<F: Field> {
-    x: Expression<F>,
-    y: Expression<F>,
+impl<F: Field> From<&AffineCurvePoint<F>> for AffineCurveExpression<F> {
+    fn from(point: &AffineCurvePoint<F>) -> AffineCurveExpression<F> {
+        AffineCurveExpression {
+            x: Expression::from(&point.x),
+            y: Expression::from(&point.y),
+        }
+    }
 }
 
-/// An embedded Weierstrass curve point defined over the same base field
-/// as the field used in the constraint system, with affine coordinates as
-/// expressions.
-pub struct WeierstrassPointExpression<F: Field> {
-    x: Expression<F>,
-    y: Expression<F>,
+pub struct ProjectiveCurvePoint<F: Field> {
+    x: Element<F>,
+    y: Element<F>,
+    z: Element<F>,
 }
 
-/// An embedded Weierstrass curve point defined over the same base field
-/// as the field used in the constraint system, with projective coordinates
-/// as expressions.
-pub struct ProjWeierstrassPointExpression<F: Field> {
+pub struct ProjectiveCurveExpression<F: Field> {
     x: Expression<F>,
     y: Expression<F>,
     z: Expression<F>,
+}
+
+impl<F: Field> Group<F> for TwistedEdwardsCurve<F> {
+    type GroupElement = AffineCurvePoint<F>;
+    type GroupExpression = AffineCurveExpression<F>;
+
+    fn add_expressions(
+        &self,
+        builder: &mut GadgetBuilder<F>,
+        a: &Self::GroupExpression,
+        b: &Self::GroupExpression,
+    ) -> Self::GroupExpression {
+        let AffineCurveExpression { x: x1, y: y1 } = a;
+        let AffineCurveExpression { x: x2, y: y2 } = b;
+        let x1y2 = builder.product(&x1, &y2);
+        let x2y1 = builder.product(&y1, &x2);
+        let x1x2 = builder.product(&x1, &x2);
+        let x1x2y1y2 = builder.product(&x1y2, &x2y1);
+        let y1y2 = builder.product(&y1, &y2);
+        let x3 = builder.quotient(
+            &(x1y2 + x2y1),
+            &(&x1x2y1y2 * &self.d + Expression::one()));
+        let y3 = builder.quotient(
+            &(y1y2 - &x1x2 * &self.a),
+            &(&x1x2y1y2 * -&self.d + Expression::one()));
+        AffineCurveExpression { x: x3, y: y3 }
+    }
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
@@ -161,26 +160,6 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         EdwardsPointExpression::from_expressions_unsafe(x_2, y_2)
     }
 
-    /// Multiplies an `EdwardsPointExpression` by a scalar using a naive approach consisting of
-    /// multiplication by doubling.
-    // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
-    pub fn scalar_mult(
-        builder: &mut GadgetBuilder<F>,
-        point: &EdwardsPointExpression<F, C>,
-        scalar: &Expression<F>,
-    ) -> EdwardsPointExpression<F, C> {
-        let scalar_binary = builder.split_allowing_ambiguity(&scalar);
-
-        let mut sum = Self::identity();
-        let mut current = point.clone();
-        for bit in scalar_binary.bits {
-            let boolean_product = &Self::boolean_mult(builder, &current, &bit);
-            sum = Self::add(builder, &sum, boolean_product);
-            current = Self::double(builder, &current);
-        }
-        sum
-    }
-
     /// Given a boolean element, return the given element if element is on, otherwise
     /// return the identity.
     fn boolean_mult(
@@ -241,8 +220,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues};
-    use crate::embedded_curve::JubJub;
+    use crate::{Expression, GadgetBuilder, WireValues};
     use crate::field::{Bls12_381, Element};
 
     #[test]

@@ -62,6 +62,7 @@ mod field_arithmetic;
 mod gadget;
 mod gadget_builder;
 mod gadget_traits;
+mod group;
 mod lcg;
 mod matrices;
 mod merkle_damgard;
