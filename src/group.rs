@@ -7,10 +7,10 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
     type GroupElement;
     type GroupExpression;
 
-    fn identity_element() -> Self::GroupElement;
+    fn identity() -> Self::GroupElement;
 
     fn identity_expression() -> Self::GroupExpression {
-        Self::GroupExpression::from(&Self::identity_element())
+        Self::GroupExpression::from(&Self::identity())
     }
 
     fn add_expressions(
@@ -36,55 +36,20 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
     fn double_expression(
         builder: &mut GadgetBuilder<F>,
         expression: &Self::GroupExpression,
-    ) -> Self::GroupExpression {
-        Self::add_expressions(builder, expression, expression)
-    }
+    ) -> Self::GroupExpression;
 
     fn double_element(element: &Self::GroupElement) -> Self::GroupElement {
-        Self::add_elements(element, element)
+        let exp = Self::GroupExpression::from(element);
+
+        let mut builder = GadgetBuilder::new();
+
+        let doubled = Self::double_expression(&mut builder, exp);
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        doubled.evaluate(&values)
     }
 }
 
 pub trait CyclicGroup<F: Field>: Group<F> {
     fn generator() -> Self::GroupElement;
-}
-
-pub trait KnownOrderGroup<F: Field>: Group<F> {
-    fn order() -> BigUint;
-}
-
-pub trait PrimeOrderGroup<F: Field>: CyclicGroup<F> {}
-
-pub struct CyclicSubgroup<F: Field, G: Group<F>, Gen: GroupGenerator<G::GroupElement>> {
-    phantom_f: PhantomData<*const F>,
-    phantom_g: PhantomData<*const G>,
-    phantom_gen: PhantomData<*const Gen>,
-}
-
-pub trait GroupGenerator<E> {
-    fn generator() -> E;
-}
-
-impl<F: Field, G: Group<F>, Gen: GroupGenerator<G::GroupElement>> Group<F> for CyclicSubgroup<F, G, Gen> {
-    type GroupElement = G::GroupElement;
-    type GroupExpression = G::GroupExpression;
-
-    fn identity_element() -> Self::GroupElement {
-        G::identity_element()
-    }
-
-    fn add_expressions(
-        builder: &mut GadgetBuilder<F>,
-        lhs: &Self::GroupExpression,
-        rhs: &Self::GroupExpression,
-    ) -> Self::GroupExpression {
-        G::add_expressions(builder, lhs, rhs)
-    }
-}
-
-impl<F: Field, G: Group<F>, Gen: GroupGenerator<G::GroupElement>>
-CyclicGroup<F> for CyclicSubgroup<F, G, Gen> {
-    fn generator() -> Self::GroupElement {
-        Gen::generator()
-    }
 }
