@@ -116,6 +116,7 @@ impl<F: Field> GadgetBuilder<F> {
             // We're asserting x <[=] y. We don't need x's canonical encoding, because the
             // non-canonical encoding would give x_bin > |F| and thus x_bin > y_bin, rendering the
             // instance unsatisfiable.
+            // TODO: This only holds for assertions, not evaluations.
             (self.split_allowing_ambiguity(x), self.split(y))
         } else {
             // Similarly, here we're asserting y <[=] x, so we don't need y's canonical encoding.

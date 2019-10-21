@@ -14,7 +14,6 @@ impl<F: Field> GadgetBuilder<F> {
     ///
     /// Note that this gadget returns 0 if the index is out of range. If you want to prohibit
     /// out-of-range indices, you can do so with a separate call to `assert_lt`.
-    // TODO: We can do this more efficiently with a binary MUX structure.
     pub fn random_access(
         &mut self,
         items: &[Expression<F>],
