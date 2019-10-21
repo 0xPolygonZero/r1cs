@@ -102,6 +102,27 @@ impl<F: Field> GadgetBuilder<F> {
         self.product(x, &y_inv)
     }
 
+    /// Returns `x / y`, assuming `y` is non-zero. This is equivalent to `quotient` except that it
+    /// allows `0 / 0`. This method will panic if it encounters `0 / 0`, but a malicious prover
+    /// would be able to supply an arbitrary quotient.
+    ///
+    /// This method uses a single constraint, whereas `quotient` uses two, so this method may be
+    /// preferable in cases where `0 / 0` cannot possibly arise.
+    pub fn quotient_unsafe(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
+        let q = self.wire();
+        self.generator(
+            [x.dependencies(), y.dependencies()].concat(),
+            move |values: &mut WireValues<F>| {
+                let x_value = x.evaluate(values);
+                let y_value = y.evaluate(values);
+                assert!(y_value.is_nonzer(), "Division by zero");
+                let q_value = x_value / y_value;
+                values.set(q, q_value)
+            }
+        );
+        Expression::from(q)
+    }
+
     /// Returns `x mod y`, assuming `y` is non-zero. If `y` is zero, the gadget will not be
     /// satisfiable.
     pub fn modulus(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
