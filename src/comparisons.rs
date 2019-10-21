@@ -125,6 +125,8 @@ impl<F: Field> GadgetBuilder<F> {
         self.cmp_binary(&x_bin, &y_bin, less, strict)
     }
 
+    // TODO: Consider identifying the first differing chunk with a single field element rather than
+    // a bitmask. This will mean doing random access later.
     fn cmp_binary(
         &mut self,
         x_bits: &BinaryExpression<F>,
