@@ -110,12 +110,14 @@ impl<F: Field> GadgetBuilder<F> {
     /// preferable in cases where `0 / 0` cannot possibly arise.
     pub fn quotient_unsafe(&mut self, x: &Expression<F>, y: &Expression<F>) -> Expression<F> {
         let q = self.wire();
+        let x = x.clone();
+        let y = y.clone();
         self.generator(
             [x.dependencies(), y.dependencies()].concat(),
             move |values: &mut WireValues<F>| {
                 let x_value = x.evaluate(values);
                 let y_value = y.evaluate(values);
-                assert!(y_value.is_nonzer(), "Division by zero");
+                assert!(y_value.is_nonzero(), "Division by zero");
                 let q_value = x_value / y_value;
                 values.set(q, q_value)
             }
