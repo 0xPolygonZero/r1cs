@@ -2,7 +2,7 @@ use crate::{Field, GadgetBuilder, Evaluable, WireValues, BooleanExpression, Elem
 use std::marker::PhantomData;
 use num::BigUint;
 
-pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::GroupElement> + for<'b> From<Vec<&'b Expression<F>>>,
+pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::GroupElement>,
                                     Self::GroupExpression: Evaluable<F, Self::GroupElement>,
                                     Self::GroupExpression: GroupExpression<F>,
                                     Self::GroupExpression: Clone {
@@ -68,12 +68,16 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         expression: &Self::GroupExpression,
         boolean: &BooleanExpression<F>,
     ) -> Self::GroupExpression {
-        let coordinates = expression.to_coordinate_expression();
+        let coordinates = expression.to_component_expression();
 
-        let x = builder.selection(boolean, &coordinates[0], &Expression::zero());
-        let y = builder.selection(boolean, &coordinates[1], &Expression::one());
+        let mut r = Vec::new();
+        let ic = Self::identity_expression().to_component_expression();
 
-        Self::GroupExpression::from(vec![&x, &y])
+        for (i, x) in coordinates.iter().enumerate() {
+            r.push(builder.selection(boolean, &x, &ic[i]));
+        }
+
+        Self::GroupExpression::from_component_expression_unsafe(r)
     }
 
     fn scalar_mult_element(
@@ -93,7 +97,8 @@ pub trait CyclicGroup<F: Field>: Group<F> {
 
 /// Applies a (not necessarily injective) map, defined from a group to the field,
 /// to an expression corresponding to an element in the group.
-pub trait GroupExpression<F: Field> where Self: for<'b> From<Vec<&'b Expression<F>>> {
+pub trait GroupExpression<F: Field> where {
     fn compressed_expression(&self) -> &Expression<F>;
-    fn to_coordinate_expression(&self) -> Vec<&Expression<F>>;
+    fn to_component_expression(&self) -> Vec<Expression<F>>;
+    fn from_component_expression_unsafe(components: Vec<Expression<F>>) -> Self;
 }

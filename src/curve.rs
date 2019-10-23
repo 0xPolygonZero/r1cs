@@ -102,7 +102,11 @@ impl<F: Field, C: EdwardsCurve<F>> GroupExpression<F> for EdwardsExpression<F, C
     fn compressed_expression(&self) -> &Expression<F> {
         &self.y
     }
-    fn to_coordinate_expression(&self) -> Vec<&Expression<F>> { vec![&self.x, &self.y] }
+    fn to_component_expression(&self) -> Vec<Expression<F>> { vec![self.x.clone(), self.y.clone()] }
+    fn from_component_expression_unsafe(components: Vec<Expression<F>>) -> Self {
+        // TODO: enforce safety
+        Self::new_unsafe(components[0].clone(), components[1].clone())
+    }
 }
 
 impl<F: Field, C: EdwardsCurve<F>> From<&EdwardsPoint<F, C>> for EdwardsExpression<F, C> {
