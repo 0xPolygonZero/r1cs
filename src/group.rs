@@ -1,14 +1,15 @@
-use crate::{Field, GadgetBuilder, Evaluable, WireValues, BooleanExpression, Element, Expression};
-use std::marker::PhantomData;
-use num::BigUint;
-
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use std::marker::PhantomData;
+
+use num::BigUint;
+
+use crate::{BooleanExpression, Element, Evaluable, Expression, Field, GadgetBuilder, WireValues};
 
 pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::GroupElement>,
-                                    Self::GroupExpression: Evaluable<F, Self::GroupElement>,
-                                    Self::GroupExpression: GroupExpression<F>,
-                                    Self::GroupExpression: Clone {
+                                Self::GroupExpression: Evaluable<F, Self::GroupElement>,
+                                Self::GroupExpression: GroupExpression<F>,
+                                Self::GroupExpression: Clone {
     type GroupElement;
     type GroupExpression;
 
@@ -104,7 +105,6 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
 }
 
 pub trait CyclicGroup<F: Field>: Group<F> {
-
     fn generator_element() -> Self::GroupElement;
 
     fn generator_expression() -> Self::GroupExpression {
