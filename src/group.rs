@@ -74,10 +74,10 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         expression: &Self::GroupExpression,
         boolean: &BooleanExpression<F>,
     ) -> Self::GroupExpression {
-        let coordinates = expression.to_component_expression();
+        let coordinates = expression.to_components();
 
         let mut r = Vec::new();
-        let ic = Self::identity_expression().to_component_expression();
+        let ic = Self::identity_expression().to_components();
 
         for (i, x) in coordinates.iter().enumerate() {
             r.push(builder.selection(boolean, &x, &ic[i]));
@@ -117,7 +117,7 @@ pub trait CyclicGroup<F: Field>: Group<F> {
 /// Applies a (not necessarily injective) map, defined from a group to the field,
 /// to an expression corresponding to an element in the group.
 pub trait GroupExpression<F: Field> where {
-    fn compressed_expression(&self) -> &Expression<F>;
-    fn to_component_expression(&self) -> Vec<Expression<F>>;
+    fn compressed(&self) -> &Expression<F>;
+    fn to_components(&self) -> Vec<Expression<F>>;
     fn from_component_expression_unsafe(components: Vec<Expression<F>>) -> Self;
 }

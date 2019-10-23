@@ -54,7 +54,7 @@ impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C
         let gs_ye = C::add_expressions(builder, &gs, &ye);
 
         // TODO: verify that compressing the Edwards Curve point to the Y-coordinate is valid
-        let hash_check = compress.compress(builder, &gs_ye.compressed_expression(), &message);
+        let hash_check = compress.compress(builder, &gs_ye.compressed(), &message);
         builder.assert_equal(&hash_check, &signature.e);
     }
 }
