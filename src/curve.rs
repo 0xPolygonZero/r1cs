@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn scalar_mult() {
+    fn mul_scalar() {
         let x1 = Element::<Bls12_381>::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
@@ -327,7 +327,7 @@ mod tests {
             = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = JubJubPrimeSubgroup::scalar_mult_expression(
+        let p3 = JubJubPrimeSubgroup::mul_scalar_expression(
             &mut builder,
             &p1,
             &scalar,

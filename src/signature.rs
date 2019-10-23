@@ -43,11 +43,11 @@ impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C
         compress: &CF,
     ) where CF: CompressionFunction<F> {
         let generator = C::generator_expression();
-        let gs = C::scalar_mult_expression(
+        let gs = C::mul_scalar_expression(
             builder,
             &generator,
             &signature.s);
-        let ye = C::scalar_mult_expression(
+        let ye = C::mul_scalar_expression(
             builder,
             public_key,
             &signature.e);
@@ -80,12 +80,12 @@ mod tests {
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
         let public_key
-            = JubJubPrimeSubgroup::scalar_mult_element(&generator, &private_key);
+            = JubJubPrimeSubgroup::mul_scalar_element(&generator, &private_key);
 
         let nonce = Element::from_str("5434290453746709621674353600312312").unwrap();
 
         let r
-            = JubJubPrimeSubgroup::scalar_mult_element(&generator, &nonce);
+            = JubJubPrimeSubgroup::mul_scalar_element(&generator, &nonce);
 
         let compress = TestCompress {};
 

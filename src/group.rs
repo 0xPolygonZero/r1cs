@@ -53,7 +53,7 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
     /// Performs scalar multiplication in constraints by first splitting up a scalar into
     /// a binary representation, and then performing the naive double-or-add algorithm. This
     /// implementation is generic for all groups.
-    fn scalar_mult_expression(
+    fn mul_scalar_expression(
         builder: &mut GadgetBuilder<F>,
         expression: &Self::GroupExpression,
         scalar: &Expression<F>,
@@ -63,16 +63,33 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         let mut sum = Self::identity_expression();
         let mut current = expression.clone();
         for bit in scalar_binary.bits {
-            let boolean_product = Self::boolean_mult_expression(builder, &current, &bit);
+            let boolean_product = Self::mul_boolean_expression(builder, &current, &bit);
             sum = Self::add_expressions(builder, &sum, &boolean_product);
             current = Self::double_expression(builder, &current);
         }
         sum
     }
 
+    /// Like `mul_scalart`, but actually evaluates the compression function rather than just adding it
+    /// to a `GadgetBuilder`.
+    fn mul_scalar_element(
+        element: &Self::GroupElement,
+        scalar: &Element<F>,
+    ) -> Self::GroupElement {
+        let mut builder = GadgetBuilder::new();
+        let new_point = Self::mul_scalar_expression(
+            &mut builder,
+            &Self::GroupExpression::from(element),
+            &Expression::from(scalar),
+        );
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        new_point.evaluate(&values)
+    }
+
     /// Given a boolean element, return the given element if element is on, otherwise
     /// return the identity.
-    fn boolean_mult_expression(
+    fn mul_boolean_expression(
         builder: &mut GadgetBuilder<F>,
         expression: &Self::GroupExpression,
         boolean: &BooleanExpression<F>,
@@ -88,23 +105,6 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
 
         Self::GroupExpression::from_component_expression_unsafe(r)
     }
-
-    /// Like `scalar_mult`, but actually evaluates the compression function rather than just adding it
-    /// to a `GadgetBuilder`.
-    fn scalar_mult_element(
-        element: &Self::GroupElement,
-        scalar: &Element<F>,
-    ) -> Self::GroupElement {
-        let mut builder = GadgetBuilder::new();
-        let new_point = Self::scalar_mult_expression(
-            &mut builder,
-            &Self::GroupExpression::from(element),
-            &Expression::from(scalar),
-        );
-        let mut values = WireValues::new();
-        builder.build().execute(&mut values);
-        new_point.evaluate(&values)
-    }
 }
 
 /// A trait that defines a generator `g` for a cyclic group in which every element
@@ -119,7 +119,7 @@ pub trait CyclicGroup<F: Field>: Group<F> {
 
 /// Applies a (not necessarily injective) map, defined from a group to the field,
 /// to an expression corresponding to an element in the group.
-pub trait GroupExpression<F: Field> where {
+pub trait GroupExpression<F: Field> {
     fn compressed(&self) -> &Expression<F>;
     fn to_components(&self) -> Vec<Expression<F>>;
     fn from_component_expression_unsafe(components: Vec<Expression<F>>) -> Self;
