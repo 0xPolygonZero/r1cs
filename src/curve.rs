@@ -83,7 +83,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
     pub fn new(
         builder: &mut GadgetBuilder<F>,
         x: Expression<F>,
-        y: Expression<F>
+        y: Expression<F>,
     ) -> EdwardsExpression<F, C> {
         let x_squared = builder.product(&x, &x);
         let y_squared = builder.product(&y, &y);
@@ -93,7 +93,7 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
         EdwardsExpression::new_unsafe(x, y)
     }
 
-    pub fn new_unsafe(x: Expression<F>, y: Expression<F>) ->EdwardsExpression<F, C> {
+    pub fn new_unsafe(x: Expression<F>, y: Expression<F>) -> EdwardsExpression<F, C> {
         EdwardsExpression { x, y, phantom: PhantomData }
     }
 }
@@ -219,7 +219,7 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
     /// to a `GadgetBuilder`.
     fn scalar_mult_element(
         element: &Self::GroupElement,
-        scalar: &Element<F>
+        scalar: &Element<F>,
     ) -> Self::GroupElement {
         let mut builder = GadgetBuilder::new();
         let new_point = Self::scalar_mult_expression(
