@@ -1,9 +1,10 @@
-use crate::{Field, GadgetBuilder, Evaluable, WireValues};
+use crate::{Field, GadgetBuilder, Evaluable, WireValues, BooleanExpression, Element, Expression};
 use std::marker::PhantomData;
 use num::BigUint;
 
 pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::GroupElement>,
-                                Self::GroupExpression: Evaluable<F, Self::GroupElement> {
+                                Self::GroupExpression: Evaluable<F, Self::GroupElement>,
+                                Self::GroupExpression: Compressible<F> {
     type GroupElement;
     type GroupExpression;
 
@@ -43,48 +44,32 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
     fn double_element(element: &Self::GroupElement) -> Self::GroupElement {
         Self::add_elements(element, element)
     }
+
+    fn scalar_mult_expression(
+        builder: &mut GadgetBuilder<F>,
+        expression: &Self::GroupExpression,
+        scalar: &Expression<F>,
+    ) -> Self::GroupExpression;
+
+    fn boolean_mult_expression(
+        builder: &mut GadgetBuilder<F>,
+        expression: &Self::GroupExpression,
+        boolean: &BooleanExpression<F>,
+    ) -> Self::GroupExpression;
+
+    fn scalar_mult_element(
+        element: &Self::GroupElement,
+        scalar: &Element<F>
+    ) -> Self::GroupElement;
 }
 
 pub trait CyclicGroup<F: Field>: Group<F> {
-    fn generator() -> Self::GroupElement;
+    fn generator_element() -> Self::GroupElement;
+    fn generator_expression() -> Self::GroupExpression;
 }
 
-pub trait KnownOrderGroup<F: Field>: Group<F> {
-    fn order() -> BigUint;
-}
-
-pub trait PrimeOrderGroup<F: Field>: CyclicGroup<F> {}
-
-pub struct CyclicSubgroup<F: Field, G: Group<F>, Gen: GroupGenerator<G::GroupElement>> {
-    phantom_f: PhantomData<*const F>,
-    phantom_g: PhantomData<*const G>,
-    phantom_gen: PhantomData<*const Gen>,
-}
-
-pub trait GroupGenerator<E> {
-    fn generator() -> E;
-}
-
-impl<F: Field, G: Group<F>, Gen: GroupGenerator<G::GroupElement>> Group<F> for CyclicSubgroup<F, G, Gen> {
-    type GroupElement = G::GroupElement;
-    type GroupExpression = G::GroupExpression;
-
-    fn identity_element() -> Self::GroupElement {
-        G::identity_element()
-    }
-
-    fn add_expressions(
-        builder: &mut GadgetBuilder<F>,
-        lhs: &Self::GroupExpression,
-        rhs: &Self::GroupExpression,
-    ) -> Self::GroupExpression {
-        G::add_expressions(builder, lhs, rhs)
-    }
-}
-
-impl<F: Field, G: Group<F>, Gen: GroupGenerator<G::GroupElement>>
-CyclicGroup<F> for CyclicSubgroup<F, G, Gen> {
-    fn generator() -> Self::GroupElement {
-        Gen::generator()
-    }
+/// Applies a (not necessarily injective) map defined from a group to the field
+/// to an expression corresponding to an element in the group.
+pub trait Compressible<F: Field> {
+    fn compressed_expression(&self) -> &Expression<F>;
 }

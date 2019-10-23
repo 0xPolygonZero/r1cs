@@ -22,7 +22,6 @@ extern crate alloc;
 pub use num;
 
 pub use constraint::*;
-pub use curve::*;
 pub use curves::*;
 pub use davies_meyer::*;
 pub use embedded_curve::*;
@@ -56,7 +55,6 @@ mod bitwise_operations;
 mod boolean_algebra;
 mod comparisons;
 mod constraint;
-mod curve;
 mod curves;
 mod davies_meyer;
 mod embedded_curve;

@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
-use crate::{Bls12_381, EdwardsCurve, Element};
+use crate::{Bls12_381, EdwardsCurve, Element, Curve};
 
 // Families of embedded curves, defined over
 // the same base field as the constraint system.
 
 pub struct JubJub {}
+
+impl Curve<Bls12_381> for JubJub {}
 
 impl EdwardsCurve<Bls12_381> for JubJub {
     fn a() -> Element<Bls12_381> {
@@ -18,6 +20,7 @@ impl EdwardsCurve<Bls12_381> for JubJub {
         ).unwrap()
     }
 
+    /*
     // TODO: determine whether this is the correct generator for the JubJub prime order subgroup
     fn subgroup_generator() -> (Element<Bls12_381>, Element<Bls12_381>) {
         let x = Element::from_str(
@@ -29,6 +32,7 @@ impl EdwardsCurve<Bls12_381> for JubJub {
 
         (x, y)
     }
+    */
 }
 
 #[cfg(test)]

@@ -1,13 +1,16 @@
-use crate::{CompressionFunction, EdwardsCurve, EdwardsPointExpression, Expression, Field, GadgetBuilder};
+use crate::{CompressionFunction, CyclicGroup, Expression, Field, GadgetBuilder};
 
-pub trait SignatureExpression<F: Field, C: EdwardsCurve<F>, CF> {
+pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF> {
     fn verify(
-        &self,
         builder: &mut GadgetBuilder<F>,
+        signature: &SignatureExpression<F>,
         message: &Expression<F>,
-        public_key: &EdwardsPointExpression<F, C>,
+        public_key: &C::GroupExpression,
         compress: &CF,
     ) where CF: CompressionFunction<F>;
+}
+
+pub struct Schnorr {
 }
 
 /// Struct to represent a Schnorr Signature.
@@ -15,12 +18,12 @@ pub trait SignatureExpression<F: Field, C: EdwardsCurve<F>, CF> {
 /// Assumes that the message has already been hashed to a field element
 /// Signature is a tuple consisting of scalars (s, e), where r_v = sg + ey
 /// Public key is a group element, y = xg for private key x
-pub struct SchnorrSignatureExpression<F: Field> {
+pub struct SignatureExpression<F: Field> {
     pub s: Expression<F>,
     pub e: Expression<F>,
 }
 
-impl<F: Field, C: EdwardsCurve<F>, CF> SignatureExpression<F, C, CF> for SchnorrSignatureExpression<F> {
+impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr {
     /// Generates constraints to verify that a Schnorr signature for a message is valid,
     /// given a public key and a secure compression function.
     ///
@@ -29,32 +32,37 @@ impl<F: Field, C: EdwardsCurve<F>, CF> SignatureExpression<F, C, CF> for Schnorr
     /// A naive implementation that has not been optimized or audited.
     // TODO: optimize scalar multiplication for a fixed generator
     fn verify(
-        &self,
         builder: &mut GadgetBuilder<F>,
+        signature: &SignatureExpression<F>,
         message: &Expression<F>,
-        public_key: &EdwardsPointExpression<F, C>,
+        public_key: &C::GroupExpression,
         compress: &CF,
     ) where CF: CompressionFunction<F> {
-        let generator = EdwardsPointExpression::from_elements(
-            C::subgroup_generator().0, C::subgroup_generator().1,
-        );
-        let gs = EdwardsPointExpression::scalar_mult(builder, &generator, &self.s);
-        let ye = EdwardsPointExpression::scalar_mult(builder, public_key, &self.e);
-        let gs_ye = EdwardsPointExpression::add(builder, &gs, &ye);
+        let generator = C::generator_expression();
+        let gs = C::scalar_mult_expression(
+            builder,
+            &generator,
+            &signature.s);
+        let ye = C::scalar_mult_expression(
+            builder,
+            public_key,
+            &signature.e);
+        let gs_ye = C::add_expressions(builder, &gs, &ye);
 
         // TODO: verify that compressing the Edwards Curve point to the Y-coordinate is valid
-        let hash_check = compress.compress(builder, gs_ye.compressed(), &message);
-        builder.assert_equal(&hash_check, &self.e);
+        let hash_check = compress.compress(builder, &gs_ye.compressed_expression(), &message);
+        builder.assert_equal(&hash_check, &signature.e);
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
     use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues, EdwardsPoint};
     use crate::CompressionFunction;
-    use crate::curve::EdwardsCurve;
+    use crate::curves::EdwardsCurve;
     use crate::embedded_curve::JubJub;
     use crate::field::{Bls12_381, Element, Field};
     use crate::signature::{SchnorrSignatureExpression, SignatureExpression};
@@ -110,3 +118,4 @@ mod tests {
         }
     }
 }
+*/
