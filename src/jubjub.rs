@@ -1,5 +1,7 @@
 use crate::{Curve, EdwardsCurve, Element, Bls12_381, EdwardsPoint, Group, CyclicGroup, EdwardsExpression};
 
+use std::str::FromStr;
+
 pub struct JubJub {}
 
 impl Curve<Bls12_381> for JubJub {}
@@ -18,18 +20,18 @@ impl EdwardsCurve<Bls12_381> for JubJub {
 
 impl CyclicGroup<Bls12_381> for JubJub {
     fn generator_element() -> EdwardsPoint<Bls12_381, JubJub> {
-        let x = Element::from(
+        let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
         let y = Element::from_str(
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        (x, y)
+        EdwardsPoint::new(x, y)
     }
 
     fn generator_expression() -> EdwardsExpression<Bls12_381, JubJub> {
-
+        EdwardsExpression::from(&Self::generator_element())
     }
 }
 
