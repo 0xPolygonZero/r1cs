@@ -50,6 +50,9 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         Self::add_elements(element, element)
     }
 
+    /// Performs scalar multiplication in constraints by first splitting up a scalar into
+    /// a binary representation, and then performing the naive double-or-add algorithm. This
+    /// implementation is generic for all groups.
     fn scalar_mult_expression(
         builder: &mut GadgetBuilder<F>,
         expression: &Self::GroupExpression,
