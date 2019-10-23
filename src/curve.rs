@@ -1,5 +1,8 @@
 use std::marker::PhantomData;
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use crate::{Element, Evaluable, GroupExpression, Expression, Field, GadgetBuilder, Group, WireValues, BooleanExpression};
 
 pub trait Curve<F: Field> {}

@@ -2,6 +2,9 @@ use crate::{Field, GadgetBuilder, Evaluable, WireValues, BooleanExpression, Elem
 use std::marker::PhantomData;
 use num::BigUint;
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::GroupElement>,
                                     Self::GroupExpression: Evaluable<F, Self::GroupElement>,
                                     Self::GroupExpression: GroupExpression<F>,
