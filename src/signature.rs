@@ -110,6 +110,8 @@ mod tests {
         let gadget = builder.build();
         let mut values = WireValues::new();
         gadget.execute(&mut values);
+
+        //TODO: include test vectors
     }
 
     // A dummy compression function which returns 2x + y.

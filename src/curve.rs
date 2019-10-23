@@ -121,6 +121,13 @@ impl<F: Field, C: EdwardsCurve<F>> From<&EdwardsPoint<F, C>> for EdwardsExpressi
     }
 }
 
+impl<F: Field, C: EdwardsCurve<F>> From<(Element<F>, Element<F>)> for EdwardsExpression<F, C> {
+    fn from(coordinates: (Element<F>, Element<F>)) -> Self {
+        let point = EdwardsPoint::new(coordinates.0, coordinates.1);
+        EdwardsExpression::from(&point)
+    }
+}
+
 impl<F: Field, C: EdwardsCurve<F>> From<Vec<&Expression<F>>> for EdwardsExpression<F, C> {
     fn from(coordinates: Vec<&Expression<F>>) -> Self {
         EdwardsExpression::new_unsafe(coordinates[0].clone(), coordinates[1].clone())
@@ -199,14 +206,12 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
     // TODO: optimize for fixed-base multiplication using windowing, given a constant expression
 }
 
-/*
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsExpression, Expression, GadgetBuilder, WireValues};
-    use crate::embedded_curve::JubJub;
+    use crate::{EdwardsExpression, Expression, GadgetBuilder, WireValues, Group};
+    use crate::jubjub::JubJubPrimeSubgroup;
     use crate::field::{Bls12_381, Element};
 
     #[test]
@@ -222,7 +227,7 @@ mod tests {
         let y_exp = Expression::from(y);
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions(
+        let p = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new(
             &mut builder, x_exp, y_exp);
 
         let gadget = builder.build();
@@ -242,8 +247,12 @@ mod tests {
         let y_exp = Expression::from(y);
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions(
-            &mut builder, x_exp, y_exp);
+        let p
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new(
+            &mut builder,
+            x_exp,
+            y_exp
+        );
 
         let gadget = builder.build();
         assert!(!gadget.execute(&mut WireValues::new()));
@@ -260,7 +269,7 @@ mod tests {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x, y);
+        EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x, y));
     }
 
     #[test]
@@ -272,12 +281,14 @@ mod tests {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
+        let p1
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
 
-        let p2 = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions_unsafe(-p1.x.clone(), p1.y.clone());
+        let p2
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new_unsafe(-p1.x.clone(), p1.y.clone());
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::add(&mut builder, &p1, &p2);
+        let p3 = JubJubPrimeSubgroup::add_expressions(&mut builder, &p1, &p2);
         let gadget = builder.build();
         let mut values = WireValues::new();
         gadget.execute(&mut values);
@@ -300,10 +311,11 @@ mod tests {
             ).unwrap()
         );
 
-        let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
+        let p1
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::scalar_mult(
+        let p3 = JubJubPrimeSubgroup::scalar_mult_expression(
             &mut builder,
             &p1,
             &scalar,
@@ -315,4 +327,3 @@ mod tests {
         // TODO: include assertion
     }
 }
-*/
