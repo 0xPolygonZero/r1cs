@@ -167,6 +167,7 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
     /// Multiplies an `EdwardsPointExpression` by a scalar using a naive approach consisting of
     /// multiplication by doubling.
     // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
+    // TODO: optimize for fixed-base multiplication using windowing, given a constant expression
     fn scalar_mult_expression(
         builder: &mut GadgetBuilder<F>,
         expression: &Self::GroupExpression,
@@ -177,9 +178,9 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
         let mut sum = Self::identity_expression();
         let mut current = expression.clone();
         for bit in scalar_binary.bits {
-            let boolean_product = &Self::boolean_mult_expression(builder, current, &bit);
-            sum = Self::add_expressions(builder, &sum, boolean_product);
-            current = &Self::double_expression(builder, &current);
+            let boolean_product = Self::boolean_mult_expression(builder, current, &bit);
+            sum = Self::add_expressions(builder, &sum, &boolean_product);
+            current = Self::double_expression(builder, &current);
         }
         sum
     }

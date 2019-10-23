@@ -1,4 +1,4 @@
-use crate::{CompressionFunction, CyclicGroup, Expression, Field, GadgetBuilder};
+use crate::{CompressionFunction, Compressible, CyclicGroup, Expression, Field, GadgetBuilder};
 
 pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF> {
     fn verify(
