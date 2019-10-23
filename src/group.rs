@@ -63,6 +63,8 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         sum
     }
 
+    /// Given a boolean element, return the given element if element is on, otherwise
+    /// return the identity.
     fn boolean_mult_expression(
         builder: &mut GadgetBuilder<F>,
         expression: &Self::GroupExpression,
@@ -80,10 +82,22 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         Self::GroupExpression::from_component_expression_unsafe(r)
     }
 
+    /// Like `scalar_mult`, but actually evaluates the compression function rather than just adding it
+    /// to a `GadgetBuilder`.
     fn scalar_mult_element(
         element: &Self::GroupElement,
-        scalar: &Element<F>
-    ) -> Self::GroupElement;
+        scalar: &Element<F>,
+    ) -> Self::GroupElement {
+        let mut builder = GadgetBuilder::new();
+        let new_point = Self::scalar_mult_expression(
+            &mut builder,
+            &Self::GroupExpression::from(element),
+            &Expression::from(scalar),
+        );
+        let mut values = WireValues::new();
+        builder.build().execute(&mut values);
+        new_point.evaluate(&values)
+    }
 }
 
 pub trait CyclicGroup<F: Field>: Group<F> {

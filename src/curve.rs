@@ -193,55 +193,8 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
         EdwardsExpression::new_unsafe(x_2, y_2)
     }
 
-    /// Multiplies an `EdwardsPointExpression` by a scalar using a naive approach consisting of
-    /// multiplication by doubling.
     // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
     // TODO: optimize for fixed-base multiplication using windowing, given a constant expression
-    fn scalar_mult_expression(
-        builder: &mut GadgetBuilder<F>,
-        expression: &Self::GroupExpression,
-        scalar: &Expression<F>,
-    ) -> Self::GroupExpression {
-        let scalar_binary = builder.split_allowing_ambiguity(&scalar);
-
-        let mut sum = Self::identity_expression();
-        let mut current = expression.clone();
-        for bit in scalar_binary.bits {
-            let boolean_product = Self::boolean_mult_expression(builder, &current, &bit);
-            sum = Self::add_expressions(builder, &sum, &boolean_product);
-            current = Self::double_expression(builder, &current);
-        }
-        sum
-    }
-
-    /// Given a boolean element, return the given element if element is on, otherwise
-    /// return the identity.
-    fn boolean_mult_expression(
-        builder: &mut GadgetBuilder<F>,
-        expression: &Self::GroupExpression,
-        boolean: &BooleanExpression<F>,
-    ) -> Self::GroupExpression {
-        let x = builder.selection(boolean, &expression.x, &Expression::zero());
-        let y = builder.selection(boolean, &expression.y, &Expression::one());
-        Self::GroupExpression::new_unsafe(x, y)
-    }
-
-    /// Like `scalar_mult`, but actually evaluates the compression function rather than just adding it
-    /// to a `GadgetBuilder`.
-    fn scalar_mult_element(
-        element: &Self::GroupElement,
-        scalar: &Element<F>,
-    ) -> Self::GroupElement {
-        let mut builder = GadgetBuilder::new();
-        let new_point = Self::scalar_mult_expression(
-            &mut builder,
-            &EdwardsExpression::from(element),
-            &Expression::from(scalar),
-        );
-        let mut values = WireValues::new();
-        builder.build().execute(&mut values);
-        new_point.evaluate(&values)
-    }
 }
 
 /*
