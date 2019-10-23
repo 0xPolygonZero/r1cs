@@ -133,9 +133,11 @@ impl<F: Field, C: EdwardsCurve<F>> From<(Element<F>, Element<F>)> for EdwardsExp
     }
 }
 
-impl<F: Field, C: EdwardsCurve<F>> From<Vec<&Expression<F>>> for EdwardsExpression<F, C> {
-    fn from(coordinates: Vec<&Expression<F>>) -> Self {
-        EdwardsExpression::new_unsafe(coordinates[0].clone(), coordinates[1].clone())
+impl<F: Field, C: EdwardsCurve<F>> From<Vec<Expression<F>>> for EdwardsExpression<F, C> {
+    fn from(coordinates: Vec<Expression<F>>) -> Self {
+        let x = components.remove(0);
+        let y = components.remove(0);
+        Self::new_unsafe(x, y)
     }
 }
 
