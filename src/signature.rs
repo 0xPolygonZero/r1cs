@@ -1,4 +1,5 @@
 use crate::{CompressionFunction, GroupExpression, CyclicGroup, Expression, Field, GadgetBuilder};
+use std::marker::PhantomData;
 
 pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF> {
     fn verify(
@@ -10,7 +11,10 @@ pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF> {
     ) where CF: CompressionFunction<F>;
 }
 
-pub struct Schnorr {
+pub struct Schnorr<F: Field, C: CyclicGroup<F>, CF> {
+    phantom_f: PhantomData<*const F>,
+    phantom_c: PhantomData<*const C>,
+    phantom_cf: PhantomData<*const CF>,
 }
 
 /// Struct to represent a Schnorr Signature.
@@ -23,7 +27,7 @@ pub struct SignatureExpression<F: Field> {
     pub e: Expression<F>,
 }
 
-impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr {
+impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C, CF> {
     /// Generates constraints to verify that a Schnorr signature for a message is valid,
     /// given a public key and a secure compression function.
     ///
@@ -55,51 +59,51 @@ impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues, EdwardsPoint};
+    use crate::{EdwardsExpression, Expression, GadgetBuilder, WireValues, EdwardsPoint, CyclicGroup, Group};
     use crate::CompressionFunction;
-    use crate::curves::EdwardsCurve;
-    use crate::embedded_curve::JubJub;
+    use crate::curve::EdwardsCurve;
+    use crate::jubjub::JubJubPrimeSubgroup;
     use crate::field::{Bls12_381, Element, Field};
-    use crate::signature::{SchnorrSignatureExpression, SignatureExpression};
+    use crate::signature::{SignatureExpression, Schnorr, SignatureScheme};
 
     #[test]
     fn verify() {
         // Generate signature
-        let generator = EdwardsPoint::<Bls12_381, JubJub>::from_elements(
-            JubJub::subgroup_generator().0, JubJub::subgroup_generator().1,
-        );
+        let generator = JubJubPrimeSubgroup::generator_element();
 
         let private_key = Element::from_str("4372820819045374670962167435360035096875258").unwrap();
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
-        let public_key = generator.scalar_mult_evaluate(&private_key);
+        let public_key
+            = JubJubPrimeSubgroup::scalar_mult_element(&generator, &private_key);
 
         let nonce = Element::from_str("5434290453746709621674353600312312").unwrap();
 
-        let r = generator.scalar_mult_evaluate(&nonce);
+        let r
+            = JubJubPrimeSubgroup::scalar_mult_element(&generator, &nonce);
 
         let compress = TestCompress {};
 
         let message = Element::from_str("12345").unwrap();
 
-        let e = compress.compress_evaluate(&r.compressed(), &message);
+        let e = compress.compress_evaluate(&r.compressed_element(), &message);
 
         let s = &nonce - &private_key * &e;
 
-        let signature = SchnorrSignatureExpression { s: Expression::from(s), e: Expression::from(e) };
+        let signature = SignatureExpression { s: Expression::from(s), e: Expression::from(e) };
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
-        signature.verify(
+        Schnorr::<Bls12_381, JubJubPrimeSubgroup, TestCompress>::verify(
             &mut builder,
+            &signature,
             &Expression::from(message),
-            &EdwardsPointExpression::from_edwards_point(public_key),
+            &EdwardsExpression::from(&public_key),
             &compress,
         );
 
@@ -118,4 +122,3 @@ mod tests {
         }
     }
 }
-*/

@@ -71,6 +71,10 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
                 "Point must be contained on the curve.");
         EdwardsPoint { x, y, phantom: PhantomData }
     }
+
+    pub fn compressed_element(&self) -> &Element<F> {
+        &self.y
+    }
 }
 
 pub struct EdwardsExpression<F: Field, C: EdwardsCurve<F>> {
@@ -99,12 +103,10 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
 }
 
 impl<F: Field, C: EdwardsCurve<F>> GroupExpression<F> for EdwardsExpression<F, C> {
-    fn compressed_expression(&self) -> &Expression<F> {
-        &self.y
-    }
+    fn compressed_expression(&self) -> &Expression<F> { &self.y }
     fn to_component_expression(&self) -> Vec<Expression<F>> { vec![self.x.clone(), self.y.clone()] }
+
     fn from_component_expression_unsafe(components: Vec<Expression<F>>) -> Self {
-        // TODO: enforce safety
         Self::new_unsafe(components[0].clone(), components[1].clone())
     }
 }
