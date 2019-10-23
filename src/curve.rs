@@ -234,6 +234,7 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
 }
 
 /*
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
