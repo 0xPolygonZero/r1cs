@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Element, Evaluable, Compressible, Expression, Field, GadgetBuilder, Group, WireValues, BooleanExpression};
+use crate::{Element, Evaluable, GroupExpression, Expression, Field, GadgetBuilder, Group, WireValues, BooleanExpression};
 
 pub trait Curve<F: Field> {}
 
@@ -98,10 +98,11 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
     }
 }
 
-impl<F: Field, C: EdwardsCurve<F>> Compressible<F> for EdwardsExpression<F, C> {
+impl<F: Field, C: EdwardsCurve<F>> GroupExpression<F> for EdwardsExpression<F, C> {
     fn compressed_expression(&self) -> &Expression<F> {
         &self.y
     }
+    fn to_coordinate_expression(&self) -> Vec<&Expression<F>> { vec![&self.x, &self.y] }
 }
 
 impl<F: Field, C: EdwardsCurve<F>> From<&EdwardsPoint<F, C>> for EdwardsExpression<F, C> {
@@ -111,6 +112,12 @@ impl<F: Field, C: EdwardsCurve<F>> From<&EdwardsPoint<F, C>> for EdwardsExpressi
             y: Expression::from(&point.y),
             phantom: PhantomData,
         }
+    }
+}
+
+impl<F: Field, C: EdwardsCurve<F>> From<Vec<&Expression<F>>> for EdwardsExpression<F, C> {
+    fn from(coordinates: Vec<&Expression<F>>) -> Self {
+        EdwardsExpression::new_unsafe(coordinates[0].clone(), coordinates[1].clone())
     }
 }
 
