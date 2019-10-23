@@ -29,10 +29,6 @@ impl CyclicGroup<Bls12_381> for JubJub {
 
         EdwardsPoint::new(x, y)
     }
-
-    fn generator_expression() -> EdwardsExpression<Bls12_381, JubJub> {
-        EdwardsExpression::from(&Self::generator_element())
-    }
 }
 
 #[cfg(test)]

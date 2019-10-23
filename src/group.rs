@@ -64,11 +64,15 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
 }
 
 pub trait CyclicGroup<F: Field>: Group<F> {
+
     fn generator_element() -> Self::GroupElement;
-    fn generator_expression() -> Self::GroupExpression;
+
+    fn generator_expression() -> Self::GroupExpression {
+        Self::GroupExpression::from(Self::generator_element())
+    }
 }
 
-/// Applies a (not necessarily injective) map defined from a group to the field
+/// Applies a (not necessarily injective) map, defined from a group to the field,
 /// to an expression corresponding to an element in the group.
 pub trait Compressible<F: Field> {
     fn compressed_expression(&self) -> &Expression<F>;
