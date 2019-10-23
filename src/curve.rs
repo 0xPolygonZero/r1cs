@@ -27,6 +27,15 @@ impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPoint<F, C> {
     }
 }
 
+impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsExpression<F, C> {
+    fn clone(&self) -> Self {
+        EdwardsExpression {
+            x: self.x.clone(),
+            y: self.y.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
 
 /// An embedded Montgomery curve point defined over the same base field
 /// as the field used in the constraint system, with affine coordinates as
@@ -58,7 +67,8 @@ pub struct ProjWeierstrassExpression<F: Field, C: Curve<F>> {
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
     pub fn new(x: Element<F>, y: Element<F>) -> EdwardsPoint<F, C> {
-        // TODO: Membership check.
+        assert!(C::a() * &x * &x + &y * &y == Element::one() + C::d() * &x * &x * &y * &y,
+                "Point must be contained on the curve.");
         EdwardsPoint { x, y, phantom: PhantomData }
     }
 }
@@ -70,8 +80,16 @@ pub struct EdwardsExpression<F: Field, C: EdwardsCurve<F>> {
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
-    pub fn new(x: Expression<F>, y: Expression<F>) -> EdwardsExpression<F, C> {
-        // TODO: Add constraints to verify membership.
+    pub fn new(
+        builder: &mut GadgetBuilder<F>,
+        x: Expression<F>,
+        y: Expression<F>
+    ) -> EdwardsExpression<F, C> {
+        let x_squared = builder.product(&x, &x);
+        let y_squared = builder.product(&y, &y);
+        let x_squared_y_squared = builder.product(&x_squared, &y_squared);
+        builder.assert_equal(&(&x_squared * C::a() + &y_squared),
+                             &(&x_squared_y_squared * C::d() + Expression::one()));
         EdwardsExpression::new_unsafe(x, y)
     }
 
@@ -178,7 +196,7 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
         let mut sum = Self::identity_expression();
         let mut current = expression.clone();
         for bit in scalar_binary.bits {
-            let boolean_product = Self::boolean_mult_expression(builder, current, &bit);
+            let boolean_product = Self::boolean_mult_expression(builder, &current, &bit);
             sum = Self::add_expressions(builder, &sum, &boolean_product);
             current = Self::double_expression(builder, &current);
         }
