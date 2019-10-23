@@ -7,6 +7,8 @@ use crate::{Element, Evaluable, GroupExpression, Expression, Field, GadgetBuilde
 
 pub trait Curve<F: Field> {}
 
+/// Trait used to represent Edwards Curves and Twisted Edwards Curves. Note that the `a`
+/// parameter can be set to 1 to represent the less-general non-twisted Edwards Curves.
 pub trait EdwardsCurve<F: Field> {
     fn a() -> Element<F>;
     fn d() -> Element<F>;
@@ -87,6 +89,10 @@ pub struct EdwardsExpression<F: Field, C: EdwardsCurve<F>> {
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
+
+    /// Safely creates an `EdwardsExpression` from two coordinates of type `EdwardsExpression`.
+    /// Automatically generates constraints that assert that the resulting curve point
+    /// is contained in the EdwardsCurve.
     pub fn new(
         builder: &mut GadgetBuilder<F>,
         x: Expression<F>,
@@ -100,6 +106,9 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
         EdwardsExpression::new_unsafe(x, y)
     }
 
+    /// Creates an `EdwardsExpression` from two arbitrary coordinates of type `Expression`.
+    /// This method is unsafe and should only be used when the coordinates are proven
+    /// to exist on the curve.
     pub fn new_unsafe(x: Expression<F>, y: Expression<F>) -> EdwardsExpression<F, C> {
         EdwardsExpression { x, y, phantom: PhantomData }
     }
@@ -109,6 +118,8 @@ impl<F: Field, C: EdwardsCurve<F>> GroupExpression<F> for EdwardsExpression<F, C
     fn compressed(&self) -> &Expression<F> { &self.y }
     fn to_components(&self) -> Vec<Expression<F>> { vec![self.x.clone(), self.y.clone()] }
 
+    /// Given two group components of type `Expression`, creates an `EdwardsExpression`. Used
+    /// in the generic implementation of scalar multiplication for groups.
     fn from_component_expression_unsafe(mut components: Vec<Expression<F>>) -> Self {
         let x = components.remove(0);
         let y = components.remove(0);
@@ -154,6 +165,8 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
         EdwardsPoint::new(Element::zero(), Element::one())
     }
 
+    /// Adds two points on an `EdwardsCurve` using the standard algorithm for Twisted Edwards
+    /// Curves.
     // TODO: improve the constraint count by using an improved addition algorithm
     fn add_expressions(
         builder: &mut GadgetBuilder<F>,
