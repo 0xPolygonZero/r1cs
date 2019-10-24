@@ -192,8 +192,7 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
     // TODO: improve constraint count
     /// Naive implementation of the doubling algorithm for twisted Edwards curves.
     ///
-    /// Assuming that `EdwardsPointExpressions` are on the curve, so the non-deterministic
-    /// division method is acceptable, as the denominator is non-zero.
+    /// Assume that `EdwardsPointExpressions` are on the curve.
     ///
     /// Note that this algorithm requires the point to be of odd order, which, in the case
     /// of prime-order subgroups of Edwards curves, is satisfied.
