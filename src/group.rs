@@ -103,7 +103,7 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
             r.push(builder.selection(boolean, &x, &ic[i]));
         }
 
-        Self::GroupExpression::from_component_expression_unsafe(r)
+        Self::GroupExpression::from_components_unsafe(r)
     }
 }
 
@@ -122,5 +122,5 @@ pub trait CyclicGroup<F: Field>: Group<F> {
 pub trait GroupExpression<F: Field> {
     fn compressed(&self) -> &Expression<F>;
     fn to_components(&self) -> Vec<Expression<F>>;
-    fn from_component_expression_unsafe(components: Vec<Expression<F>>) -> Self;
+    fn from_components_unsafe(components: Vec<Expression<F>>) -> Self;
 }

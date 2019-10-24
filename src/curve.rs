@@ -120,7 +120,7 @@ impl<F: Field, C: EdwardsCurve<F>> GroupExpression<F> for EdwardsExpression<F, C
 
     /// Given two group components of type `Expression`, creates an `EdwardsExpression`. Used
     /// in the generic implementation of scalar multiplication for groups.
-    fn from_component_expression_unsafe(mut components: Vec<Expression<F>>) -> Self {
+    fn from_components_unsafe(mut components: Vec<Expression<F>>) -> Self {
         let x = components.remove(0);
         let y = components.remove(0);
         Self::new_unsafe(x, y)
