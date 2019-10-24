@@ -6,7 +6,7 @@ use alloc::collections::btree_map::BTreeMap;
 use num::BigUint;
 use num_traits::One;
 
-use crate::expression::BooleanExpression;
+use crate::expression::{BooleanExpression, Expression};
 use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 
@@ -72,6 +72,10 @@ impl<F: Field> Clone for WireValues<F> {
     fn clone(&self) -> Self {
         WireValues { values: self.values.clone() }
     }
+}
+
+pub trait Evaluable<F: Field, R> {
+    fn evaluate(&self, wire_values: &WireValues<F>) -> R;
 }
 
 /// Creates an instance of `WireValues` from the given wires and field element values.

@@ -1,36 +1,17 @@
 use std::marker::PhantomData;
 
-use crate::{BooleanExpression, Element, Expression, Field, GadgetBuilder, WireValues};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+use crate::{Element, Evaluable, GroupExpression, Expression, Field, GadgetBuilder, Group, WireValues, BooleanExpression};
 
 pub trait Curve<F: Field> {}
 
-pub trait CurvePoint<F: Field, C: Curve<F>> {}
-
-/// An embedded twisted Edwards curve defined over the same base field
-/// as the field used in the constraint system
+/// Trait used to represent Edwards Curves and Twisted Edwards Curves. Note that the `a`
+/// parameter can be set to 1 to represent the less-general non-twisted Edwards Curves.
 pub trait EdwardsCurve<F: Field> {
     fn a() -> Element<F>;
     fn d() -> Element<F>;
-    fn subgroup_generator() -> (Element<F>, Element<F>);
-}
-
-/// An embedded Edwards curve point defined over the same base field
-/// as the field used in the constraint system, with affine coordinates as
-/// expressions.
-pub struct EdwardsPointExpression<F: Field, C: EdwardsCurve<F>> {
-    x: Expression<F>,
-    y: Expression<F>,
-    phantom: PhantomData<*const C>,
-}
-
-impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPointExpression<F, C> {
-    fn clone(&self) -> Self {
-        EdwardsPointExpression {
-            x: self.x.clone(),
-            y: self.y.clone(),
-            phantom: PhantomData,
-        }
-    }
 }
 
 /// An embedded Edwards curve point defined over the same base field as
@@ -51,89 +32,161 @@ impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsPoint<F, C> {
     }
 }
 
+impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsExpression<F, C> {
+    fn clone(&self) -> Self {
+        EdwardsExpression {
+            x: self.x.clone(),
+            y: self.y.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
 
 /// An embedded Montgomery curve point defined over the same base field
 /// as the field used in the constraint system, with affine coordinates as
 /// expressions.
-pub struct MontgomeryPointExpression<F: Field> {
+pub struct MontgomeryExpression<F: Field, C: Curve<F>> {
     x: Expression<F>,
     y: Expression<F>,
+    phantom: PhantomData<*const C>,
 }
 
 /// An embedded Weierstrass curve point defined over the same base field
 /// as the field used in the constraint system, with affine coordinates as
 /// expressions.
-pub struct WeierstrassPointExpression<F: Field> {
+pub struct WeierstrassExpression<F: Field, C: Curve<F>> {
     x: Expression<F>,
     y: Expression<F>,
+    phantom: PhantomData<*const C>,
 }
 
 /// An embedded Weierstrass curve point defined over the same base field
 /// as the field used in the constraint system, with projective coordinates
 /// as expressions.
-pub struct ProjWeierstrassPointExpression<F: Field> {
+pub struct ProjWeierstrassExpression<F: Field, C: Curve<F>> {
     x: Expression<F>,
     y: Expression<F>,
     z: Expression<F>,
+    phantom: PhantomData<*const C>,
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
-    /// Like `scalar_mult`, but actually evaluates the compression function rather than just adding it
-    /// to a `GadgetBuilder`.
-    pub fn scalar_mult_evaluate(&self, scalar: &Element<F>) -> EdwardsPoint<F, C> {
-        let mut builder = GadgetBuilder::new();
-        let new_point = EdwardsPointExpression::scalar_mult(
-            &mut builder,
-            &EdwardsPointExpression::from_edwards_point(self.clone()),
-            &Expression::from(scalar),
-        );
-        let mut values = WireValues::new();
-        builder.build().execute(&mut values);
-        new_point.evaluate(&values)
-    }
-
-    /// Given an `x` and `y` coordinate, checks that they constitute a point on the curve
-    /// and returns an `EdwardsPoint`
-    pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPoint<F, C> {
+    pub fn new(x: Element<F>, y: Element<F>) -> EdwardsPoint<F, C> {
         assert!(C::a() * &x * &x + &y * &y == Element::one() + C::d() * &x * &x * &y * &y,
                 "Point must be contained on the curve.");
         EdwardsPoint { x, y, phantom: PhantomData }
     }
 
-    /// Returns the Y coordinate of an `EdwardsPoint`
-    pub fn compressed(&self) -> &Element<F> {
+    pub fn compressed_element(&self) -> &Element<F> {
         &self.y
     }
 }
 
+pub struct EdwardsExpression<F: Field, C: EdwardsCurve<F>> {
+    pub x: Expression<F>,
+    pub y: Expression<F>,
+    phantom: PhantomData<*const C>,
+}
 
-impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
-    /// Returns the Y coordinate of an `EdwardsPointExpression`
-    pub fn compressed(&self) -> &Expression<F> {
-        &self.y
+impl<F: Field, C: EdwardsCurve<F>> EdwardsExpression<F, C> {
+
+    /// Safely creates an `EdwardsExpression` from two coordinates of type `EdwardsExpression`.
+    /// Automatically generates constraints that assert that the resulting curve point
+    /// is contained in the EdwardsCurve.
+    pub fn new(
+        builder: &mut GadgetBuilder<F>,
+        x: Expression<F>,
+        y: Expression<F>,
+    ) -> EdwardsExpression<F, C> {
+        let x_squared = builder.product(&x, &x);
+        let y_squared = builder.product(&y, &y);
+        let x_squared_y_squared = builder.product(&x_squared, &y_squared);
+        builder.assert_equal(&(&x_squared * C::a() + &y_squared),
+                             &(&x_squared_y_squared * C::d() + Expression::one()));
+        EdwardsExpression::new_unsafe(x, y)
     }
 
-    /// Assumes that the `EdwardsPointExpressions` are known to be contained on the curve
-    /// (and omits a membership check), so the non-deterministic inversion method is valid.
+    /// Creates an `EdwardsExpression` from two arbitrary coordinates of type `Expression`.
+    /// This method is unsafe and should only be used when the coordinates are proven
+    /// to exist on the curve.
+    pub fn new_unsafe(x: Expression<F>, y: Expression<F>) -> EdwardsExpression<F, C> {
+        EdwardsExpression { x, y, phantom: PhantomData }
+    }
+}
+
+impl<F: Field, C: EdwardsCurve<F>> GroupExpression<F> for EdwardsExpression<F, C> {
+    fn compressed(&self) -> &Expression<F> { &self.y }
+    fn to_components(&self) -> Vec<Expression<F>> { vec![self.x.clone(), self.y.clone()] }
+
+    /// Given two group components of type `Expression`, creates an `EdwardsExpression`. Used
+    /// in the generic implementation of scalar multiplication for groups.
+    fn from_components_unsafe(mut components: Vec<Expression<F>>) -> Self {
+        let x = components.remove(0);
+        let y = components.remove(0);
+        Self::new_unsafe(x, y)
+    }
+}
+
+impl<F: Field, C: EdwardsCurve<F>> From<&EdwardsPoint<F, C>> for EdwardsExpression<F, C> {
+    fn from(point: &EdwardsPoint<F, C>) -> Self {
+        EdwardsExpression {
+            x: Expression::from(&point.x),
+            y: Expression::from(&point.y),
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<F: Field, C: EdwardsCurve<F>> From<(Element<F>, Element<F>)> for EdwardsExpression<F, C> {
+    fn from(coordinates: (Element<F>, Element<F>)) -> Self {
+        let point = EdwardsPoint::new(coordinates.0, coordinates.1);
+        EdwardsExpression::from(&point)
+    }
+}
+
+impl<F: Field, C: EdwardsCurve<F>> Evaluable<F, EdwardsPoint<F, C>> for EdwardsExpression<F, C> {
+    fn evaluate(
+        &self,
+        wire_values: &WireValues<F>,
+    ) -> EdwardsPoint<F, C> {
+        EdwardsPoint {
+            x: self.x.evaluate(wire_values),
+            y: self.y.evaluate(wire_values),
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
+    type GroupElement = EdwardsPoint<F, C>;
+    type GroupExpression = EdwardsExpression<F, C>;
+
+    fn identity_element() -> Self::GroupElement {
+        EdwardsPoint::new(Element::zero(), Element::one())
+    }
+
+    /// Adds two points on an `EdwardsCurve` using the standard algorithm for Twisted Edwards
+    /// Curves.
     // TODO: improve the constraint count by using an improved addition algorithm
-    pub fn add(
+    fn add_expressions(
         builder: &mut GadgetBuilder<F>,
-        point_1: &EdwardsPointExpression<F, C>,
-        point_2: &EdwardsPointExpression<F, C>,
-    ) -> EdwardsPointExpression<F, C> {
-        let d = C::d();
-        let a = C::a();
-        // TODO: better method for specifying variables
-        let EdwardsPointExpression { x: x1, y: y1, phantom: _ } = point_1;
-        let EdwardsPointExpression { x: x2, y: y2, phantom: _ } = point_2;
+        lhs: &Self::GroupExpression,
+        rhs: &Self::GroupExpression,
+    ) -> Self::GroupExpression {
+        let EdwardsExpression { x: x1, y: y1, phantom: _ } = lhs;
+        let EdwardsExpression { x: x2, y: y2, phantom: _ } = rhs;
         let x1y2 = builder.product(&x1, &y2);
         let x2y1 = builder.product(&y1, &x2);
         let x1x2 = builder.product(&x1, &x2);
         let x1x2y1y2 = builder.product(&x1y2, &x2y1);
         let y1y2 = builder.product(&y1, &y2);
-        let x3 = builder.quotient(&(x1y2 + x2y1), &(&x1x2y1y2 * &d + Expression::one()));
-        let y3 = builder.quotient(&(y1y2 - &x1x2 * &a), &(&x1x2y1y2 * -&d + Expression::one()));
-        EdwardsPointExpression::from_expressions_unsafe(x3, y3)
+        let x3 = builder.quotient(
+            &(x1y2 + x2y1),
+            &(&x1x2y1y2 * &C::d() + Expression::one()));
+        let y3 = builder.quotient(
+            &(y1y2 - &x1x2 * &C::a()),
+            &(&x1x2y1y2 * -&C::d() + Expression::one()));
+        EdwardsExpression::new_unsafe(x3, y3)
     }
 
     // TODO: improve constraint count
@@ -144,11 +197,11 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
     ///
     /// Note that this algorithm requires the point to be of odd order, which, in the case
     /// of prime-order subgroups of Edwards curves, is satisfied.
-    pub fn double(
+    fn double_expression(
         builder: &mut GadgetBuilder<F>,
-        point: &EdwardsPointExpression<F, C>,
-    ) -> EdwardsPointExpression<F, C> {
-        let EdwardsPointExpression { x, y, phantom: _ } = point;
+        point: &Self::GroupExpression,
+    ) -> Self::GroupExpression {
+        let EdwardsExpression { x, y, phantom: _ } = point;
         let a = C::a();
 
         let xy = builder.product(&x, &y);
@@ -158,91 +211,19 @@ impl<F: Field, C: EdwardsCurve<F>> EdwardsPointExpression<F, C> {
         let y_2 = builder.quotient(&(&yy - &xx * &a),
                                    &(-&xx * &a - &yy + Expression::from(2u8)));
 
-        EdwardsPointExpression::from_expressions_unsafe(x_2, y_2)
+        EdwardsExpression::new_unsafe(x_2, y_2)
     }
 
-    /// Multiplies an `EdwardsPointExpression` by a scalar using a naive approach consisting of
-    /// multiplication by doubling.
     // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
-    pub fn scalar_mult(
-        builder: &mut GadgetBuilder<F>,
-        point: &EdwardsPointExpression<F, C>,
-        scalar: &Expression<F>,
-    ) -> EdwardsPointExpression<F, C> {
-        let scalar_binary = builder.split_allowing_ambiguity(&scalar);
-
-        let mut sum = Self::identity();
-        let mut current = point.clone();
-        for bit in scalar_binary.bits {
-            let boolean_product = &Self::boolean_mult(builder, &current, &bit);
-            sum = Self::add(builder, &sum, boolean_product);
-            current = Self::double(builder, &current);
-        }
-        sum
-    }
-
-    /// Given a boolean element, return the given element if element is on, otherwise
-    /// return the identity.
-    fn boolean_mult(
-        builder: &mut GadgetBuilder<F>,
-        point: &EdwardsPointExpression<F, C>,
-        boolean: &BooleanExpression<F>,
-    ) -> EdwardsPointExpression<F, C> {
-        let x = builder.selection(boolean, &point.x, &Expression::zero());
-        let y = builder.selection(boolean, &point.y, &Expression::one());
-        EdwardsPointExpression::from_expressions_unsafe(x, y)
-    }
-
-    /// Identity element for twisted Edwards Curve
-    pub fn identity() -> EdwardsPointExpression<F, C> {
-        EdwardsPointExpression::from_expressions_unsafe(Expression::zero(), Expression::one())
-    }
-
-    /// Takes two elements as coordinates, checks that they're on the curve without adding
-    /// constraints, and then returns an EdwardsPointExpression
-    pub fn from_elements(x: Element<F>, y: Element<F>) -> EdwardsPointExpression<F, C> {
-        let p = EdwardsPoint::<F, C>::from_elements(x, y);
-        EdwardsPointExpression::from_edwards_point(p)
-    }
-
-    /// Converts an EdwardsPoint into an EdwardsPointExpression. Assumes that the coordinates
-    /// of the EdwardsPoint have already been verified on the curve
-    pub fn from_edwards_point(p: EdwardsPoint<F, C>) -> EdwardsPointExpression<F, C> {
-        EdwardsPointExpression::from_expressions_unsafe(Expression::from(p.x), Expression::from(p.y))
-    }
-
-    /// Takes two expressions as coordinates, adds constraints verifying that the coordinates
-    /// are contained on the specified curve, and then returns an EdwardsPointExpression
-    pub fn from_expressions(builder: &mut GadgetBuilder<F>, x: Expression<F>, y: Expression<F>) -> EdwardsPointExpression<F, C> {
-        let x_squared = builder.product(&x, &x);
-        let y_squared = builder.product(&y, &y);
-        let x_squared_y_squared = builder.product(&x_squared, &y_squared);
-        builder.assert_equal(&(&x_squared * C::a() + &y_squared),
-                             &(&x_squared_y_squared * C::d() + Expression::one()));
-        EdwardsPointExpression::from_expressions_unsafe(x, y)
-    }
-
-    /// Takes two expressions as coordinates, does not perform a check or add constraints
-    /// to check that the coordinates are on the specified curve, and then returns an
-    /// EdwardsPointExpression
-    pub fn from_expressions_unsafe(x: Expression<F>, y: Expression<F>) -> EdwardsPointExpression<F, C> {
-        EdwardsPointExpression { x, y, phantom: PhantomData }
-    }
-
-    /// Evaluates the EdwardsPointExpression by evaluating the expression in each coordinate
-    pub fn evaluate(&self, values: &WireValues<F>) -> EdwardsPoint<F, C> {
-        let x = self.x.evaluate(values);
-        let y = self.y.evaluate(values);
-        EdwardsPoint::from_elements(x, y)
-    }
+    // TODO: optimize for fixed-base multiplication using windowing, given a constant expression
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsPointExpression, Expression, GadgetBuilder, WireValues};
-    use crate::embedded_curve::JubJub;
+    use crate::{EdwardsExpression, Expression, GadgetBuilder, WireValues, Group};
+    use crate::jubjub::JubJubPrimeSubgroup;
     use crate::field::{Bls12_381, Element};
 
     #[test]
@@ -258,7 +239,7 @@ mod tests {
         let y_exp = Expression::from(y);
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions(
+        let p = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new(
             &mut builder, x_exp, y_exp);
 
         let gadget = builder.build();
@@ -278,8 +259,12 @@ mod tests {
         let y_exp = Expression::from(y);
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions(
-            &mut builder, x_exp, y_exp);
+        let p
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new(
+            &mut builder,
+            x_exp,
+            y_exp
+        );
 
         let gadget = builder.build();
         assert!(!gadget.execute(&mut WireValues::new()));
@@ -296,7 +281,7 @@ mod tests {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x, y);
+        EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x, y));
     }
 
     #[test]
@@ -308,12 +293,14 @@ mod tests {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
+        let p1
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
 
-        let p2 = EdwardsPointExpression::<Bls12_381, JubJub>::from_expressions_unsafe(-p1.x.clone(), p1.y.clone());
+        let p2
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new_unsafe(-p1.x.clone(), p1.y.clone());
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::add(&mut builder, &p1, &p2);
+        let p3 = JubJubPrimeSubgroup::add_expressions(&mut builder, &p1, &p2);
         let gadget = builder.build();
         let mut values = WireValues::new();
         gadget.execute(&mut values);
@@ -322,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn scalar_mult() {
+    fn mul_scalar() {
         let x1 = Element::<Bls12_381>::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
@@ -336,10 +323,11 @@ mod tests {
             ).unwrap()
         );
 
-        let p1 = EdwardsPointExpression::<Bls12_381, JubJub>::from_elements(x1, y1);
+        let p1
+            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = EdwardsPointExpression::<Bls12_381, JubJub>::scalar_mult(
+        let p3 = JubJubPrimeSubgroup::mul_scalar_expression(
             &mut builder,
             &p1,
             &scalar,
