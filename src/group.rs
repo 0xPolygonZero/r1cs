@@ -70,7 +70,7 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
         sum
     }
 
-    /// Like `mul_scalart`, but actually evaluates the compression function rather than just adding it
+    /// Like `mul_scalar_expression`, but actually evaluates the compression function rather than just adding it
     /// to a `GadgetBuilder`.
     fn mul_scalar_element(
         element: &Self::GroupElement,
