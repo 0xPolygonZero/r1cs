@@ -1,10 +1,8 @@
-use crate::{Curve, EdwardsCurve, Element, Bls12_381, EdwardsPoint, Group, CyclicGroup, EdwardsExpression};
-
 use std::str::FromStr;
 
-pub struct JubJubPrimeSubgroup {}
+use crate::{Bls12_381, CyclicGroup, EdwardsCurve, EdwardsExpression, EdwardsPoint, Element, Group};
 
-impl Curve<Bls12_381> for JubJubPrimeSubgroup {}
+pub struct JubJubPrimeSubgroup {}
 
 impl EdwardsCurve<Bls12_381> for JubJubPrimeSubgroup {
     fn a() -> Element<Bls12_381> {
@@ -38,7 +36,7 @@ mod tests {
 
     use itertools::assert_equal;
 
-    use crate::field::{Bn128, Bls12_381, Element};
+    use crate::field::{Bls12_381, Bn128, Element};
 
     #[test]
     fn subgroup_check() {
