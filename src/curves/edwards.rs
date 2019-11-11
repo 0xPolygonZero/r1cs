@@ -1,11 +1,8 @@
-use std::marker::PhantomData;
-
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use std::marker::PhantomData;
 
-use crate::{Element, Evaluable, GroupExpression, Expression, Field, GadgetBuilder, Group, WireValues, BooleanExpression};
-
-pub trait Curve<F: Field> {}
+use crate::{BooleanExpression, Element, Evaluable, Expression, Field, GadgetBuilder, Group, GroupExpression, WireValues};
 
 /// Trait used to represent Edwards Curves and Twisted Edwards Curves. Note that the `a`
 /// parameter can be set to 1 to represent the less-general non-twisted Edwards Curves.
@@ -17,8 +14,8 @@ pub trait EdwardsCurve<F: Field> {
 /// An embedded Edwards curve point defined over the same base field as
 /// the constraint system, with affine coordinates as elements.
 pub struct EdwardsPoint<F: Field, C: EdwardsCurve<F>> {
-    x: Element<F>,
-    y: Element<F>,
+    pub x: Element<F>,
+    pub y: Element<F>,
     phantom: PhantomData<*const C>,
 }
 
@@ -40,34 +37,6 @@ impl<F: Field, C: EdwardsCurve<F>> Clone for EdwardsExpression<F, C> {
             phantom: PhantomData,
         }
     }
-}
-
-/// An embedded Montgomery curve point defined over the same base field
-/// as the field used in the constraint system, with affine coordinates as
-/// expressions.
-pub struct MontgomeryExpression<F: Field, C: Curve<F>> {
-    x: Expression<F>,
-    y: Expression<F>,
-    phantom: PhantomData<*const C>,
-}
-
-/// An embedded Weierstrass curve point defined over the same base field
-/// as the field used in the constraint system, with affine coordinates as
-/// expressions.
-pub struct WeierstrassExpression<F: Field, C: Curve<F>> {
-    x: Expression<F>,
-    y: Expression<F>,
-    phantom: PhantomData<*const C>,
-}
-
-/// An embedded Weierstrass curve point defined over the same base field
-/// as the field used in the constraint system, with projective coordinates
-/// as expressions.
-pub struct ProjWeierstrassExpression<F: Field, C: Curve<F>> {
-    x: Expression<F>,
-    y: Expression<F>,
-    z: Expression<F>,
-    phantom: PhantomData<*const C>,
 }
 
 impl<F: Field, C: EdwardsCurve<F>> EdwardsPoint<F, C> {
@@ -167,7 +136,8 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
 
     /// Adds two points on an `EdwardsCurve` using the standard algorithm for Twisted Edwards
     /// Curves.
-    // TODO: improve the constraint count by using an improved addition algorithm
+    // TODO: Add special case for variable + constant addition.
+    // TODO: This uses 7 constraints, but we can get this down to 6, as described in the Zcash spec.
     fn add_expressions(
         builder: &mut GadgetBuilder<F>,
         lhs: &Self::GroupExpression,
@@ -221,9 +191,9 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsExpression, Expression, GadgetBuilder, WireValues, Group};
-    use crate::jubjub::JubJubPrimeSubgroup;
+    use crate::{EdwardsExpression, Expression, GadgetBuilder, Group, WireValues};
     use crate::field::{Bls12_381, Element};
+    use crate::JubJubPrimeSubgroup;
 
     #[test]
     fn point_on_curve() {

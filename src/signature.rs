@@ -1,5 +1,6 @@
-use crate::{CompressionFunction, GroupExpression, CyclicGroup, Expression, Field, GadgetBuilder};
 use std::marker::PhantomData;
+
+use crate::{CompressionFunction, CyclicGroup, Expression, Field, GadgetBuilder, GroupExpression};
 
 pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF> {
     fn verify(
@@ -63,12 +64,12 @@ impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsExpression, Expression, GadgetBuilder, WireValues, EdwardsPoint, CyclicGroup, Group};
+    use crate::{CyclicGroup, EdwardsExpression, EdwardsPoint, Expression, GadgetBuilder, Group, WireValues};
     use crate::CompressionFunction;
-    use crate::curve::EdwardsCurve;
-    use crate::jubjub::JubJubPrimeSubgroup;
+    use crate::EdwardsCurve;
     use crate::field::{Bls12_381, Element, Field};
-    use crate::signature::{SignatureExpression, Schnorr, SignatureScheme};
+    use crate::JubJubPrimeSubgroup;
+    use crate::signature::{Schnorr, SignatureExpression, SignatureScheme};
 
     #[test]
     fn verify() {
