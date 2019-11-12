@@ -37,17 +37,17 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for EdwardsGroup<F, C> {
     ) -> Self::GroupExpression {
         let a = C::a();
         let d = C::d();
-        let EdwardsExpression { x: x1, y: y1, phantom: _ } = lhs;
-        let EdwardsExpression { x: x2, y: y2, phantom: _ } = rhs;
+        let EdwardsExpression { x: x1, y: y1, .. } = lhs;
+        let EdwardsExpression { x: x2, y: y2, .. } = rhs;
         let x1y2 = builder.product(&x1, &y2);
         let x2y1 = builder.product(&y1, &x2);
         let x1x2 = builder.product(&x1, &x2);
         let x1x2y1y2 = builder.product(&x1y2, &x2y1);
         let y1y2 = builder.product(&y1, &y2);
-        let x3 = builder.quotient(
+        let x3 = builder.quotient_unsafe(
             &(x1y2 + x2y1),
             &(&x1x2y1y2 * &d + Expression::one()));
-        let y3 = builder.quotient(
+        let y3 = builder.quotient_unsafe(
             &(y1y2 - &x1x2 * &a),
             &(&x1x2y1y2 * -&d + Expression::one()));
         EdwardsExpression::new_unsafe(x3, y3)
@@ -56,22 +56,20 @@ impl<F: Field, C: EdwardsCurve<F>> Group<F> for EdwardsGroup<F, C> {
     // TODO: improve constraint count
     /// Naive implementation of the doubling algorithm for twisted Edwards curves.
     ///
-    /// Assume that `EdwardsPointExpressions` are on the curve.
-    ///
     /// Note that this algorithm requires the point to be of odd order, which, in the case
     /// of prime-order subgroups of Edwards curves, is satisfied.
     fn double_expression(
         builder: &mut GadgetBuilder<F>,
         point: &Self::GroupExpression,
     ) -> Self::GroupExpression {
-        let EdwardsExpression { x, y, phantom: _ } = point;
+        let EdwardsExpression { x, y, .. } = point;
         let a = C::a();
 
         let xy = builder.product(&x, &y);
         let xx = builder.product(&x, &x);
         let yy = builder.product(&y, &y);
-        let x_2 = builder.quotient(&(&xy * Element::from(2u8)), &(&xx * &a + &yy));
-        let y_2 = builder.quotient(&(&yy - &xx * &a),
+        let x_2 = builder.quotient_unsafe(&(&xy * Element::from(2u8)), &(&xx * &a + &yy));
+        let y_2 = builder.quotient_unsafe(&(&yy - &xx * &a),
                                    &(-&xx * &a - &yy + Expression::from(2u8)));
 
         EdwardsExpression::new_unsafe(x_2, y_2)
