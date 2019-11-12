@@ -109,11 +109,11 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
 
 /// A trait that defines a generator `g` for a cyclic group in which every element
 /// is defined as `g^a` for some scalar `a`.
-pub trait CyclicGroup<F: Field>: Group<F> {
-    fn generator_element() -> Self::GroupElement;
+pub trait CyclicGenerator<F: Field, G: Group<F>> {
+    fn generator_element() -> G::GroupElement;
 
-    fn generator_expression() -> Self::GroupExpression {
-        Self::GroupExpression::from(&Self::generator_element())
+    fn generator_expression() -> G::GroupExpression {
+        G::GroupExpression::from(&Self::generator_element())
     }
 }
 

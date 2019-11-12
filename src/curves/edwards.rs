@@ -11,6 +11,76 @@ pub trait EdwardsCurve<F: Field> {
     fn d() -> Element<F>;
 }
 
+pub struct EdwardsGroup<F: Field, C: EdwardsCurve<F>> {
+    phantom_f: PhantomData<*const F>,
+    phantom_c: PhantomData<*const C>,
+}
+
+
+impl<F: Field, C: EdwardsCurve<F>> Group<F> for EdwardsGroup<F, C> {
+
+    type GroupElement = EdwardsPoint<F, C>;
+    type GroupExpression = EdwardsExpression<F, C>;
+
+    fn identity_element() -> Self::GroupElement {
+        EdwardsPoint::new(Element::zero(), Element::one())
+    }
+
+    /// Adds two points on an `EdwardsCurve` using the standard algorithm for Twisted Edwards
+    /// Curves.
+    // TODO: Add special case for variable + constant addition.
+    // TODO: This uses 7 constraints, but we can get this down to 6, as described in the Zcash spec.
+    fn add_expressions(
+        builder: &mut GadgetBuilder<F>,
+        lhs: &Self::GroupExpression,
+        rhs: &Self::GroupExpression,
+    ) -> Self::GroupExpression {
+        let a = C::a();
+        let d = C::d();
+        let EdwardsExpression { x: x1, y: y1, phantom: _ } = lhs;
+        let EdwardsExpression { x: x2, y: y2, phantom: _ } = rhs;
+        let x1y2 = builder.product(&x1, &y2);
+        let x2y1 = builder.product(&y1, &x2);
+        let x1x2 = builder.product(&x1, &x2);
+        let x1x2y1y2 = builder.product(&x1y2, &x2y1);
+        let y1y2 = builder.product(&y1, &y2);
+        let x3 = builder.quotient(
+            &(x1y2 + x2y1),
+            &(&x1x2y1y2 * &d + Expression::one()));
+        let y3 = builder.quotient(
+            &(y1y2 - &x1x2 * &a),
+            &(&x1x2y1y2 * -&d + Expression::one()));
+        EdwardsExpression::new_unsafe(x3, y3)
+    }
+
+    // TODO: improve constraint count
+    /// Naive implementation of the doubling algorithm for twisted Edwards curves.
+    ///
+    /// Assume that `EdwardsPointExpressions` are on the curve.
+    ///
+    /// Note that this algorithm requires the point to be of odd order, which, in the case
+    /// of prime-order subgroups of Edwards curves, is satisfied.
+    fn double_expression(
+        builder: &mut GadgetBuilder<F>,
+        point: &Self::GroupExpression,
+    ) -> Self::GroupExpression {
+        let EdwardsExpression { x, y, phantom: _ } = point;
+        let a = C::a();
+
+        let xy = builder.product(&x, &y);
+        let xx = builder.product(&x, &x);
+        let yy = builder.product(&y, &y);
+        let x_2 = builder.quotient(&(&xy * Element::from(2u8)), &(&xx * &a + &yy));
+        let y_2 = builder.quotient(&(&yy - &xx * &a),
+                                   &(-&xx * &a - &yy + Expression::from(2u8)));
+
+        EdwardsExpression::new_unsafe(x_2, y_2)
+    }
+
+    // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
+    // TODO: optimize for fixed-base multiplication using windowing, given a constant expression
+}
+
 /// An embedded Edwards curve point defined over the same base field as
 /// the constraint system, with affine coordinates as elements.
 pub struct EdwardsPoint<F: Field, C: EdwardsCurve<F>> {
@@ -126,74 +196,13 @@ impl<F: Field, C: EdwardsCurve<F>> Evaluable<F, EdwardsPoint<F, C>> for EdwardsE
     }
 }
 
-impl<F: Field, C: EdwardsCurve<F>> Group<F> for C {
-    type GroupElement = EdwardsPoint<F, C>;
-    type GroupExpression = EdwardsExpression<F, C>;
-
-    fn identity_element() -> Self::GroupElement {
-        EdwardsPoint::new(Element::zero(), Element::one())
-    }
-
-    /// Adds two points on an `EdwardsCurve` using the standard algorithm for Twisted Edwards
-    /// Curves.
-    // TODO: Add special case for variable + constant addition.
-    // TODO: This uses 7 constraints, but we can get this down to 6, as described in the Zcash spec.
-    fn add_expressions(
-        builder: &mut GadgetBuilder<F>,
-        lhs: &Self::GroupExpression,
-        rhs: &Self::GroupExpression,
-    ) -> Self::GroupExpression {
-        let EdwardsExpression { x: x1, y: y1, phantom: _ } = lhs;
-        let EdwardsExpression { x: x2, y: y2, phantom: _ } = rhs;
-        let x1y2 = builder.product(&x1, &y2);
-        let x2y1 = builder.product(&y1, &x2);
-        let x1x2 = builder.product(&x1, &x2);
-        let x1x2y1y2 = builder.product(&x1y2, &x2y1);
-        let y1y2 = builder.product(&y1, &y2);
-        let x3 = builder.quotient(
-            &(x1y2 + x2y1),
-            &(&x1x2y1y2 * &C::d() + Expression::one()));
-        let y3 = builder.quotient(
-            &(y1y2 - &x1x2 * &C::a()),
-            &(&x1x2y1y2 * -&C::d() + Expression::one()));
-        EdwardsExpression::new_unsafe(x3, y3)
-    }
-
-    // TODO: improve constraint count
-    /// Naive implementation of the doubling algorithm for twisted Edwards curves.
-    ///
-    /// Assume that `EdwardsPointExpressions` are on the curve.
-    ///
-    /// Note that this algorithm requires the point to be of odd order, which, in the case
-    /// of prime-order subgroups of Edwards curves, is satisfied.
-    fn double_expression(
-        builder: &mut GadgetBuilder<F>,
-        point: &Self::GroupExpression,
-    ) -> Self::GroupExpression {
-        let EdwardsExpression { x, y, phantom: _ } = point;
-        let a = C::a();
-
-        let xy = builder.product(&x, &y);
-        let xx = builder.product(&x, &x);
-        let yy = builder.product(&y, &y);
-        let x_2 = builder.quotient(&(&xy * Element::from(2u8)), &(&xx * &a + &yy));
-        let y_2 = builder.quotient(&(&yy - &xx * &a),
-                                   &(-&xx * &a - &yy + Expression::from(2u8)));
-
-        EdwardsExpression::new_unsafe(x_2, y_2)
-    }
-
-    // TODO: implement Daira's algorithm from https://github.com/zcash/zcash/issues/3924
-    // TODO: optimize for fixed-base multiplication using windowing, given a constant expression
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use crate::{EdwardsExpression, Expression, GadgetBuilder, Group, WireValues};
+    use crate::{EdwardsExpression, Expression, GadgetBuilder, Group, WireValues, EdwardsGroup};
     use crate::field::{Bls12_381, Element};
-    use crate::JubJubPrimeSubgroup;
+    use crate::{JubJub, JubJubPrimeSubgroup};
 
     #[test]
     fn point_on_curve() {
@@ -208,7 +217,7 @@ mod tests {
         let y_exp = Expression::from(y);
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new(
+        let p = EdwardsExpression::<Bls12_381, JubJub>::new(
             &mut builder, x_exp, y_exp);
 
         let gadget = builder.build();
@@ -229,7 +238,7 @@ mod tests {
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
         let p
-            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new(
+            = EdwardsExpression::<Bls12_381, JubJub>::new(
             &mut builder,
             x_exp,
             y_exp
@@ -250,7 +259,7 @@ mod tests {
             "44412834903739585386157632289020980010620626017712148233229312325549216099227"
         ).unwrap();
 
-        EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x, y));
+        EdwardsExpression::<Bls12_381, JubJub>::from((x, y));
     }
 
     #[test]
@@ -263,13 +272,13 @@ mod tests {
         ).unwrap();
 
         let p1
-            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
+            = EdwardsExpression::<Bls12_381, JubJub>::from((x1, y1));
 
         let p2
-            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::new_unsafe(-p1.x.clone(), p1.y.clone());
+            = EdwardsExpression::<Bls12_381, JubJub>::new_unsafe(-p1.x.clone(), p1.y.clone());
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = JubJubPrimeSubgroup::add_expressions(&mut builder, &p1, &p2);
+        let p3 = EdwardsGroup::<Bls12_381, JubJub>::add_expressions(&mut builder, &p1, &p2);
         let gadget = builder.build();
         let mut values = WireValues::new();
         gadget.execute(&mut values);
@@ -293,10 +302,10 @@ mod tests {
         );
 
         let p1
-            = EdwardsExpression::<Bls12_381, JubJubPrimeSubgroup>::from((x1, y1));
+            = EdwardsExpression::<Bls12_381, JubJub>::from((x1, y1));
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
-        let p3 = JubJubPrimeSubgroup::mul_scalar_expression(
+        let p3 = EdwardsGroup::<Bls12_381, JubJub>::mul_scalar_expression(
             &mut builder,
             &p1,
             &scalar,

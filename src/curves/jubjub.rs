@@ -1,10 +1,13 @@
 use std::str::FromStr;
 
-use crate::{Bls12_381, CyclicGroup, EdwardsCurve, EdwardsExpression, EdwardsPoint, Element, Group};
+use crate::{Bls12_381, CyclicGenerator, EdwardsCurve, EdwardsGroup, EdwardsExpression, EdwardsPoint, Element, Group};
 
-pub struct JubJubPrimeSubgroup {}
+pub struct JubJub {}
 
-impl EdwardsCurve<Bls12_381> for JubJubPrimeSubgroup {
+impl JubJub {
+}
+
+impl EdwardsCurve<Bls12_381> for JubJub {
     fn a() -> Element<Bls12_381> {
         -Element::one()
     }
@@ -16,8 +19,10 @@ impl EdwardsCurve<Bls12_381> for JubJubPrimeSubgroup {
     }
 }
 
-impl CyclicGroup<Bls12_381> for JubJubPrimeSubgroup {
-    fn generator_element() -> EdwardsPoint<Bls12_381, JubJubPrimeSubgroup> {
+pub struct JubJubPrimeSubgroup {}
+
+impl CyclicGenerator<Bls12_381, EdwardsGroup<Bls12_381, JubJub>> for JubJubPrimeSubgroup {
+    fn generator_element() -> EdwardsPoint<Bls12_381, JubJub> {
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"
         ).unwrap();
