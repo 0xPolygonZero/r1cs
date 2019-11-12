@@ -202,7 +202,7 @@ mod tests {
 
     use crate::{EdwardsExpression, Expression, GadgetBuilder, Group, WireValues, EdwardsGroup};
     use crate::field::{Bls12_381, Element};
-    use crate::{JubJub, JubJubGenerator};
+    use crate::{JubJub};
 
     #[test]
     fn point_on_curve() {

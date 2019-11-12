@@ -1,20 +1,19 @@
 use std::marker::PhantomData;
 
-use crate::{CompressionFunction, CyclicGenerator, Expression, Field, GadgetBuilder, GroupExpression, Group};
+use crate::{CompressionFunction, Expression, Field, GadgetBuilder, GroupExpression, Group, CyclicGroup};
 
-pub trait SignatureScheme<F: Field, G: Group<F>, C: CyclicGenerator<F, G>, CF> {
+pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> {
     fn verify(
         builder: &mut GadgetBuilder<F>,
         signature: &SignatureExpression<F>,
         message: &Expression<F>,
-        public_key: &G::GroupExpression,
+        public_key: &C::GroupExpression,
         compress: &CF,
-    ) where CF: CompressionFunction<F>;
+    );
 }
 
-pub struct Schnorr<F: Field, G: Group<F>, C: CyclicGenerator<F, G>, CF>  {
+pub struct Schnorr<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> {
     phantom_f: PhantomData<*const F>,
-    phantom_g: PhantomData<*const G>,
     phantom_c: PhantomData<*const C>,
     phantom_cf: PhantomData<*const CF>,
 }
@@ -29,7 +28,7 @@ pub struct SignatureExpression<F: Field> {
     pub e: Expression<F>,
 }
 
-impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>, CF> SignatureScheme<F, G, C, CF> for Schnorr<F, G, C, CF> {
+impl<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> SignatureScheme<F, C, CF> for Schnorr<F, C, CF> {
     /// Generates constraints to verify that a Schnorr signature for a message is valid,
     /// given a public key and a secure compression function.
     ///
@@ -41,19 +40,19 @@ impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>, CF> SignatureScheme<F, G, 
         builder: &mut GadgetBuilder<F>,
         signature: &SignatureExpression<F>,
         message: &Expression<F>,
-        public_key: &G::GroupExpression,
+        public_key: &C::GroupExpression,
         compress: &CF,
-    ) where CF: CompressionFunction<F> {
+    ) {
         let generator = C::generator_expression();
-        let gs = G::mul_scalar_expression(
+        let gs = C::mul_scalar_expression(
             builder,
             &generator,
             &signature.s);
-        let ye = G::mul_scalar_expression(
+        let ye = C::mul_scalar_expression(
             builder,
             public_key,
             &signature.e);
-        let gs_ye = G::add_expressions(builder, &gs, &ye);
+        let gs_ye = C::add_expressions(builder, &gs, &ye);
 
         // TODO: verify that compressing the Edwards Curve point to the Y-coordinate is valid
         let hash_check = compress.compress(builder, &gs_ye.compressed(), &message);
@@ -65,29 +64,28 @@ impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>, CF> SignatureScheme<F, G, 
 mod tests {
     use std::str::FromStr;
 
-    use crate::{CyclicGenerator, EdwardsExpression, EdwardsPoint, Expression, GadgetBuilder, Group, WireValues, JubJub, EdwardsGroup};
+    use crate::{CyclicGenerator, EdwardsExpression, EdwardsPoint, Expression, GadgetBuilder, Group, WireValues, JubJub, EdwardsGroup, CyclicGroup, CyclicSubgroup, JubJubPrimeSubgroup};
     use crate::CompressionFunction;
     use crate::EdwardsCurve;
     use crate::field::{Bls12_381, Element, Field};
-    use crate::JubJubGenerator;
     use crate::signature::{Schnorr, SignatureExpression, SignatureScheme};
 
     #[test]
     fn verify() {
         // Generate signature
-        let generator = JubJubGenerator::generator_element();
+        let generator = JubJub::generator_element();
 
         let private_key = Element::from_str("4372820819045374670962167435360035096875258").unwrap();
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
         let public_key
-            = EdwardsGroup::<Bls12_381, JubJub>::mul_scalar_element(&generator, &private_key);
+            = JubJubPrimeSubgroup::mul_scalar_element(&generator, &private_key);
 
         let nonce = Element::from_str("5434290453746709621674353600312312").unwrap();
 
         let r
-            = EdwardsGroup::<Bls12_381, JubJub>::mul_scalar_element(&generator, &nonce);
+            = JubJubPrimeSubgroup::mul_scalar_element(&generator, &nonce);
 
         let compress = TestCompress {};
 
@@ -101,7 +99,7 @@ mod tests {
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
-        Schnorr::<Bls12_381, EdwardsGroup<Bls12_381, JubJub>, JubJubGenerator, TestCompress>::verify(
+        Schnorr::<Bls12_381, JubJubPrimeSubgroup, TestCompress>::verify(
             &mut builder,
             &signature,
             &Expression::from(message),

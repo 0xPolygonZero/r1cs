@@ -109,11 +109,69 @@ pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::Gr
 
 /// A trait that defines a generator `g` for a cyclic group in which every element
 /// is defined as `g^a` for some scalar `a`.
+pub trait CyclicGroup<F: Field>: Group<F> {
+    fn generator_element() -> Self::GroupElement;
+
+    fn generator_expression() -> Self::GroupExpression {
+        Self::GroupExpression::from(&Self::generator_element())
+    }
+}
+
 pub trait CyclicGenerator<F: Field, G: Group<F>> {
     fn generator_element() -> G::GroupElement;
 
     fn generator_expression() -> G::GroupExpression {
         G::GroupExpression::from(&Self::generator_element())
+    }
+}
+
+pub struct CyclicSubgroup<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> {
+    phantom_f: PhantomData<*const F>,
+    phantom_g: PhantomData<*const G>,
+    phantom_c: PhantomData<*const C>,
+}
+
+impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> CyclicSubgroup<F, G, C> {
+    pub fn new() -> CyclicSubgroup<F, G, C> {
+        CyclicSubgroup::<F, G, C> {
+            phantom_f: PhantomData,
+            phantom_g: PhantomData,
+            phantom_c: PhantomData,
+        }
+    }
+}
+
+impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> Group<F> for CyclicSubgroup<F, G, C> {
+    type GroupElement = G::GroupElement;
+    type GroupExpression = G::GroupExpression;
+
+    fn identity_element() -> Self::GroupElement {
+        G::identity_element()
+    }
+
+    fn add_expressions(
+        builder: &mut GadgetBuilder<F>,
+        lhs: &Self::GroupExpression,
+        rhs: &Self::GroupExpression
+    ) -> Self::GroupExpression {
+        G::add_expressions(builder, lhs, rhs)
+    }
+
+    fn double_expression(
+        builder: &mut GadgetBuilder<F>,
+        expression: &Self::GroupExpression
+    ) -> Self::GroupExpression {
+        G::double_expression(builder, expression)
+    }
+}
+
+impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> CyclicGroup<F> for CyclicSubgroup<F, G, C> {
+    fn generator_element() -> Self::GroupElement {
+        C::generator_element()
+    }
+
+    fn generator_expression() -> Self::GroupExpression {
+        C::generator_expression()
     }
 }
 
