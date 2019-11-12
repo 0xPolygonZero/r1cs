@@ -131,16 +131,6 @@ pub struct CyclicSubgroup<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> {
     phantom_c: PhantomData<*const C>,
 }
 
-impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> CyclicSubgroup<F, G, C> {
-    pub fn new() -> CyclicSubgroup<F, G, C> {
-        CyclicSubgroup::<F, G, C> {
-            phantom_f: PhantomData,
-            phantom_g: PhantomData,
-            phantom_c: PhantomData,
-        }
-    }
-}
-
 impl<F: Field, G: Group<F>, C: CyclicGenerator<F, G>> Group<F> for CyclicSubgroup<F, G, C> {
     type GroupElement = G::GroupElement;
     type GroupExpression = G::GroupExpression;
