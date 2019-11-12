@@ -19,9 +19,9 @@ impl EdwardsCurve<Bls12_381> for JubJub {
     }
 }
 
-pub struct JubJubPrimeSubgroup {}
+pub struct JubJubGenerator {}
 
-impl CyclicGenerator<Bls12_381, EdwardsGroup<Bls12_381, JubJub>> for JubJubPrimeSubgroup {
+impl CyclicGenerator<Bls12_381, EdwardsGroup<Bls12_381, JubJub>> for JubJubGenerator {
     fn generator_element() -> EdwardsPoint<Bls12_381, JubJub> {
         let x = Element::from_str(
             "11076627216317271660298050606127911965867021807910416450833192264015104452986"

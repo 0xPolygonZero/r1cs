@@ -69,13 +69,13 @@ mod tests {
     use crate::CompressionFunction;
     use crate::EdwardsCurve;
     use crate::field::{Bls12_381, Element, Field};
-    use crate::JubJubPrimeSubgroup;
+    use crate::JubJubGenerator;
     use crate::signature::{Schnorr, SignatureExpression, SignatureScheme};
 
     #[test]
     fn verify() {
         // Generate signature
-        let generator = JubJubPrimeSubgroup::generator_element();
+        let generator = JubJubGenerator::generator_element();
 
         let private_key = Element::from_str("4372820819045374670962167435360035096875258").unwrap();
 
@@ -101,7 +101,7 @@ mod tests {
 
         let mut builder = GadgetBuilder::<Bls12_381>::new();
 
-        Schnorr::<Bls12_381, EdwardsGroup<Bls12_381, JubJub>, JubJubPrimeSubgroup, TestCompress>::verify(
+        Schnorr::<Bls12_381, EdwardsGroup<Bls12_381, JubJub>, JubJubGenerator, TestCompress>::verify(
             &mut builder,
             &signature,
             &Expression::from(message),
