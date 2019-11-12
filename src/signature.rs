@@ -1,18 +1,18 @@
 use std::marker::PhantomData;
 
-use crate::{CompressionFunction, CyclicGroup, Expression, Field, GadgetBuilder, GroupExpression};
+use crate::{CompressionFunction, Expression, Field, GadgetBuilder, GroupExpression, Group, CyclicGroup};
 
-pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF> {
+pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> {
     fn verify(
         builder: &mut GadgetBuilder<F>,
         signature: &SignatureExpression<F>,
         message: &Expression<F>,
         public_key: &C::GroupExpression,
         compress: &CF,
-    ) where CF: CompressionFunction<F>;
+    );
 }
 
-pub struct Schnorr<F: Field, C: CyclicGroup<F>, CF> {
+pub struct Schnorr<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> {
     phantom_f: PhantomData<*const F>,
     phantom_c: PhantomData<*const C>,
     phantom_cf: PhantomData<*const CF>,
@@ -28,7 +28,7 @@ pub struct SignatureExpression<F: Field> {
     pub e: Expression<F>,
 }
 
-impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C, CF> {
+impl<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> SignatureScheme<F, C, CF> for Schnorr<F, C, CF> {
     /// Generates constraints to verify that a Schnorr signature for a message is valid,
     /// given a public key and a secure compression function.
     ///
@@ -42,7 +42,7 @@ impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C
         message: &Expression<F>,
         public_key: &C::GroupExpression,
         compress: &CF,
-    ) where CF: CompressionFunction<F> {
+    ) {
         let generator = C::generator_expression();
         let gs = C::mul_scalar_expression(
             builder,
@@ -64,17 +64,16 @@ impl<F: Field, C: CyclicGroup<F>, CF> SignatureScheme<F, C, CF> for Schnorr<F, C
 mod tests {
     use std::str::FromStr;
 
-    use crate::{CyclicGroup, EdwardsExpression, EdwardsPoint, Expression, GadgetBuilder, Group, WireValues};
+    use crate::{CyclicGenerator, EdwardsExpression, EdwardsPoint, Expression, GadgetBuilder, Group, WireValues, JubJub, EdwardsGroup, CyclicGroup, CyclicSubgroup, JubJubPrimeSubgroup};
     use crate::CompressionFunction;
     use crate::EdwardsCurve;
     use crate::field::{Bls12_381, Element, Field};
-    use crate::JubJubPrimeSubgroup;
     use crate::signature::{Schnorr, SignatureExpression, SignatureScheme};
 
     #[test]
     fn verify() {
         // Generate signature
-        let generator = JubJubPrimeSubgroup::generator_element();
+        let generator = JubJub::generator_element();
 
         let private_key = Element::from_str("4372820819045374670962167435360035096875258").unwrap();
 
