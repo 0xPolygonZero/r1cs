@@ -3,14 +3,28 @@ use std::marker::PhantomData;
 use crate::{Element, Expression, Field, Group, GadgetBuilder};
 
 /// A Montgomery curve.
-pub trait MontgomeryCurve<F: Field> {
+pub trait MontgomeryCurveAffine<F: Field> {
+    fn a() -> Element<F>;
+    fn b() -> Element<F>;
+}
+
+/// A Montgomery curve.
+pub trait MontgomeryCurveProjective<F: Field> {
     fn a() -> Element<F>;
     fn b() -> Element<F>;
 }
 
 /// An embedded Montgomery curve point defined over the same base field as
 /// the constraint system, with affine coordinates as elements.
-pub struct MontgomeryPoint<F: Field, C: MontgomeryCurve<F>> {
+pub struct MontgomeryPointAffine<F: Field, C: MontgomeryCurve<F>> {
+    pub x: Element<F>,
+    pub y: Element<F>,
+    phantom: PhantomData<*const C>,
+}
+
+/// An embedded Montgomery curve point defined over the same base field as
+/// the constraint system, with affine coordinates as elements.
+pub struct MontgomeryPointProjective<F: Field, C: MontgomeryCurve<F>> {
     pub x: Element<F>,
     pub y: Element<F>,
     phantom: PhantomData<*const C>,
