@@ -20,6 +20,7 @@ std = ["num/std", "num-traits/std", "itertools/use_std", "bimap/std"]
 criterion = "0.2"
 
 [dependencies]
+zkinterface = { version = "1.0.6" }
 bimap = { version = "0.4.0" }
 itertools = { version = "0.8.0" }
 num = { version = "0.2.0", features = ["rand"] }

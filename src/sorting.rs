@@ -68,9 +68,13 @@ impl<F: Field> GadgetBuilder<F> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+    use std::fs::File;
+
     use crate::expression::Expression;
     use crate::field::Element;
     use crate::gadget_builder::GadgetBuilder;
+    use crate::r1cs_zkinterface::write_circuit_and_r1cs;
     use crate::test_util::F257;
 
     #[test]
@@ -88,6 +92,10 @@ mod tests {
         assert_eq!(Element::from(1u8), outputs[1].evaluate(&values));
         assert_eq!(Element::from(4u8), outputs[2].evaluate(&values));
         assert_eq!(Element::from(7u8), outputs[3].evaluate(&values));
+
+        let mut file = File::create("sort_4_ascending.zkinterface").unwrap();
+        let mut public_wires = HashSet::new();
+        write_circuit_and_r1cs::<F257, File>(&gadget, &public_wires, &mut file);
     }
 
     #[test]

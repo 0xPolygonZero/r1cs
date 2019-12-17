@@ -43,6 +43,7 @@ pub use sponge::*;
 pub use wire::*;
 pub use wire_values::*;
 pub use witness_generator::*;
+pub use r1cs_zkinterface::*;
 
 #[macro_use]
 mod wire_values;
@@ -80,6 +81,7 @@ mod util;
 mod verify_permutation;
 mod wire;
 mod witness_generator;
+mod r1cs_zkinterface;
 
 #[cfg(test)]
 mod test_util;
