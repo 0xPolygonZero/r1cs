@@ -68,6 +68,7 @@ pub struct RescueBuilder<F: Field> {
 
 impl<F: Field> RescueBuilder<F> {
     pub fn new(width: usize) -> Self {
+        assert!(width > 0, "Permutation width must be non-zero");
         RescueBuilder {
             width,
             alpha: None,

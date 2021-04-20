@@ -12,7 +12,9 @@ pub struct ElementMatrix<F: Field> {
 
 impl<F: Field> ElementMatrix<F> {
     pub fn new(rows: Vec<Vec<Element<F>>>) -> Self {
+        assert!(!rows.is_empty(), "Expected at least one row");
         let num_cols = rows[0].len();
+        assert!(num_cols > 0, "Expected at least one column");
         for row in rows.iter() {
             assert_eq!(row.len(), num_cols, "Rows must have uniform length");
         }
