@@ -6,7 +6,7 @@ use alloc::collections::btree_map::BTreeMap;
 use num::BigUint;
 use num_traits::One;
 
-use crate::expression::{BooleanExpression, Expression};
+use crate::expression::{BooleanExpression};
 use crate::field::{Element, Field};
 use crate::wire::{BinaryWire, BooleanWire, Wire};
 

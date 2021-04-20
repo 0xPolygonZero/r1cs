@@ -2,8 +2,6 @@
 use alloc::vec::Vec;
 use std::marker::PhantomData;
 
-use num::BigUint;
-
 use crate::{BooleanExpression, Element, Evaluable, Expression, Field, GadgetBuilder, WireValues};
 
 pub trait Group<F: Field> where Self::GroupExpression: for<'a> From<&'a Self::GroupElement>,

@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
-use crate::{Bls12_381, CyclicGenerator, EdwardsCurve, EdwardsGroup, EdwardsExpression, EdwardsPoint, Element, Group, CyclicGroup, CyclicSubgroup, Field};
-use std::marker::PhantomData;
+use crate::{Bls12_381, CyclicGenerator, EdwardsCurve, EdwardsGroup, EdwardsPoint, Element, CyclicSubgroup};
 
 pub struct JubJub;
 
@@ -34,13 +33,6 @@ impl CyclicGenerator<Bls12_381, EdwardsGroup<Bls12_381, JubJub>> for JubJub {
 
 #[cfg(test)]
 mod tests {
-    use std::iter;
-    use std::str::FromStr;
-
-    use itertools::assert_equal;
-
-    use crate::field::{Bls12_381, Bn128, Element};
-
     #[test]
     fn subgroup_check() {
         //TODO: verify that generator is valid and generates a subgroup of prime order with appropriate cofactor

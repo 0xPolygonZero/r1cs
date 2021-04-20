@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{CompressionFunction, Expression, Field, GadgetBuilder, GroupExpression, Group, CyclicGroup};
+use crate::{CompressionFunction, Expression, Field, GadgetBuilder, GroupExpression, CyclicGroup};
 
 pub trait SignatureScheme<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> {
     fn verify(
@@ -64,9 +64,8 @@ impl<F: Field, C: CyclicGroup<F>, CF: CompressionFunction<F>> SignatureScheme<F,
 mod tests {
     use std::str::FromStr;
 
-    use crate::{CyclicGenerator, EdwardsExpression, EdwardsPoint, Expression, GadgetBuilder, Group, WireValues, JubJub, EdwardsGroup, CyclicGroup, CyclicSubgroup, JubJubPrimeSubgroup};
+    use crate::{CyclicGenerator, EdwardsExpression, Expression, GadgetBuilder, Group, WireValues, JubJub, JubJubPrimeSubgroup};
     use crate::CompressionFunction;
-    use crate::EdwardsCurve;
     use crate::field::{Bls12_381, Element, Field};
     use crate::signature::{Schnorr, SignatureExpression, SignatureScheme};
 

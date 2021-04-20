@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Element, Expression, Field, Group, GadgetBuilder};
+use crate::{Element, Expression, Field};
 
 /// A Montgomery curve.
 pub trait MontgomeryCurve<F: Field> {

@@ -2,7 +2,7 @@
 use alloc::vec::Vec;
 use std::marker::PhantomData;
 
-use crate::{BooleanExpression, Element, Evaluable, Expression, Field, GadgetBuilder, Group, GroupExpression, WireValues};
+use crate::{Element, Evaluable, Expression, Field, GadgetBuilder, Group, GroupExpression, WireValues};
 
 /// Trait used to represent Edwards Curves and Twisted Edwards Curves. Note that the `a`
 /// parameter can be set to 1 to represent the less-general non-twisted Edwards Curves.
