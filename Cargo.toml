@@ -17,7 +17,7 @@ default = ["std"]
 std = ["num/std", "num-traits/std", "itertools/use_std", "bimap/std"]
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3.5"
 
 [dependencies]
 bimap = { version = "0.4.0" }
