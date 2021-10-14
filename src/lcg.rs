@@ -30,7 +30,7 @@ impl LCG {
     }
 
     pub fn next_biguint(&mut self, limit_exclusive: BigUint) -> BigUint {
-        let bits = (&limit_exclusive - BigUint::one()).bits();
+        let bits = (&limit_exclusive - BigUint::one()).bits() as usize;
         loop {
             let n = self.next_biguint_bits(bits);
             if n < limit_exclusive {

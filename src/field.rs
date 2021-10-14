@@ -138,7 +138,7 @@ impl<F: Field> Element<F> {
 
     /// The number of bits needed to encode this particular field element.
     pub fn bits(&self) -> usize {
-        self.to_biguint().bits()
+        self.to_biguint().bits() as usize
     }
 
     /// Return the i'th least significant bit. So, for example, x.bit(0) returns the least

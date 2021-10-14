@@ -41,7 +41,7 @@ impl<F: Field> GadgetBuilder<F> {
             let max_term = (BigUint::one() << term.len()) - BigUint::one();
             max_sum += max_term;
         }
-        let sum_bits = max_sum.bits();
+        let sum_bits = max_sum.bits() as usize;
 
         // TODO: Generalize this addition function to support larger operands.
         // We can split the bits into chunks and perform addition on joined chunks.

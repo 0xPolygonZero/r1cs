@@ -47,7 +47,7 @@ impl<F: Field> WireValues<F> {
 
     pub fn set_binary_unsigned(&mut self, wire: &BinaryWire, value: &BigUint) {
         let l = wire.len();
-        assert!(value.bits() <= l, "Value does not fit");
+        assert!(value.bits() <= l as u64, "Value does not fit");
 
         for i in 0..l {
             let value = ((value >> i) & BigUint::one()).is_one();

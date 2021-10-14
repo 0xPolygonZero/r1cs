@@ -22,8 +22,8 @@ criterion = "0.2"
 [dependencies]
 bimap = { version = "0.4.0" }
 itertools = { version = "0.8.0" }
-num = { version = "0.2.0", features = ["rand"] }
-num-traits = { version = "0.2.8" }
+num = { version = "0.4.0", features = ["rand"] }
+num-traits = { version = "0.2.14" }
 
 [[bench]]
 name = "nth_root"
